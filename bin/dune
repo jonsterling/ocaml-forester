@@ -1,0 +1,4 @@
+(executable
+ (public_name entmoot)
+ (name main)
+ (libraries entmoot))

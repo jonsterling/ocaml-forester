@@ -1,0 +1,8 @@
+(ocamllex Lexer)
+
+(menhir
+ (modules Parser))
+
+(library
+ (name entmoot)
+ (libraries ocamlgraph))
