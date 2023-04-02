@@ -4,7 +4,7 @@
   let bvar str = Parser.BVAR (int_of_string (drop_sigil '#' str))
   let macro str = Parser.MACRO (drop_sigil '\\' str)
   let illegal str = raise @@ SyntaxError ("Lexer - Illegal character: " ^ str)
-  let text str = Parser.TEXT (String.trim str)
+  let text str = Parser.TEXT str
 }
 
 let digit = ['0'-'9']
@@ -14,7 +14,7 @@ let macro = '\\' (alpha) (alpha|digit|'_')*
 let addr = (alpha) (alpha|digit|'_'|'-')* 
 let whitespace = [' ' '\t']*
 let newline = '\r' | '\n' | "\r\n"
-let text = [^ '#' '\\' '{' '}' '[' ']' '|' '\n']+
+let text = [^ '#' '\\' '{' '}' '[' ']' '<' '>' '|']+
  
 rule token =
   parse
@@ -28,6 +28,8 @@ rule token =
   | '[' { Parser.LSQUARE }
   | ']' { Parser.RSQUARE }
   | '|' { Parser.PIPE }
+  | "<<" { Parser.LLANGLE }
+  | ">>" { Parser.RRANGLE }
   | text { text (Lexing.lexeme lexbuf) }
   | newline { token lexbuf } 
   | eof { Parser.EOF }

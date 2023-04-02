@@ -41,6 +41,15 @@ class import_macros (dep : addr) : tree =
     method render _ _ = ()
   end
 
+class set_title (title : tree) : tree =
+  object 
+    method process forest addr = 
+      forest#process addr title;
+      forest#set_title addr title
+
+    method render _ _ = ()
+  end
+
 class def_macro ~(name : string) (body : tree list -> tree) : tree = 
   object
     method process forest addr = 
@@ -63,17 +72,14 @@ class use_macro ~(name : string) ~(args : tree list) : tree =
       body#render forest fmt
   end
 
-class glue ~(sep : string) (trees : tree list) : tree =
+class glue (trees : tree list) : tree =
   object 
     method process forest addr = 
       List.iter (forest#process addr) trees
 
     method render forest fmt =
-      let task i tree = 
-        if i > 0 then Format.fprintf fmt "%s" sep;
-        tree#render forest fmt;
-      in 
-      List.iteri task trees
+      let task tree = tree#render forest fmt in 
+      List.iter task trees
   end
 
 class math (body : tree) : tree = 

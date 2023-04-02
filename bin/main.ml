@@ -23,6 +23,8 @@ let () =
   parse {|
     \import{jms-0001}
     \p{[\mymacro{\coolname} | jms-0001]}
+
+    transclusion: <<jms-0003>>
   |};
 
   forest#plant_tree "jms-0001" @@ 

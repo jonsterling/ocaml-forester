@@ -12,7 +12,7 @@
 %token <string> MACRO
 %token <int> BVAR
 %token DEFMACRO IMPORT
-%token LBRACE RBRACE LSQUARE RSQUARE PIPE
+%token LBRACE RBRACE LSQUARE RSQUARE PIPE LLANGLE RRANGLE
 %token EOF
 %type <Types.tree list -> Types.tree> frag
 %type <Types.tree list -> Types.tree> arg
@@ -20,12 +20,15 @@
 %start <Types.tree list -> Types.tree> main
 
 %%
-frag: 
+addr: 
+| txt = TEXT 
+  { String.trim txt }
 
+frag:
 | txt = TEXT 
   { fun _ ->
     new Tree.plain_text txt }
-    
+
 | DEFMACRO; name = MACRO; body = arg;
   { fun env ->
     new Tree.def_macro ~name @@ fun args -> 
@@ -35,13 +38,17 @@ frag:
   { fun env ->
     List.nth env @@ ix - 1 }
   
-| IMPORT; LBRACE; addr = TEXT; RBRACE 
+| IMPORT; LBRACE; addr = addr; RBRACE 
   { fun _ ->
     new Tree.import_macros addr }
-  
-| LSQUARE; title = body; PIPE; addr = TEXT; RSQUARE 
+
+| LSQUARE; title = body; PIPE; addr = addr; RSQUARE 
   { fun env ->
     new Tree.wikilink (title env) addr }
+    
+| LLANGLE; addr = addr; RRANGLE 
+  { fun _ -> 
+    new Tree.transclude addr }
   
 | name = MACRO; args = list(arg)
   { fun env ->
@@ -52,7 +59,7 @@ body:
 
 | frags = list(frag)
   { fun env ->
-    new Tree.glue ~sep:" " @@
+    new Tree.glue @@
     List.map (fun frag -> frag env) frags }
 
 arg: 
