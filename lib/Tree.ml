@@ -1,5 +1,37 @@
 open Types
 
+module Xml =
+struct
+  type printer = Format.formatter -> unit 
+
+  let rec seq (printers : printer list) : printer = 
+    match printers with 
+    | [] -> fun _ -> () 
+    | u :: vs -> 
+      fun fmt ->
+        u fmt ; seq vs fmt
+
+  let tag ?(attrs = []) (name : string) body fmt = 
+    Format.fprintf fmt "<%s" name;
+    begin
+      attrs |> List.iter @@ fun (k, v) -> 
+      Format.fprintf fmt " %s=\"%s\"" k v
+    end;
+    Format.fprintf fmt ">";
+    body fmt;
+    Format.fprintf fmt "</%s>" name
+end
+
+module Html =
+struct 
+  let a ~href =
+    Xml.tag "a" ~attrs:["href", href] 
+
+  let li = Xml.tag "li"
+  let ul = Xml.tag "ul"
+  let nav = Xml.tag "nav"
+end
+
 class empty : tree = 
   object 
     method process _ _ = () 
@@ -18,10 +50,9 @@ class basic_tag (tag : string) (body : tree) : tree =
     method process forest addr = 
       forest#process addr body
 
-    method render forest fmt = 
-      Format.fprintf fmt "<%s>" tag; 
-      body#render forest fmt; 
-      Format.fprintf fmt "</%s>" tag
+    method render forest = 
+      Xml.tag tag @@
+      body#render forest 
   end
 
 class bold : tree -> tree = 
@@ -85,10 +116,9 @@ class glue (trees : tree list) : tree =
 class math (body : tree) : tree = 
   object 
     method process _ _ = () 
-    method render forest fmt =
-      Format.fprintf fmt "<math xmlns=\"http://www.w3.org/1998/Math/MathML\">";
-      body#render forest fmt;
-      Format.fprintf fmt "</math>"
+    method render forest =
+      Xml.tag "math" ~attrs:["xmlns", "http://www.w3.org/1998/Math/MathML"] @@
+      body#render forest
   end
 
 class wikilink (title : tree) (destAddr : addr) : tree = 
@@ -97,10 +127,9 @@ class wikilink (title : tree) (destAddr : addr) : tree =
       forest#process addr title;
       forest#record_link ~src:addr ~dest:destAddr
 
-    method render forest fmt = 
-      Format.fprintf fmt "<a href=\"%s\">" destAddr;
-      title#render forest fmt;
-      Format.fprintf fmt "</a>"
+    method render forest = 
+      Html.a ~href:destAddr @@
+      title#render forest
   end
 
 class transclude (childAddr : addr) : tree = 
@@ -127,29 +156,24 @@ class root (childAddr : addr) : tree =
   object 
     method process _ _ = ()
 
-    method render (forest : closed_forest) fmt = 
+    method render (forest : closed_forest) = 
       let child = forest#lookup_tree childAddr in 
       let backlinks = forest#lookup_backlinks childAddr in 
-      child#render forest fmt;
-
-      match backlinks with 
-      | [] -> () 
-      | _ -> 
-        Format.fprintf fmt "<nav>";
-        Format.fprintf fmt "<ul>";
-        begin 
-          backlinks |> List.iter @@ fun addr -> 
-          Format.fprintf fmt "<li>";
-          Format.fprintf fmt "<a href=\"%s\">" addr;
-          begin 
+      Xml.seq @@ 
+      [ child#render forest;
+        match backlinks with 
+        | [] -> Xml.seq []
+        | _ -> 
+          Html.nav @@ 
+          Html.ul @@
+          Xml.seq @@ 
+          begin
+            backlinks |> List.map @@ fun addr -> 
+            Html.li @@ 
+            Html.a ~href:addr @@ 
             match forest#lookup_title addr with 
-            | None -> Format.fprintf fmt "[%s]" addr
-            | Some title -> title#render forest fmt
-          end;
-          Format.fprintf fmt "</a>";
-          Format.fprintf fmt "</li>"
-        end; 
-        Format.fprintf fmt "</ul>";
-        Format.fprintf fmt "</nav>"
+            | None -> fun fmt -> Format.fprintf fmt "[%s]" addr
+            | Some title -> title#render forest
+          end
+      ]
   end
-
