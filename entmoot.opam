@@ -2,8 +2,8 @@
 opam-version: "2.0"
 synopsis: "A short synopsis"
 description: "A longer description"
-maintainer: ["Maintainer Name"]
-authors: ["Author Name"]
+maintainer: ["Jonathan Sterling"]
+authors: ["Jonathan Sterling"]
 license: "LICENSE"
 tags: ["topics" "to describe" "your" "project"]
 homepage: "https://github.com/username/reponame"
@@ -12,9 +12,9 @@ bug-reports: "https://github.com/username/reponame/issues"
 depends: [
   "ocaml"
   "dune" {>= "3.7"}
+  "xmlm"
+  "bwd"
   "odoc" {with-doc}
-  "bwd" {>= "2.1.0"}
-  "xmlm" {>= "1.4.0"}
 ]
 build: [
   ["dune" "subst"] {dev}

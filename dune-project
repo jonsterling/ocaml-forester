@@ -9,9 +9,9 @@
 (source
  (github username/reponame))
 
-(authors "Author Name")
+(authors "Jonathan Sterling")
 
-(maintainers "Maintainer Name")
+(maintainers "Jonathan Sterling")
 
 (license LICENSE)
 
@@ -21,6 +21,6 @@
  (name entmoot)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dune)
+ (depends ocaml dune xmlm bwd)
  (tags
   (topics "to describe" your project)))

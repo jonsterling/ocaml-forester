@@ -16,9 +16,25 @@ let parse s =
 
 let () = 
   Format.print_newline ();
-  let _ = parse "adsfadsf" in 
-  ()
-(* 
+  let forest = new Forest.forest in 
+
+  forest#plant_tree "basics" @@ 
+  parse {|
+    \def{p}{@p{#1}}
+  |};
+
+  forest#plant_tree "jms-0002" @@ 
+  parse {|
+  \title{adsfadf}
+  \import{basics}
+
+  \p{asdfasdf}
+
+  \p{asdf}
+  |};
+
+  forest#render_trees;
+  (* 
   let forest = new Forest.basic_forest in 
 
   forest#plant_tree "jms-0002" @@ 

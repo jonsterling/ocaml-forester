@@ -19,7 +19,8 @@ type env = Sem.t bwd
 
 class forest =
   object(self)
-    val expansionQueue : Syn.doc Tbl.t = Tbl.create 100
+    val expansionQueue : Syn.t Tbl.t = Tbl.create 100
+    val titles : Syn.t Tbl.t = Tbl.create 100
     val trees : Sem.doc Tbl.t = Tbl.create 100
     val vertical : Gph.t = Gph.create ()
     val horizontal : Gph.t = Gph.create ()
@@ -34,26 +35,23 @@ class forest =
         macros
       | Some macros -> macros
 
-    method private process_meta addr = 
+    method private process_metas scope = 
       function 
-      | Syn.Import dep -> 
-        Gph.add_edge imports dep addr
-      | Syn.DefMacro (name, code) -> 
-        let macros = self#get_macros addr in
+      | Syn.Seq xs -> List.iter (self#process_metas scope) xs
+      | Syn.DefMacro (name, code) ->
+        let macros = self#get_macros scope in
         Hashtbl.add macros name code
+      | Syn.Import dep -> 
+        Gph.add_edge imports dep scope
+      | Syn.Title title -> 
+        Tbl.add titles scope title
+      | _ -> ()
 
-    method private process_metas addr (metas : Syn.meta list) = 
-      match metas with 
-      | [] -> ()
-      | meta :: metas ->
-        self#process_meta addr meta; 
-        self#process_metas addr metas
-
-    method plant_tree addr (syn : Syn.doc) = 
+    method plant_tree addr (syn : Syn.t) = 
       let open Syn in 
       Gph.add_vertex vertical addr;
       Gph.add_vertex imports addr;
-      self#process_metas addr syn.metas;
+      self#process_metas addr syn;
       Tbl.add expansionQueue addr syn
 
     method private expand_imports =
@@ -70,11 +68,9 @@ class forest =
       | Syn.Text text -> Sem.Text text
       | Syn.Transclude addr -> Sem.Transclude addr
       | Syn.Wikilink (title, dest) -> Sem.Wikilink (self#expand_tree scope env title, dest) 
-      | Syn.Nil -> Sem.Nil 
       | Syn.Tag (name, attrs, body) ->
-        let attrs' = attrs |> List.map (self#expand_attr scope env) in 
         let body' = self#expand_tree scope env body in 
-        Sem.Tag (name, attrs', body')
+        Sem.Tag (name, attrs, body')
       | Syn.Seq xs -> Sem.Seq (List.map (self#expand_tree scope env) xs)
       | Syn.Macro (name, args) -> 
         let macros = self#get_macros scope in
@@ -86,22 +82,19 @@ class forest =
           | None -> 
             failwith @@ "Could not resolve macro named " ^ name ^ " in scope " ^ scope
         end
-      | Syn.Arg ix -> 
-        Bwd.nth env ix
-
-    method private expand_attr scope env (lbl, syn) = 
-      lbl, self#expand_tree scope env syn
+      | Syn.BVar ix -> 
+        Bwd.nth env @@ ix - 1
+      | Syn.Title _ | Syn.DefMacro _ | Syn.Import _ -> Sem.Seq []
 
     method private process_tree scope = 
       function 
-      | Sem.Text _ | Sem.Nil -> () 
+      | Sem.Text _ -> () 
       | Sem.Transclude addr -> 
         Gph.add_edge vertical addr scope
       | Sem.Wikilink (title, addr) -> 
         self#process_tree scope title;
         Gph.add_edge horizontal addr scope
-      | Sem.Tag (_, attrs, body) -> 
-        attrs |> List.iter (fun (_, x) -> self#process_tree scope x);
+      | Sem.Tag (_, _, body) -> 
         self#process_tree scope body
       | Sem.Seq xs ->
         xs |> List.iter (self#process_tree scope)
@@ -109,8 +102,13 @@ class forest =
     method expand_trees = 
       self#expand_imports;
       expansionQueue |> Tbl.iter @@ fun addr doc ->
-      let body = self#expand_tree addr Bwd.Emp Syn.(doc.body) in 
-      let title = self#expand_tree addr Bwd.Emp Syn.(doc.title) in
+      let body = self#expand_tree addr Bwd.Emp doc in 
+      let title = 
+        match Tbl.find_opt titles addr with 
+        | None -> Sem.Seq []
+        | Some title -> 
+          self#expand_tree addr Bwd.Emp title
+      in
       Tbl.remove expansionQueue addr;
       Tbl.add trees addr {title; body}
 
@@ -120,101 +118,23 @@ class forest =
       let open Sem in
       self#process_tree addr doc.body;
       self#process_tree addr doc.title
-  end
 
-(* type macros = (string, closure) Hashtbl.t *)
-(* 
-class basic_forest =
-  object(self)
-    val trees : tree Tbl.t = Tbl.create 100
-    val titles : tree Tbl.t = Tbl.create 100
-    val macroTable : (addr, macros) Hashtbl.t = 
-      Hashtbl.create 1000
-    val hasProcessed : (tree, unit) Hashtbl.t = 
-      Hashtbl.create 1000
-    val mutable frozen : bool = false
-
-    method plant_tree addr tree =
-      assert (not frozen);
-      Gph.add_vertex vertical addr;
-      Gph.add_vertex horizontal addr;
-      Gph.add_vertex imports addr;
-      Tbl.add trees addr tree
-
-    method set_title addr tree = 
-      assert (not frozen);
-      Tbl.add titles addr tree
-
-    method record_link ~src ~dest =
-      assert (not frozen);
-      Gph.add_edge horizontal dest src
-
-    method record_translusion ~parent ~child =
-      assert (not frozen);
-      Gph.add_edge vertical child parent
-
-    method private get_macros (addr : addr) : macros = 
-      match Hashtbl.find_opt macroTable addr with 
-      | None -> 
-        let macros = Hashtbl.create 10 in 
-        Hashtbl.add macroTable addr macros;
-        macros
-      | Some macros -> macros
-
-    method def_macro addr ~(name : string) ~(body : closure) =
-      assert (not frozen);
-      let macros = self#get_macros addr in
-      Hashtbl.add macros name body
-
-    method import_macros ~at ~dep = 
-      assert (not frozen);
-      Gph.add_edge imports dep at
-
-    method lookup_macro addr ~(name : string) ~(args : tree list) : tree =
-      let macros = self#get_macros addr in 
-      Hashtbl.find macros name args
-
-    method lookup_tree addr =
-      Tbl.find trees addr
-
-    method lookup_backlinks addr = 
-      if Gph.mem_vertex horizontal addr then 
-        Gph.succ horizontal addr
-      else 
-        []
-
-    method lookup_title addr = 
-      Tbl.find_opt titles addr
-
-    method process (addr : addr) (tree : tree) =
-      match Hashtbl.find_opt hasProcessed tree with
-      | None ->
-        tree#process (self :> open_forest) addr;
-        Hashtbl.add hasProcessed tree ()
-      | Some () ->
-        ()
-
-    method freeze =
-      Tbl.iter self#process trees;
-      begin
-        imports |> Topo.iter @@ fun addr -> 
-        let macros = self#get_macros addr in 
-        let task addr' = 
-          self#get_macros addr' |> Hashtbl.iter @@ fun name clo -> 
-          Hashtbl.add macros name clo
-        in 
-        Gph.iter_pred task imports addr
-      end;
-      frozen <- true
-
-    method render_all fmt =
-      if not frozen then 
-        self#freeze;
-
-      let task addr =
-        Format.fprintf fmt "\n\n- Rendering %s\n" addr;
-        let tree = new Tree.root addr in
-        tree#render (self :> closed_forest) fmt
+    method render_trees : unit = 
+      let open Sem in
+      self#process_trees; 
+      let env : Render.env = 
+        object(self)
+          method transclude addr = 
+            let doc = Tbl.find trees addr in 
+            Render.render self doc.body
+        end
       in
-      Topo.iter task vertical
-  end *)
+      let out = Xmlm.make_output ~indent:(Some 2) (`Channel stdout) in
+      trees |> Tbl.iter @@ fun _ doc -> 
+      Xmlm.output out @@ `Dtd None;
+      Xmlm.output out @@ `El_start (("", "body"), []);
+      Render.render env doc.body out;
+      Xmlm.output out `El_end;
+      Format.print_newline ();
+      Format.print_newline ();
+  end

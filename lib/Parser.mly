@@ -1,11 +1,15 @@
 %{
   open Types
+  let rec get_text = 
+    function 
+    | Syn.Text txt -> txt 
+    | Syn.Seq [x] -> get_text x
+    | _ -> failwith "get_text"
 %}
 
 %token <string> TEXT
-%token <string> MACRO
+%token <string> MACRO TAG
 %token <int> BVAR
-%token DEFMACRO IMPORT
 %token LBRACE RBRACE LSQUARE RSQUARE PIPE LLANGLE RRANGLE
 %token EOF
 %type <Syn.t> frag
@@ -27,19 +31,29 @@ frag:
     
 | LLANGLE; addr = addr; RRANGLE 
   { Syn.Transclude addr }
-  
+
 | name = MACRO; args = list(arg)
-  { Syn.Macro (name, args) }
+  { match name with 
+    | "title" -> Syn.Title (List.hd args)
+    | "import" -> Syn.Import (get_text (List.hd args))
+    | "def" -> Syn.DefMacro (get_text (List.hd args), List.nth args 1)
+    | _ -> Syn.Macro (name, args) }
+    
+ | name = TAG; body = arg
+   { Syn.Tag (name, [], body) }
+    
+ | bvar = BVAR 
+   { Syn.BVar bvar }
+ 
 
 body:
-
 | frags = list(frag)
   { Syn.Seq frags }
 
 arg: 
 | LBRACE bdy = body RBRACE
   { bdy }
-
+  
 main: 
 | body = body; EOF
   { body }

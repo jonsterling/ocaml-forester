@@ -5,4 +5,9 @@
 
 (library
  (name entmoot)
- (libraries ocamlgraph bwd))
+ (libraries ocamlgraph bwd xmlm))
+
+(env
+ (dev
+  (flags
+   (:standard -w -66-32-33-27))))

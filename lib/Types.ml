@@ -8,22 +8,15 @@ struct
     | Text of string 
     | Transclude of addr
     | Wikilink of t * addr
-    | Nil 
     | Tag of string * attr list * t
     | Macro of string * t list
     | Seq of t list
-    | Arg of int
-
-  and attr = string * t
-
-  type meta = 
+    | BVar of int
+    | Title of t 
     | Import of addr 
     | DefMacro of string * t
 
-  type doc = 
-    {metas : meta list;
-     title : t;
-     body : t}
+  and attr = string * string
 end
 
 module Sem = 
@@ -32,11 +25,10 @@ struct
     | Text of string 
     | Transclude of addr 
     | Wikilink of t * addr 
-    | Nil
     | Tag of string * attr list * t
     | Seq of t list
 
-  and attr = string * t
+  and attr = string * string
 
   type doc = 
     {title : t; 
