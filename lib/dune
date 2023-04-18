@@ -5,4 +5,4 @@
 
 (library
  (name entmoot)
- (libraries ocamlgraph))
+ (libraries ocamlgraph bwd))

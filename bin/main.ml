@@ -10,13 +10,15 @@ let pos_string pos =
 
 let parse s =
   let lexbuf = Lexing.from_string s in
-  try Parser.main Lexer.token lexbuf []
+  try Parser.main Lexer.token lexbuf
   with Parser.Error ->
     failwith @@ "Parse error at " ^ pos_string lexbuf.lex_curr_p
 
 let () = 
   Format.print_newline ();
-
+  let _ = parse "adsfadsf" in 
+  ()
+(* 
   let forest = new Forest.basic_forest in 
 
   forest#plant_tree "jms-0002" @@ 
@@ -42,4 +44,4 @@ let () =
     \p{asdfasdsss}
   |};
 
-  forest#render_all Format.std_formatter
+  forest#render_all Format.std_formatter *)

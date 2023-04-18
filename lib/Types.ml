@@ -2,31 +2,43 @@ type addr = string
 
 type renderer = Format.formatter -> unit
 
-class type tree = 
-  object 
-    method process : open_forest -> addr -> unit
-    method render : closed_forest -> renderer
-  end
+module Syn =
+struct
+  type t = 
+    | Text of string 
+    | Transclude of addr
+    | Wikilink of t * addr
+    | Nil 
+    | Tag of string * attr list * t
+    | Macro of string * t list
+    | Seq of t list
+    | Arg of int
 
-and open_forest = 
-  object 
-    method process : addr -> tree -> unit
-    method plant_tree : addr -> tree -> unit
-    method record_link : src:addr -> dest:addr -> unit
-    method record_translusion : parent:addr -> child:addr -> unit
-    method import_macros : at:addr -> dep:addr -> unit
-    method def_macro : addr -> name:string -> body:(tree list -> tree) -> unit
-    method set_title : addr -> tree -> unit
-  end
+  and attr = string * t
 
-and closed_forest =
-  object 
-    method lookup_tree : addr -> tree
-    method lookup_backlinks : addr -> addr list
-    method lookup_title : addr -> tree option
-    method lookup_macro : addr -> name:string -> args:tree list -> tree
-    method render_all : renderer
-  end
+  type meta = 
+    | Import of addr 
+    | DefMacro of string * t
 
-type closure = tree list -> tree
+  type doc = 
+    {metas : meta list;
+     title : t;
+     body : t}
+end
 
+module Sem = 
+struct 
+  type t = 
+    | Text of string 
+    | Transclude of addr 
+    | Wikilink of t * addr 
+    | Nil
+    | Tag of string * attr list * t
+    | Seq of t list
+
+  and attr = string * t
+
+  type doc = 
+    {title : t; 
+     body : t}
+end
