@@ -17,7 +17,7 @@ let rec expand macros env =
       | Some v, [] -> v
       | None, _ -> 
         begin
-          match Hashtbl.find_opt macros name with 
+          match macros name with 
           | Some (Clo (env', xs, body)) -> 
             let env'' = List.fold_right2 Map.add xs args' env' in
             expand macros env'' body

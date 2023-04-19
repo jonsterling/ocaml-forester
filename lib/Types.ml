@@ -39,4 +39,4 @@ module Map = Map.Make (String)
 
 type env = Sem.t Map.t
 type clo = Clo of env * string list * Syn.t
-type macros = (string, clo) Hashtbl.t 
+type macros = string -> clo option 

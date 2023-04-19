@@ -22,15 +22,19 @@ class forest =
     val vertical : Gph.t = Gph.create ()
     val horizontal : Gph.t = Gph.create ()
     val imports : Gph.t = Gph.create ()
-    val macroTable : (addr, macros) Hashtbl.t = Hashtbl.create 1000
+    val macroTable : (addr, (string, clo) Hashtbl.t) Hashtbl.t = Hashtbl.create 1000
 
-    method private get_macros (addr : addr) : macros = 
+    method private get_macros (addr : addr) : (string, clo) Hashtbl.t = 
       match Hashtbl.find_opt macroTable addr with 
       | None -> 
         let macros = Hashtbl.create 10 in 
         Hashtbl.add macroTable addr macros;
         macros
       | Some macros -> macros
+
+    method private read_macros (addr : addr) : macros = 
+      let tbl = self#get_macros addr in 
+      Hashtbl.find_opt tbl
 
     method private process_metas scope = 
       function 
@@ -79,7 +83,7 @@ class forest =
     method expand_trees = 
       self#expand_imports;
       expansionQueue |> Tbl.iter @@ fun addr doc ->
-      let macros = self#get_macros addr in 
+      let macros = self#read_macros addr in 
       let body = Expand.expand macros Map.empty doc in 
       let title = 
         match Tbl.find_opt titles addr with 
