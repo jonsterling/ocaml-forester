@@ -1,3 +1,5 @@
 open Types
 
-val expand : macros -> env -> Syn.t -> Sem.t
+type globals = string -> clo option 
+
+val expand : globals -> env -> Syn.t -> Sem.t
