@@ -4,6 +4,7 @@ type printer = Xmlm.output -> unit
 
 class type env = 
   object 
+    method route : addr -> string
     method transclude : addr -> printer
   end
   

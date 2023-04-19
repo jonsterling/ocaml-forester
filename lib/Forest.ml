@@ -128,24 +128,25 @@ class forest =
 
     method process_trees = 
       self#expand_trees;
-      trees |> Tbl.iter @@ fun addr doc -> 
-      let open Sem in
-      self#process_tree addr doc.body;
-      self#process_tree addr doc.title
+      trees |> Tbl.iter @@ fun addr Sem.{body; title} -> 
+      self#process_tree addr body;
+      self#process_tree addr title
+
+    method render_env : Render.env =
+      object(self)
+        method route addr = 
+          addr ^ ".html"
+        method transclude addr = 
+          let doc = Tbl.find trees addr in 
+          Render.render_doc self doc
+      end
 
     method render_trees : unit = 
       let open Sem in
       self#process_trees; 
-      let env : Render.env = 
-        object(self)
-          method transclude addr = 
-            let doc = Tbl.find trees addr in 
-            Render.render_doc self doc
-        end
-      in
       let out = Xmlm.make_output @@ `Channel stdout in
       trees |> Tbl.iter @@ fun _ doc -> 
-      Render.render_doc_page env doc out;
+      Render.render_doc_page self#render_env doc out;
       Format.print_newline ();
       Format.print_newline ();
   end

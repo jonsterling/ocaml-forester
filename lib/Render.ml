@@ -3,7 +3,8 @@ open Types
 type printer = Xmlm.output -> unit 
 
 class type env = 
-  object 
+  object
+    method route : addr -> string
     method transclude : addr -> printer
   end
 
@@ -89,7 +90,8 @@ let rec render (env : env) : Sem.t -> printer =
   | Sem.Math bdy -> 
     Printer.text @@ "\\(" ^ renderMathMode env bdy ^ "\\)"
   | Sem.Wikilink (title, addr) -> 
-    Html.a ~href:addr @@ render env title
+    let url = env#route addr in
+    Html.a ~href:url @@ render env title
   | Sem.Tag (name, attrs, xs) -> 
     xs |> Printer.iter (render env) |> Html.tag name attrs
   | Sem.Transclude addr -> 
@@ -120,7 +122,7 @@ struct
        "src", "https://cdn.jsdelivr.net/npm/katex@0.16.6/dist/katex.min.js";
        "integrity", "sha384-j/ZricySXBnNMJy9meJCtyXTKMhIJ42heyr7oAdxTDBy/CYA9hzpMo+YTNV5C+1X";
        "crossorigin", "anonymous"] 
-    @@ text " "
+    @@ text ""
 
   let autorender : printer = 
     tag "script"
