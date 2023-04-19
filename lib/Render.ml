@@ -50,14 +50,17 @@ struct
     bdy out
 end
 
-let rec renderMathMode (env : env) : Sem.t -> string = 
+let rec renderNodeMathMode (env : env) : Sem.node -> string = 
   function 
   | Sem.Text txt -> String.trim txt
-  | Sem.Seq xs -> List.fold_right (fun y r -> renderMathMode env y ^ r) xs ""
   | Sem.Math x -> renderMathMode env x 
   | Sem.Tag (name, attrs, args) ->
     "\\" ^ name ^ renderMathAttrs env attrs ^ renderMathArgs env args
   | _ -> failwith "renderMathMode"
+
+and renderMathMode (env : env) (nodes : Sem.t) : string = 
+  List.fold_right (fun y r -> renderNodeMathMode env y ^ r) nodes ""
+
 
 and renderMathArg (env : env) (arg : Sem.t) : string = 
   "{" ^ renderMathMode env arg ^ "}"
@@ -78,12 +81,10 @@ and renderMathArgs (env : env) (args : Sem.t list) : string =
 
 
 
-let rec render (env : env) : Sem.t -> printer = 
+let rec renderNode (env : env) : Sem.node -> printer = 
   function 
   | Sem.Text txt -> 
     Printer.trimmedText txt 
-  | Sem.Seq xs ->
-    xs |> Printer.iter (render env)
   | Sem.Math bdy -> 
     Printer.text @@ "\\(" ^ renderMathMode env bdy ^ "\\)"
   | Sem.Wikilink (title, addr) -> 
@@ -94,6 +95,9 @@ let rec render (env : env) : Sem.t -> printer =
       [xs |> Printer.iter (render env)]
   | Sem.Transclude addr -> 
     env#transclude addr
+
+and render (env : env) : Sem.t -> printer = 
+  Printer.iter (renderNode env)
 
 let render_doc (env : env) (doc : Sem.doc) : printer =
   Html.tag "section" 

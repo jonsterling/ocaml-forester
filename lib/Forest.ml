@@ -36,9 +36,8 @@ class forest =
     method private global_resolver (addr : addr) : Expand.globals =
       Hashtbl.find_opt @@ self#get_macros addr
 
-    method private process_metas scope : Syn.t -> unit =
+    method private process_metas_in_node scope : Syn.node -> unit =
       function
-      | Syn.Seq xs -> List.iter (self#process_metas scope) xs
       | Syn.DefMacro (name, xs, code) ->
         let macros = self#get_macros scope in
         let clo = Clo (Env.empty, xs, code) in
@@ -49,6 +48,9 @@ class forest =
         Tbl.add titles scope title
       | _ -> ()
 
+    method private process_metas scope : Syn.t -> unit = 
+      List.iter @@ self#process_metas_in_node scope
+
     method private expand_imports : unit =
       imports |> Topo.iter @@ fun addr ->
       let macros = self#get_macros addr in
@@ -58,28 +60,29 @@ class forest =
       in
       Gph.iter_pred task imports addr
 
-    method private process_tree scope : Sem.t -> unit =
+    method private process_node scope : Sem.node -> unit =
       function
       | Sem.Text _ -> ()
       | Sem.Transclude addr ->
         Gph.add_edge vertical addr scope
       | Sem.Wikilink (title, addr) ->
-        self#process_tree scope title;
+        self#process_nodes scope title;
         Gph.add_edge horizontal addr scope
       | Sem.Tag (_, _, xs) ->
-        xs |> List.iter @@ self#process_tree scope
-      | Sem.Seq xs ->
-        xs |> List.iter @@ self#process_tree scope
+        xs |> List.iter @@ self#process_nodes scope
       | Sem.Math x ->
-        self#process_tree scope x
+        self#process_nodes scope x
+
+    method private process_nodes scope : Sem.t -> unit = 
+      List.iter @@ self#process_node scope
 
     method private expand_tree addr tree = 
       let globals = self#global_resolver addr in
-      let body = Expand.expand globals Env.empty tree in
+      let body = Expand.expand_nodes globals Env.empty tree in
       let title =
         match Tbl.find_opt titles addr with
-        | None -> Sem.Text addr
-        | Some title ->  Expand.expand globals Env.empty title
+        | None -> [Sem.Text addr]
+        | Some title -> Expand.expand_nodes globals Env.empty title
       in
       Tbl.add trees addr {title; body};
 
@@ -95,8 +98,8 @@ class forest =
     method private process_trees : unit =
       self#expand_trees;
       trees |> Tbl.iter @@ fun addr Sem.{body; title} ->
-      self#process_tree addr body;
-      self#process_tree addr title
+      self#process_nodes addr body;
+      self#process_nodes addr title
 
     method private render_env : Render.env =
       object(self)

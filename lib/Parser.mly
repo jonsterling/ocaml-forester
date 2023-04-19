@@ -1,13 +1,12 @@
 %{
   open Types
-
-  let rec get_text =
+  
+  let get_text =
     function
-    | Syn.Text txt -> txt
-    | Syn.Seq [x] -> get_text x
+    | [Syn.Text txt] -> txt
     | _ -> failwith "get_text"
 
-  type frag = Syn.t list -> Syn.t list
+  type frag = Syn.t -> Syn.t
 
   let extract_macro_binder args =
     let name = get_text @@ List.hd args in
@@ -56,15 +55,14 @@ frag:
     | "let" ->
       fun cx ->
       let name, xs, body = extract_macro_binder args in
-      [Syn.Let (name, xs, body, Syn.Seq cx)]
+      [Syn.Let (name, xs, body, cx)]
     | _ ->
       List.cons @@ Syn.Tag (name, args) }
 
 
 body:
 | frags = list(frag)
-  { let result = List.fold_right Fun.id frags []  in
-    Syn.Seq result }
+  { List.fold_right Fun.id frags [] }
 
 arg:
 | LBRACE bdy = body RBRACE
