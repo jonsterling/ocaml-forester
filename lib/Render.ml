@@ -38,9 +38,9 @@ end
 module Html = 
 struct
   let tag name attrs bdy : printer = 
-    let attrs' = attrs |> List.map @@ fun (k,v) -> (("", k), v) in 
+    let attrs' = attrs |> List.map @@ fun (k,v) -> ("", k), v in 
     fun out ->
-      Xmlm.output out (`El_start (("", name), attrs'));
+      Xmlm.output out @@ `El_start (("", name), attrs');
       Printer.seq bdy out; 
       Xmlm.output out `El_end
 
@@ -56,16 +56,27 @@ let rec renderMathMode (env : env) : Sem.t -> string =
   | Sem.Seq xs -> List.fold_right (fun y r -> renderMathMode env y ^ r) xs ""
   | Sem.Math x -> renderMathMode env x 
   | Sem.Tag (name, [], args) ->
-    "\\" ^ name ^ 
-    begin 
-      match args with 
-      | [] -> "{}"
-      | _ -> List.fold_right (fun x r -> renderMathArg env x ^ r) args ""
-    end
+    "\\" ^ name ^ renderMathArgs env args
   | _ -> failwith "renderMathMode"
 
 and renderMathArg (env : env) (arg : Sem.t) : string = 
   "{" ^ renderMathMode env arg ^ "}"
+
+and renderMathAttrs (env : env) (attrs : Sem.attr list) : string = 
+  match List.length attrs with 
+  | 0 -> "" 
+  | n -> "{" ^ String.concat "," (List.map (renderMathAttr env) attrs) ^ "}"
+
+and renderMathAttr (env : env) (attr : Sem.attr) : string = 
+  let k, v = attr in 
+  k ^ " = " ^ v
+
+and renderMathArgs (env : env) (args : Sem.t list) : string = 
+  match args with 
+  | [] -> "{}"
+  | _ -> List.fold_right (fun x r -> renderMathArg env x ^ r) args ""
+
+
 
 let rec render (env : env) : Sem.t -> printer = 
   function 
