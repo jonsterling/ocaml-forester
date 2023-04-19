@@ -17,7 +17,7 @@ module Clo = Graph.Traverse
 class forest =
   object(self)
     val mutable frozen = false
-    val expansionQueue : Syn.t Tbl.t = Tbl.create 100
+    val expansionQueue : (addr * Syn.t) Queue.t = Queue.create ()
     val titles : Syn.t Tbl.t = Tbl.create 100
     val trees : Sem.doc Tbl.t = Tbl.create 100
     val vertical : Gph.t = Gph.create ()
@@ -34,8 +34,7 @@ class forest =
       | Some macros -> macros
 
     method private global_resolver (addr : addr) : Expand.globals =
-      let tbl = self#get_macros addr in
-      Hashtbl.find_opt tbl
+      Hashtbl.find_opt @@ self#get_macros addr
 
     method private process_metas scope : Syn.t -> unit =
       function
@@ -74,18 +73,24 @@ class forest =
       | Sem.Math x ->
         self#process_tree scope x
 
-    method private expand_trees : unit =
-      self#expand_imports;
-      expansionQueue |> Tbl.iter @@ fun addr doc ->
+    method private expand_tree addr tree = 
       let globals = self#global_resolver addr in
-      let body = Expand.expand globals Map.empty doc in
+      let body = Expand.expand globals Map.empty tree in
       let title =
         match Tbl.find_opt titles addr with
         | None -> Sem.Text addr
         | Some title ->  Expand.expand globals Map.empty title
       in
-      Tbl.remove expansionQueue addr;
-      Tbl.add trees addr {title; body}
+      Tbl.add trees addr {title; body};
+
+    method private expand_trees : unit =
+      self#expand_imports;
+      let rec loop () =
+        match Queue.take expansionQueue with 
+        | addr, tree -> self#expand_tree addr tree; loop () 
+        | exception Queue.Empty -> ()
+      in 
+      loop ()
 
     method private process_trees : unit =
       self#expand_trees;
@@ -108,7 +113,7 @@ class forest =
       Gph.add_vertex vertical addr;
       Gph.add_vertex imports addr;
       self#process_metas addr syn;
-      Tbl.add expansionQueue addr syn
+      Queue.push (addr, syn) expansionQueue
 
     method render_trees : unit =
       let open Sem in
