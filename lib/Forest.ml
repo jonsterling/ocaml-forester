@@ -13,9 +13,11 @@ module Tbl = Hashtbl.Make (Addr)
 module Gph = Graph.Imperative.Digraph.Concrete (Addr)
 module Topo = Graph.Topological.Make (Gph)
 module Clo = Graph.Traverse
+module Map = Map.Make (String)
 
-type macros = (string, Syn.t) Hashtbl.t 
-type env = Sem.t bwd
+type clo = Clo of Sem.t Map.t * string list * Syn.t
+
+type macros = (string, clo) Hashtbl.t 
 
 class forest =
   object(self)
@@ -38,9 +40,10 @@ class forest =
     method private process_metas scope = 
       function 
       | Syn.Seq xs -> List.iter (self#process_metas scope) xs
-      | Syn.DefMacro (name, code) ->
+      | Syn.DefMacro (name, xs, code) ->
         let macros = self#get_macros scope in
-        Hashtbl.add macros name code
+        let clo = Clo (Map.empty, xs, code) in
+        Hashtbl.add macros name clo
       | Syn.Import dep -> 
         Gph.add_edge imports dep scope
       | Syn.Title title -> 
@@ -65,25 +68,34 @@ class forest =
 
     method private expand_tree scope env = 
       function 
-      | Syn.Text text -> Sem.Text text
-      | Syn.Transclude addr -> Sem.Transclude addr
-      | Syn.Wikilink (title, dest) -> Sem.Wikilink (self#expand_tree scope env title, dest) 
-      | Syn.Tag (name, attrs, body) ->
-        let body' = self#expand_tree scope env body in 
-        Sem.Tag (name, attrs, body')
-      | Syn.Seq xs -> Sem.Seq (List.map (self#expand_tree scope env) xs)
-      | Syn.Macro (name, args) -> 
+      | Syn.Text text ->
+        Sem.Text text
+      | Syn.Transclude addr -> 
+        Sem.Transclude addr
+      | Syn.Wikilink (title, dest) ->
+        Sem.Wikilink (self#expand_tree scope env title, dest) 
+      | Syn.Seq xs -> 
+        Sem.Seq (List.map (self#expand_tree scope env) xs)
+      | Syn.Tag (name, args) -> 
         let macros = self#get_macros scope in
+        let args' = List.map (self#expand_tree scope env) args in
         begin
-          match Hashtbl.find_opt macros name with 
-          | Some clo -> 
-            let args' = List.map (self#expand_tree scope env) args in
-            self#expand_tree scope (Bwd.append env args') clo
-          | None -> 
-            failwith @@ "Could not resolve macro named " ^ name ^ " in scope " ^ scope
+          match Map.find_opt name env, args with 
+          | Some v, [] -> v
+          | None, _ -> 
+            begin
+              match Hashtbl.find_opt macros name with 
+              | Some (Clo (env', xs, body)) -> 
+                let env'' = List.fold_right2 Map.add xs args' env' in
+                self#expand_tree scope env'' body
+              | None ->
+                Sem.Tag (name, [], args')
+            end
+          | _ -> failwith "expand_tree"
         end
-      | Syn.BVar ix -> 
-        Bwd.nth env @@ ix - 1
+      | Syn.Math body -> 
+        let body' = self#expand_tree scope env body in 
+        Sem.Math body'
       | Syn.Title _ | Syn.DefMacro _ | Syn.Import _ -> Sem.Seq []
 
     method private process_tree scope = 
@@ -94,20 +106,22 @@ class forest =
       | Sem.Wikilink (title, addr) -> 
         self#process_tree scope title;
         Gph.add_edge horizontal addr scope
-      | Sem.Tag (_, _, body) -> 
-        self#process_tree scope body
+      | Sem.Tag (_, attrs, xs) -> 
+        xs |> List.iter (self#process_tree scope)
       | Sem.Seq xs ->
         xs |> List.iter (self#process_tree scope)
+      | Sem.Math x -> 
+        self#process_tree scope x
 
     method expand_trees = 
       self#expand_imports;
       expansionQueue |> Tbl.iter @@ fun addr doc ->
-      let body = self#expand_tree addr Bwd.Emp doc in 
+      let body = self#expand_tree addr Map.empty doc in 
       let title = 
         match Tbl.find_opt titles addr with 
         | None -> Sem.Seq []
         | Some title -> 
-          self#expand_tree addr Bwd.Emp title
+          self#expand_tree addr Map.empty title
       in
       Tbl.remove expansionQueue addr;
       Tbl.add trees addr {title; body}

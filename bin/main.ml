@@ -18,46 +18,21 @@ let () =
   Format.print_newline ();
   let forest = new Forest.forest in 
 
-  forest#plant_tree "basics" @@ 
+  forest#plant_tree "jms-0050" @@ 
   parse {|
-    \def{p}{@p{#1}}
-  |};
-
-  forest#plant_tree "jms-0002" @@ 
-  parse {|
-  \title{adsfadf}
+  \title{duploid}
   \import{basics}
 
-  \p{asdfasdf}
+  \def{mem}{u}{v}{\u \in \v}
+  \def{def-em}{x}{\i{\b{\x}}}
 
-  \p{asdf}
+  \p{A [preduploid|jms-004F] #{D} is called a \def-em{duploid} when it satisfies the following properties:}
+
+  \ul{
+    \li{the preduploid #{D} is univalent;}
+    \li{every positive object #{\mem{P}{D}} has an upshift;}
+    \li{every negative object of #{\mem{N}{D}} has a downshift.}
+  }  
   |};
 
   forest#render_trees;
-  (* 
-  let forest = new Forest.basic_forest in 
-
-  forest#plant_tree "jms-0002" @@ 
-  parse {|
-    \import{jms-0001}
-    \p{[\mymacro{\coolname} | jms-0001]}
-
-    transclusion: <<jms-0003>>
-  |};
-
-  forest#plant_tree "jms-0001" @@ 
-  parse {|
-    \import{jms-0003}
-    \p{this one has some backlinks}
-    \defmacro\mymacro{Hello, #1}
-  |};
-
-  forest#plant_tree "jms-0003" @@ 
-  parse {|
-    \defmacro\coolname{Fred}
-    \p{hello, \b{\coolname} \m{adf}}
-    \p{asdfadsf}
-    \p{asdfasdsss}
-  |};
-
-  forest#render_all Format.std_formatter *)

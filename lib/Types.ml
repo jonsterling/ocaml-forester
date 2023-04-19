@@ -8,13 +8,12 @@ struct
     | Text of string 
     | Transclude of addr
     | Wikilink of t * addr
-    | Tag of string * attr list * t
-    | Macro of string * t list
+    | Tag of string * t list
+    | Math of t
     | Seq of t list
-    | BVar of int
     | Title of t 
     | Import of addr 
-    | DefMacro of string * t
+    | DefMacro of string * string list * t
 
   and attr = string * string
 end
@@ -25,8 +24,9 @@ struct
     | Text of string 
     | Transclude of addr 
     | Wikilink of t * addr 
-    | Tag of string * attr list * t
+    | Tag of string * attr list * t list
     | Seq of t list
+    | Math of t
 
   and attr = string * string
 
