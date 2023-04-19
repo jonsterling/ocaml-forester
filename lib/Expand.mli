@@ -1,5 +1,5 @@
 open Types
 
-type globals = string -> clo option 
+type globals = Symbol.t -> clo option 
 
 val expand : globals -> env -> Syn.t -> Sem.t

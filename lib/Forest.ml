@@ -23,9 +23,9 @@ class forest =
     val vertical : Gph.t = Gph.create ()
     val horizontal : Gph.t = Gph.create ()
     val imports : Gph.t = Gph.create ()
-    val macroTable : (addr, (string, clo) Hashtbl.t) Hashtbl.t = Hashtbl.create 1000
+    val macroTable : (addr, (Symbol.t, clo) Hashtbl.t) Hashtbl.t = Hashtbl.create 1000
 
-    method private get_macros (addr : addr) : (string, clo) Hashtbl.t =
+    method private get_macros (addr : addr) : (Symbol.t, clo) Hashtbl.t =
       match Hashtbl.find_opt macroTable addr with
       | None ->
         let macros = Hashtbl.create 10 in
@@ -41,8 +41,8 @@ class forest =
       | Syn.Seq xs -> List.iter (self#process_metas scope) xs
       | Syn.DefMacro (name, xs, code) ->
         let macros = self#get_macros scope in
-        let clo = Clo (Map.empty, xs, code) in
-        Hashtbl.add macros name clo
+        let clo = Clo (Env.empty, xs, code) in
+        Hashtbl.add macros (User name) clo
       | Syn.Import dep ->
         Gph.add_edge imports dep scope
       | Syn.Title title ->
@@ -75,11 +75,11 @@ class forest =
 
     method private expand_tree addr tree = 
       let globals = self#global_resolver addr in
-      let body = Expand.expand globals Map.empty tree in
+      let body = Expand.expand globals Env.empty tree in
       let title =
         match Tbl.find_opt titles addr with
         | None -> Sem.Text addr
-        | Some title ->  Expand.expand globals Map.empty title
+        | Some title ->  Expand.expand globals Env.empty title
       in
       Tbl.add trees addr {title; body};
 

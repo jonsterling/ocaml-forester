@@ -35,7 +35,7 @@ struct
      body : t}
 end
 
-module Map = Map.Make (String)
+module Env = Map.Make (Symbol)
 
-type env = Sem.t Map.t
+type env = Sem.t Env.t
 type clo = Clo of env * string list * Syn.t

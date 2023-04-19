@@ -1,6 +1,6 @@
 open Types
 
-type globals = string -> clo option
+type globals = Symbol.t -> clo option
 
 type resolution = 
   | Local of Sem.t 
@@ -8,15 +8,15 @@ type resolution =
   | Undefined
 
 let resolve globals env name = 
-  match Map.find_opt name env with 
-  | Some v -> Local v 
+  match Env.find_opt name env with 
+  | Some v -> Local v
   | None ->
     match globals name with 
     | Some clo -> Global clo 
     | None -> Undefined
 
 let extend_env = 
-  List.fold_right2 Map.add
+  List.fold_right2 (fun x -> Env.add (User x))
 
 let rec expand globals env = 
   function 
@@ -31,7 +31,7 @@ let rec expand globals env =
   | Syn.Tag (name, args) -> 
     let args' = args |> List.map @@ expand globals env in
     begin
-      match resolve globals env name, args with 
+      match resolve globals env (User name), args with 
       | Local v, [] -> v 
       | Global (Clo (env', xs, body)), _ -> 
         body |> expand globals @@ extend_env xs args' env'

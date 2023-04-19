@@ -98,8 +98,8 @@ let rec render (env : env) : Sem.t -> printer =
 let render_doc (env : env) (doc : Sem.doc) : printer =
   Html.tag "section" 
     ["class", "block"] 
-    [Html.tag "details" ["open","true"] [
-        Html.tag "summary" [] 
+    [Html.tag "details" ["open","true"] 
+       [Html.tag "summary" [] 
           [Html.tag "header" [] [Html.tag "h1" [] [render env doc.title]]];
         Html.tag "div" 
           ["class", "post-content"]
