@@ -3,20 +3,19 @@ open Types
 type globals = Symbol.t -> clo option
 
 type resolution = 
-  | Local of Sem.t 
-  | Global of clo
+  | Defined of clo
   | Undefined
 
 let resolve globals env name = 
   match Env.find_opt name env with 
-  | Some v -> Local v
+  | Some clo -> Defined clo
   | None ->
     match globals name with 
-    | Some clo -> Global clo 
+    | Some clo -> Defined clo 
     | None -> Undefined
 
 let extend_env = 
-  List.fold_right2 (fun x -> Env.add (User x))
+  List.fold_right2 (fun x v -> Env.add (User x) (Val v))
 
 let rec expand globals env = 
   function 
@@ -32,8 +31,8 @@ let rec expand globals env =
     let args' = args |> List.map @@ expand globals env in
     begin
       match resolve globals env (User name), args with 
-      | Local v, [] -> v 
-      | Global (Clo (env', xs, body)), _ -> 
+      | Defined (Val v), [] -> v
+      | Defined (Clo (env', xs, body)), _ -> 
         body |> expand globals @@ extend_env xs args' env'
       | Undefined, _ -> 
         Sem.Tag (name, [], args')
@@ -42,5 +41,8 @@ let rec expand globals env =
     end
   | Syn.Math body -> 
     Sem.Math (expand globals env body)
+  | Syn.Let (name, xs, body, rest) -> 
+    let env' = Env.add (User name) (Clo (env, xs, body)) env in
+    expand globals env' rest
   | Syn.Title _ | Syn.DefMacro _ | Syn.Import _ -> 
     Sem.Seq []

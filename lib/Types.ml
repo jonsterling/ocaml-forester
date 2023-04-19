@@ -14,6 +14,7 @@ struct
     | Title of t 
     | Import of addr 
     | DefMacro of string * string list * t
+    | Let of string * string list * t * t
 
   and attr = string * string
 end
@@ -37,5 +38,5 @@ end
 
 module Env = Map.Make (Symbol)
 
-type env = Sem.t Env.t
-type clo = Clo of env * string list * Syn.t
+type clo = Clo of env * string list * Syn.t | Val of Sem.t
+and env = clo Env.t

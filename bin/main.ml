@@ -26,6 +26,8 @@ let () =
 
   forest#plant_tree "book" @@ 
   parse {| 
+    \let{foo}{a}
+    \foo
     <<jms-004F>>
     <<jms-0050>>
   |};

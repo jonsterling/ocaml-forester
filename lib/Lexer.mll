@@ -13,11 +13,10 @@ let macro = '\\' (alpha) (alpha|digit|'_'|'-')*
 let addr = (alpha) (alpha|digit|'_'|'-')* 
 let whitespace = [' ' '\t']*
 let newline = '\r' | '\n' | "\r\n"
-let text = [^ '#' '@' '$' '\\' '{' '}' '[' ']' '<' '>' '|']+
+let text = [^ '#' '\\' '{' '}' '[' ']' '<' '>' '|']+
  
 rule token =
   parse
-  | whitespace { token lexbuf }
   | '#' { Parser.MATH }
   | macro { macro (Lexing.lexeme lexbuf) }
   | '{' { Parser.LBRACE }
@@ -28,6 +27,7 @@ rule token =
   | "<<" { Parser.LLANGLE }
   | ">>" { Parser.RRANGLE }
   | text { text (Lexing.lexeme lexbuf) }
+  | whitespace { token lexbuf }
   | newline { token lexbuf } 
   | eof { Parser.EOF }
   | _ { illegal @@ Lexing.lexeme lexbuf }
