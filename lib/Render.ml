@@ -55,8 +55,8 @@ let rec renderMathMode (env : env) : Sem.t -> string =
   | Sem.Text txt -> String.trim txt
   | Sem.Seq xs -> List.fold_right (fun y r -> renderMathMode env y ^ r) xs ""
   | Sem.Math x -> renderMathMode env x 
-  | Sem.Tag (name, [], args) ->
-    "\\" ^ name ^ renderMathArgs env args
+  | Sem.Tag (name, attrs, args) ->
+    "\\" ^ name ^ renderMathAttrs env attrs ^ renderMathArgs env args
   | _ -> failwith "renderMathMode"
 
 and renderMathArg (env : env) (arg : Sem.t) : string = 
