@@ -21,6 +21,6 @@
  (name entmoot)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dune xmlm bwd)
+ (depends ocaml dune xmlm)
  (tags
   (topics "to describe" your project)))

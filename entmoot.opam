@@ -13,7 +13,6 @@ depends: [
   "ocaml"
   "dune" {>= "3.7"}
   "xmlm"
-  "bwd"
   "odoc" {with-doc}
 ]
 build: [
