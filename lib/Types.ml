@@ -8,7 +8,7 @@ struct
     | Text of string 
     | Transclude of addr
     | Wikilink of t * addr
-    | Tag of string * t list
+    | Tag of string * attr list * t list
     | Math of t
     | Title of t 
     | Import of addr 

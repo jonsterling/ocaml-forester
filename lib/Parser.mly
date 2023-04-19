@@ -57,7 +57,7 @@ frag:
       let name, xs, body = extract_macro_binder args in
       [Syn.Let (name, xs, body, cx)]
     | _ ->
-      List.cons @@ Syn.Tag (name, args) }
+      List.cons @@ Syn.Tag (name, [], args) }
 
 
 body:

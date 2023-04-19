@@ -25,15 +25,15 @@ let rec expand_node globals env =
     [Sem.Transclude addr]
   | Syn.Wikilink (title, dest) ->
     [Sem.Wikilink (expand_nodes globals env title, dest)]
-  | Syn.Tag (name, args) -> 
+  | Syn.Tag (name, attrs, args) -> 
     let args' = args |> List.map @@ expand_nodes globals env in
     begin
-      match resolve globals env (User name), args with 
-      | Defined (Val v), [] -> v
-      | Defined (Clo (env', xs, body)), _ -> 
+      match resolve globals env (User name), args, attrs with 
+      | Defined (Val v), [], [] -> v
+      | Defined (Clo (env', xs, body)), _, [] -> 
         body |> expand_nodes globals @@ extend_env xs args' env'
-      | Undefined, _ -> 
-        [Sem.Tag (name, [], args')]
+      | Undefined, _, _ -> 
+        [Sem.Tag (name, attrs, args')]
       | _ -> 
         failwith "expand"
     end
