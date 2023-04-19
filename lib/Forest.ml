@@ -13,11 +13,6 @@ module Tbl = Hashtbl.Make (Addr)
 module Gph = Graph.Imperative.Digraph.Concrete (Addr)
 module Topo = Graph.Topological.Make (Gph)
 module Clo = Graph.Traverse
-module Map = Map.Make (String)
-
-type clo = Clo of Sem.t Map.t * string list * Syn.t
-
-type macros = (string, clo) Hashtbl.t 
 
 class forest =
   object(self)
@@ -66,38 +61,6 @@ class forest =
       in 
       Gph.iter_pred task imports addr
 
-    method private expand_tree scope env = 
-      function 
-      | Syn.Text text ->
-        Sem.Text text
-      | Syn.Transclude addr -> 
-        Sem.Transclude addr
-      | Syn.Wikilink (title, dest) ->
-        Sem.Wikilink (self#expand_tree scope env title, dest) 
-      | Syn.Seq xs -> 
-        Sem.Seq (List.map (self#expand_tree scope env) xs)
-      | Syn.Tag (name, args) -> 
-        let macros = self#get_macros scope in
-        let args' = List.map (self#expand_tree scope env) args in
-        begin
-          match Map.find_opt name env, args with 
-          | Some v, [] -> v
-          | None, _ -> 
-            begin
-              match Hashtbl.find_opt macros name with 
-              | Some (Clo (env', xs, body)) -> 
-                let env'' = List.fold_right2 Map.add xs args' env' in
-                self#expand_tree scope env'' body
-              | None ->
-                Sem.Tag (name, [], args')
-            end
-          | _ -> failwith "expand_tree"
-        end
-      | Syn.Math body -> 
-        let body' = self#expand_tree scope env body in 
-        Sem.Math body'
-      | Syn.Title _ | Syn.DefMacro _ | Syn.Import _ -> Sem.Seq []
-
     method private process_tree scope = 
       function 
       | Sem.Text _ -> () 
@@ -116,12 +79,12 @@ class forest =
     method expand_trees = 
       self#expand_imports;
       expansionQueue |> Tbl.iter @@ fun addr doc ->
-      let body = self#expand_tree addr Map.empty doc in 
+      let macros = self#get_macros addr in 
+      let body = Expand.expand macros Map.empty doc in 
       let title = 
         match Tbl.find_opt titles addr with 
-        | None -> Sem.Seq []
-        | Some title -> 
-          self#expand_tree addr Map.empty title
+        | None -> Sem.Text addr
+        | Some title ->  Expand.expand macros Map.empty title
       in
       Tbl.remove expansionQueue addr;
       Tbl.add trees addr {title; body}
@@ -143,10 +106,10 @@ class forest =
 
     method render_trees : unit = 
       let open Sem in
+      let env = self#render_env in
       self#process_trees; 
-      let out = Xmlm.make_output @@ `Channel stdout in
-      trees |> Tbl.iter @@ fun _ doc -> 
-      Render.render_doc_page self#render_env doc out;
-      Format.print_newline ();
-      Format.print_newline ();
+      trees |> Tbl.iter @@ fun addr doc -> 
+      let ch = open_out @@ "output/" ^ env#route addr in 
+      let out = Xmlm.make_output @@ `Channel ch in
+      Render.render_doc_page env doc out;
   end

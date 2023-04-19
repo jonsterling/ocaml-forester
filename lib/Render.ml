@@ -41,27 +41,13 @@ struct
     let attrs' = attrs |> List.map @@ fun (k,v) -> (("", k), v) in 
     fun out ->
       Xmlm.output out (`El_start (("", name), attrs'));
-      bdy out; 
+      Printer.seq bdy out; 
       Xmlm.output out `El_end
-
-  let a ~href bdy : printer = 
-    tag "a" ["href", href] bdy
-
-  let section bdy : printer = 
-    tag "section" [] bdy
-
-  let h1 bdy : printer = 
-    tag "h1" [] bdy
 
   let with_dtd bdy : printer = 
     fun out -> 
     Xmlm.output out @@ `Dtd (Some "<!DOCTYPE html>");
     bdy out
-
-  let html = tag "html" []
-  let body = tag "body" []
-  let head = tag "head" [] 
-  let title = tag "title" [] 
 end
 
 let rec renderMathMode (env : env) : Sem.t -> string = 
@@ -91,17 +77,22 @@ let rec render (env : env) : Sem.t -> printer =
     Printer.text @@ "\\(" ^ renderMathMode env bdy ^ "\\)"
   | Sem.Wikilink (title, addr) -> 
     let url = env#route addr in
-    Html.a ~href:url @@ render env title
+    Html.tag "a" ["href", url; "class", "local"] [render env title]
   | Sem.Tag (name, attrs, xs) -> 
-    xs |> Printer.iter (render env) |> Html.tag name attrs
+    Html.tag name attrs
+      [xs |> Printer.iter (render env)]
   | Sem.Transclude addr -> 
     env#transclude addr
 
 let render_doc (env : env) (doc : Sem.doc) : printer =
-  Html.section @@ 
-  Printer.seq
-    [Html.h1 @@ render env doc.title;
-     render env doc.body]
+  Html.tag "section" 
+    ["class", "block"] 
+    [Html.tag "details" ["open","true"] [
+        Html.tag "summary" [] 
+          [Html.tag "header" [] [Html.tag "h1" [] [render env doc.title]]];
+        Html.tag "div" 
+          ["class", "post-content"]
+          [render env doc.body]]]
 
 module KaTeX = 
 struct 
@@ -114,7 +105,7 @@ struct
        "href", "https://cdn.jsdelivr.net/npm/katex@0.16.6/dist/katex.min.css";
        "integrity", "sha384-mXD7x5S50Ko38scHSnD4egvoExgMPbrseZorkbE49evAfv9nNcbrXJ8LLNsDgh9d";
        "crossorigin", "anonymous"]
-      nil
+      []
 
   let script : printer = 
     tag "script" 
@@ -122,7 +113,7 @@ struct
        "src", "https://cdn.jsdelivr.net/npm/katex@0.16.6/dist/katex.min.js";
        "integrity", "sha384-j/ZricySXBnNMJy9meJCtyXTKMhIJ42heyr7oAdxTDBy/CYA9hzpMo+YTNV5C+1X";
        "crossorigin", "anonymous"] 
-    @@ text ""
+      [text ""]
 
   let autorender : printer = 
     tag "script"
@@ -131,17 +122,24 @@ struct
        "integrity", "sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05";
        "crossorigin", "anonymous";
        "onload", "renderMathInElement(document.body);"]
-    @@ text ""
+      [text ""]
 
   let prelude : printer = 
     seq [stylesheet; script; autorender]
 end
+
 let render_doc_page (env : env) (doc : Sem.doc) : printer = 
   Html.with_dtd @@ 
-  Html.html @@
-  Printer.seq
-    [Html.head @@ 
-     Printer.seq 
-       [Html.title @@ render env doc.title;
+  Html.tag "html" []
+    [Html.tag "head" [] 
+       [Html.tag "title" [] [render env doc.title];
+        Html.tag "link"  
+          ["rel", "stylesheet";
+           "href", "style.css"]
+          [];
+        Html.tag "link" 
+          ["rel", "stylesheet";
+           "href", "https://fonts.googleapis.com/css2?family=Inria+Sans:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&amp;display=swap"]
+          [];
         KaTeX.prelude];
-     Html.body @@ render_doc env doc]
+     Html.tag "body" [] [render_doc env doc]]
