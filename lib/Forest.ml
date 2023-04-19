@@ -140,15 +140,12 @@ class forest =
         object(self)
           method transclude addr = 
             let doc = Tbl.find trees addr in 
-            Render.render self doc.body
+            Render.render_doc self doc
         end
       in
-      let out = Xmlm.make_output ~indent:(Some 2) (`Channel stdout) in
+      let out = Xmlm.make_output @@ `Channel stdout in
       trees |> Tbl.iter @@ fun _ doc -> 
-      Xmlm.output out @@ `Dtd None;
-      Xmlm.output out @@ `El_start (("", "body"), []);
-      Render.render env doc.body out;
-      Xmlm.output out `El_end;
+      Render.render_doc_page env doc out;
       Format.print_newline ();
       Format.print_newline ();
   end

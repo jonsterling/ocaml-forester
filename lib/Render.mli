@@ -8,3 +8,5 @@ class type env =
   end
   
 val render : env -> Sem.t -> printer
+val render_doc : env -> Sem.doc -> printer
+val render_doc_page : env -> Sem.doc -> printer
