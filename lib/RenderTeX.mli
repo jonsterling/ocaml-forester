@@ -2,7 +2,8 @@ open Types
 
 module Printer : 
 sig
-  type t
+  include PrinterKit.S
+  val text : string -> t
   val contents : t -> string 
 end
 

@@ -41,14 +41,18 @@ struct
     bdy out
 end
 
-
-
 let rec render_node (env : env) : Sem.node -> printer = 
   function 
   | Sem.Text txt -> 
     Printer.trimmedText txt
   | Sem.Math bdy -> 
-    Printer.text @@ "\\(" ^ RenderTeX.Printer.contents (RenderTeX.render_nodes bdy) ^ "\\)"
+    let module TP = RenderTeX.Printer in 
+    Printer.text @@
+    TP.contents @@
+    TP.seq
+      [TP.text "\\(";
+       RenderTeX.render_nodes bdy;
+       TP.text "\\)"]
   | Sem.Wikilink (title, addr) -> 
     let url = env#route addr in
     Html.tag "a" ["href", url; "class", "local"] [render env title]

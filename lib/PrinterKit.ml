@@ -1,12 +1,18 @@
-module Kit (P : sig type out end) : 
+module type S =
 sig
-  type t = P.out -> unit
+  type out 
+  type t = out -> unit
+
   val nil : t
   val iter : ?sep:t -> ('a -> t) -> 'a list -> t
   val seq : ?sep:t -> t list -> t
-end =
+end
+
+module Kit (P : sig type out end) : S with type out = P.out =
 struct 
-  type t = P.out -> unit
+  include P
+
+  type t = out -> unit
   let nil : t = fun _ -> () 
 
   let iter ?(sep = nil) printer xs : t =
