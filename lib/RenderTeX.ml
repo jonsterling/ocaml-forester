@@ -5,7 +5,14 @@ struct
   include PrinterKit.Kit (struct type out = Format.formatter end)
 
   let text txt fmt =  
-    Format.fprintf fmt "%s" (String.trim txt)
+    Format.fprintf fmt "%s" txt
+
+  let trimmedText (txt : string) : t =
+    let txt = String.trim txt in 
+    if String.length txt > 0 then 
+      text @@ txt 
+    else 
+      fun _ -> ()
 
   let contents (printer : t) : string = 
     Format.asprintf "%a" (fun fmt _ -> printer fmt) ()  
@@ -14,7 +21,7 @@ end
 let rec render_node : Sem.node -> Printer.t =
   function 
   | Sem.Text txt -> 
-    Printer.text txt
+    Printer.trimmedText txt
   | Sem.Math xs -> 
     render_nodes xs
   | Sem.Tag (name, attrs, args) -> 
