@@ -10,9 +10,11 @@ class type env =
 
 module Printer =
 struct 
+  include PrinterKit.Kit (struct type out = Xmlm.output end)
+
   let text txt : printer = 
     fun out -> 
-      Xmlm.output out @@ `Data txt
+    Xmlm.output out @@ `Data txt
 
   let trimmedText (txt : string) : printer =
     let txt = String.trim txt in 
@@ -21,18 +23,7 @@ struct
     else 
       fun _ -> ()
 
-  let iter printer xs : printer =
-    fun out -> 
-    let n = List.length xs in
-    xs |> List.iteri @@ fun i x -> 
-    if not (i = 0 || i = n) then 
-      text " " out;
-    printer x out
-
-  let seq ps : printer = 
-    iter (fun p -> p) ps
-
-  let nil : printer = fun _ -> ()
+  let space = text " "
 end
 
 module Html = 
@@ -41,7 +32,7 @@ struct
     let attrs' = attrs |> List.map @@ fun (k,v) -> ("", k), v in 
     fun out ->
       Xmlm.output out @@ `El_start (("", name), attrs');
-      Printer.seq bdy out; 
+      Printer.seq ~sep:Printer.space bdy out; 
       Xmlm.output out `El_end
 
   let with_dtd bdy : printer = 
@@ -57,18 +48,18 @@ let rec render_node (env : env) : Sem.node -> printer =
   | Sem.Text txt -> 
     Printer.trimmedText txt
   | Sem.Math bdy -> 
-    Printer.text @@ "\\(" ^ RenderTeX.render_nodes bdy ^ "\\)"
+    Printer.text @@ "\\(" ^ RenderTeX.Printer.contents (RenderTeX.render_nodes bdy) ^ "\\)"
   | Sem.Wikilink (title, addr) -> 
     let url = env#route addr in
     Html.tag "a" ["href", url; "class", "local"] [render env title]
   | Sem.Tag (name, attrs, xs) -> 
     Html.tag name attrs
-      [xs |> Printer.iter (render env)]
+      [xs |> Printer.iter ~sep:Printer.space (render env)]
   | Sem.Transclude addr -> 
     env#transclude addr
 
 and render (env : env) : Sem.t -> printer = 
-  Printer.iter (render_node env)
+  Printer.iter ~sep:Printer.space (render_node env)
 
 let render_doc (env : env) (doc : Sem.doc) : printer =
   Html.tag "section" ["class", "block"] 
@@ -85,7 +76,7 @@ struct
   open Printer 
   open Html
 
-  let stylesheet : printer = 
+  let stylesheet : printer =
     tag "link" 
       ["rel", "stylesheet";
        "href", "https://cdn.jsdelivr.net/npm/katex@0.16.6/dist/katex.min.css";

@@ -1,30 +1,54 @@
 open Types 
 
-let rec render_node : Sem.node -> string = 
+module Printer =
+struct
+  include PrinterKit.Kit (struct type out = Format.formatter end)
+
+  let text txt fmt =  
+    Format.fprintf fmt "%s" (String.trim txt)
+
+  let contents (printer : t) : string = 
+    Format.asprintf "%a" (fun fmt _ -> printer fmt) ()  
+end
+
+let rec render_node : Sem.node -> Printer.t =
   function 
-  | Sem.Text txt -> String.trim txt
-  | Sem.Math x -> render_nodes x 
-  | Sem.Tag (name, attrs, args) ->
-    "\\" ^ name ^ render_attrs attrs ^ render_args args
-  | _ -> failwith "render_nodes"
+  | Sem.Text txt -> 
+    Printer.text txt
+  | Sem.Math xs -> 
+    render_nodes xs
+  | Sem.Tag (name, attrs, args) -> 
+    Printer.seq 
+      [Printer.text "\\";
+       Printer.text name;
+       render_attrs attrs;
+       render_args args]
+  | _ -> 
+    failwith "RenderTeX.render_node"
 
-and render_nodes (nodes : Sem.t) : string = 
-  List.fold_right (fun y r -> render_node y ^ r) nodes ""
+and render_nodes xs =
+  Printer.iter render_node xs
 
-and render_arg (arg : Sem.t) : string = 
-  "{" ^ render_nodes arg ^ "}"
-
-and render_attrs (attrs : Sem.attr list) : string = 
+and render_attrs (attrs : Sem.attr list) : Printer.t = 
   match List.length attrs with 
-  | 0 -> "" 
-  | n -> "{" ^ String.concat "," (List.map render_attr attrs) ^ "}"
+  | 0 -> Printer.nil
+  | n -> 
+    Printer.seq 
+      [Printer.text "{";
+       Printer.iter ~sep:(Printer.text ",") render_attr attrs;
+       Printer.text "}"]
 
-and render_attr (attr : Sem.attr) : string = 
+and render_attr (attr : Sem.attr) : Printer.t  = 
   let k, v = attr in 
-  k ^ " = " ^ v
+  Printer.seq [Printer.text k; Printer.text " = "; Printer.text v]
 
-and render_args (args : Sem.t list) : string = 
+and render_arg (arg : Sem.t) : Printer.t = 
+  Printer.seq 
+    [Printer.text "{";
+     render_nodes arg;
+     Printer.text "}"]
+
+and render_args (args : Sem.t list) : Printer.t = 
   match args with 
-  | [] -> "{}"
-  | _ -> List.fold_right (fun x r -> render_arg x ^ r) args ""
-
+  | [] -> Printer.text "{}"
+  | _ -> Printer.iter render_arg args
