@@ -42,6 +42,8 @@ let rec expand_node globals env =
   | Syn.Let (name, xs, body, rest) -> 
     let env' = Env.add (User name) (Clo (env, xs, body)) env in
     expand_nodes globals env' rest
+  | Syn.EmbedTeX body ->
+    [Sem.EmbedTeX (expand_nodes globals env body)]
   | Syn.Title _ | Syn.DefMacro _ | Syn.Import _ -> 
     []
 

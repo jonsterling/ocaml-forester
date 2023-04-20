@@ -14,6 +14,7 @@ struct
     | Import of addr 
     | DefMacro of string * string list * t
     | Let of string * string list * t * t
+    | EmbedTeX of t
 
   and t = node list
 
@@ -29,6 +30,7 @@ struct
     | Wikilink of t * addr 
     | Tag of string * attr list * t list
     | Math of t
+    | EmbedTeX of t
 
   and t = node list
 

@@ -18,7 +18,7 @@
 %}
 
 %token <string> TEXT MACRO
-%token LBRACE RBRACE LSQUARE RSQUARE PIPE LLANGLE RRANGLE MATH
+%token LBRACE RBRACE LSQUARE RSQUARE PIPE MATH BEGIN_TEX END_TEX
 %token EOF
 %type <frag> frag
 %type <Syn.t> arg
@@ -37,9 +37,6 @@ frag:
 | LSQUARE; title = body; PIPE; addr = addr; RSQUARE
   { List.cons @@ Syn.Wikilink (title, addr)  }
 
-| LLANGLE; addr = addr; RRANGLE
-  { List.cons @@ Syn.Transclude addr }
-
 | MATH; body = arg
   { List.cons @@ Syn.Math body }
 
@@ -56,6 +53,10 @@ frag:
       fun cx ->
       let name, xs, body = extract_macro_binder args in
       [Syn.Let (name, xs, body, cx)]
+    | "tex" -> 
+      List.cons @@ Syn.EmbedTeX (List.hd args)
+    | "transclude" -> 
+      List.cons @@ Syn.Transclude (get_text (List.hd args))
     | _ ->
       List.cons @@ Syn.Tag (name, [], args) }
 
@@ -65,8 +66,10 @@ body:
   { List.fold_right Fun.id frags [] }
 
 arg:
-| LBRACE bdy = body RBRACE
+| LBRACE; bdy = body; RBRACE
   { bdy }
+| BEGIN_TEX; body = body; END_TEX
+  { body }
 
 main:
 | body = body; EOF

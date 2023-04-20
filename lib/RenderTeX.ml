@@ -22,13 +22,16 @@ let rec render_node : Sem.node -> Printer.t =
   | Sem.Math xs -> 
     render_nodes xs
   | Sem.Tag (name, attrs, args) -> 
-    Printer.seq 
-      [Printer.text "\\";
-       Printer.text name;
-       render_attrs attrs;
-       render_args args]
+    render_tag name attrs args
   | _ -> 
     failwith "RenderTeX.render_node"
+
+and render_tag name attrs args = 
+  Printer.seq 
+    [Printer.text "\\";
+     Printer.text name;
+     render_attrs attrs;
+     render_args args]
 
 and render_nodes xs =
   Printer.iter render_node xs
@@ -53,6 +56,4 @@ and render_arg (arg : Sem.t) : Printer.t =
      Printer.text "}"]
 
 and render_args (args : Sem.t list) : Printer.t = 
-  match args with 
-  | [] -> Printer.text "{}"
-  | _ -> Printer.iter render_arg args
+  Printer.iter render_arg args

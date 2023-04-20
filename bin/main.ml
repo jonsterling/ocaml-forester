@@ -26,9 +26,20 @@ let () =
 
   forest#plant_tree "book" @@ 
   parse {| 
-    \let{foo}{<<jms-004F>>}
+    \let{foo}{\transclude{jms-004F}}
+    \let{D}{#{\mathcal{D}}}
+
     \foo
-    <<jms-0050>>
+    \transclude{jms-0050}
+
+    \tex`{
+      \begin{tikzpicture}[diagram]
+        \SpliceDiagramSquare{
+          nw = \D,
+        }
+      \end{tikzpicture}
+    `}
+
   |};
 
   forest#plant_tree "jms-004F" @@
@@ -45,6 +56,7 @@ let () =
     \let{D}{#{\mathcal{D}}}
 
     \p{A [preduploid|jms-004F] \D is called a \def-em{duploid} when it satisfies the following properties:}
+
 
     \ul{
       \li{the preduploid \D is univalent;}

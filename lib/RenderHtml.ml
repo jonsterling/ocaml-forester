@@ -56,6 +56,14 @@ let rec render_node (env : env) : Sem.node -> printer =
       [xs |> Printer.iter ~sep:Printer.space (render env)]
   | Sem.Transclude addr ->
     env#transclude addr
+  | Sem.EmbedTeX bdy ->
+    let code = RenderTeX.Printer.contents @@ RenderTeX.render_nodes bdy in
+    let hash = Digest.to_hex @@ Digest.string code in
+    Html.tag "details" ["open", "true"] 
+      [Html.tag "summary" [] 
+         [Html.tag "code" [] [Printer.text hash]];
+       Html.tag "code" [] [Printer.text code]]
+
 
 and render (env : env) : Sem.t -> printer =
   Printer.iter ~sep:Printer.space (render_node env)

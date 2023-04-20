@@ -72,6 +72,8 @@ class forest =
         xs |> List.iter @@ self#process_nodes scope
       | Sem.Math x ->
         self#process_nodes scope x
+      | Sem.EmbedTeX x -> 
+        self#process_nodes scope x
 
     method private process_nodes scope : Sem.t -> unit = 
       List.iter @@ self#process_node scope
