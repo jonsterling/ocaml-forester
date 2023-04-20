@@ -101,13 +101,13 @@ class forest =
       self#process_nodes addr body;
       self#process_nodes addr title
 
-    method private render_env : Render.env =
+    method private render_env : RenderHtml.env =
       object(self)
         method route addr =
           addr ^ ".html"
         method transclude addr =
           let doc = Tbl.find trees addr in
-          Render.render_doc self doc
+          RenderHtml.render_doc self doc
       end
 
     method plant_tree addr (syn : Syn.t) : unit =
@@ -126,6 +126,6 @@ class forest =
       trees |> Tbl.iter @@ fun addr doc ->
       let ch = open_out @@ "output/" ^ env#route addr in
       let out = Xmlm.make_output @@ `Channel ch in
-      Render.render_doc_page env doc out
+      RenderHtml.render_doc_page env doc out
 
   end

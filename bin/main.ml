@@ -20,15 +20,14 @@ let () =
 
   forest#plant_tree "basics" @@
   parse {|
-    \def{mem}{u}{v}{#{\u \in \v}}
-    \def{def-em}{x}{\i{\b{\x}}}
+    \def{mem}{u}{v}{#{\u\in\v}}
+    \def{def-em}{x}{\em{\strong{\x}}}
   |};
 
   forest#plant_tree "book" @@ 
   parse {| 
-    \let{foo}{a}
+    \let{foo}{<<jms-004F>>}
     \foo
-    <<jms-004F>>
     <<jms-0050>>
   |};
 
@@ -43,12 +42,14 @@ let () =
     \title{duploid}
     \import{basics}
 
-    \p{A [preduploid|jms-004F] #{D} is called a \def-em{duploid} when it satisfies the following properties:}
+    \let{D}{#{\mathcal{D}}}
+
+    \p{A [preduploid|jms-004F] \D is called a \def-em{duploid} when it satisfies the following properties:}
 
     \ul{
-      \li{the preduploid #{D} is univalent;}
-      \li{every positive object \mem{P}{D} has an upshift;}
-      \li{every negative object of \mem{N}{D} has a downshift.}
+      \li{the preduploid \D is univalent;}
+      \li{every positive object \mem{P}{\D} has an upshift;}
+      \li{every negative object of \mem{N}{\D} has a downshift.}
     }
   |};
 

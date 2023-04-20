@@ -50,43 +50,14 @@ struct
     bdy out
 end
 
-let rec renderNodeMathMode (env : env) : Sem.node -> string = 
-  function 
-  | Sem.Text txt -> String.trim txt
-  | Sem.Math x -> renderMathMode env x 
-  | Sem.Tag (name, attrs, args) ->
-    "\\" ^ name ^ renderMathAttrs env attrs ^ renderMathArgs env args
-  | _ -> failwith "renderMathMode"
-
-and renderMathMode (env : env) (nodes : Sem.t) : string = 
-  List.fold_right (fun y r -> renderNodeMathMode env y ^ r) nodes ""
 
 
-and renderMathArg (env : env) (arg : Sem.t) : string = 
-  "{" ^ renderMathMode env arg ^ "}"
-
-and renderMathAttrs (env : env) (attrs : Sem.attr list) : string = 
-  match List.length attrs with 
-  | 0 -> "" 
-  | n -> "{" ^ String.concat "," (List.map (renderMathAttr env) attrs) ^ "}"
-
-and renderMathAttr (env : env) (attr : Sem.attr) : string = 
-  let k, v = attr in 
-  k ^ " = " ^ v
-
-and renderMathArgs (env : env) (args : Sem.t list) : string = 
-  match args with 
-  | [] -> "{}"
-  | _ -> List.fold_right (fun x r -> renderMathArg env x ^ r) args ""
-
-
-
-let rec renderNode (env : env) : Sem.node -> printer = 
+let rec render_node (env : env) : Sem.node -> printer = 
   function 
   | Sem.Text txt -> 
-    Printer.trimmedText txt 
+    Printer.trimmedText txt
   | Sem.Math bdy -> 
-    Printer.text @@ "\\(" ^ renderMathMode env bdy ^ "\\)"
+    Printer.text @@ "\\(" ^ RenderTeX.render_nodes bdy ^ "\\)"
   | Sem.Wikilink (title, addr) -> 
     let url = env#route addr in
     Html.tag "a" ["href", url; "class", "local"] [render env title]
@@ -97,16 +68,16 @@ let rec renderNode (env : env) : Sem.node -> printer =
     env#transclude addr
 
 and render (env : env) : Sem.t -> printer = 
-  Printer.iter (renderNode env)
+  Printer.iter (render_node env)
 
 let render_doc (env : env) (doc : Sem.doc) : printer =
-  Html.tag "section" 
-    ["class", "block"] 
+  Html.tag "section" ["class", "block"] 
     [Html.tag "details" ["open","true"] 
        [Html.tag "summary" [] 
-          [Html.tag "header" [] [Html.tag "h1" [] [render env doc.title]]];
-        Html.tag "div" 
-          ["class", "post-content"]
+          [Html.tag "header" [] 
+             [Html.tag "h1" [] 
+                [render env doc.title]]];
+        Html.tag "div" ["class", "post-content"]
           [render env doc.body]]]
 
 module KaTeX = 
