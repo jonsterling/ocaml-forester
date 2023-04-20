@@ -1,102 +1,97 @@
 open Types
 
-type printer = Xmlm.output -> unit 
+type printer = Xmlm.output -> unit
 
-class type env = 
+class type env =
   object
     method route : addr -> string
     method transclude : addr -> printer
   end
 
 module Printer =
-struct 
-  include PrinterKit.Kit (struct type out = Xmlm.output end)
+struct
+  module P0 =
+  struct
+    type out = Xmlm.output
 
-  let text txt : printer = 
-    fun out -> 
-    Xmlm.output out @@ `Data txt
+    let text txt out =
+      Xmlm.output out @@ `Data txt
+  end
 
-  let trimmedText (txt : string) : printer =
-    let txt = String.trim txt in 
-    if String.length txt > 0 then 
-      text @@ txt 
-    else 
-      fun _ -> ()
-
-  let space = text " "
+  include PrinterKit.Kit (P0)
 end
 
-module Html = 
+module Html =
 struct
-  let tag name attrs bdy : printer = 
-    let attrs' = attrs |> List.map @@ fun (k,v) -> ("", k), v in 
+  let tag name attrs bdy : printer =
+    let attrs' = attrs |> List.map @@ fun (k,v) -> ("", k), v in
     fun out ->
       Xmlm.output out @@ `El_start (("", name), attrs');
-      Printer.seq ~sep:Printer.space bdy out; 
+      Printer.seq ~sep:Printer.space bdy out;
       Xmlm.output out `El_end
 
-  let with_dtd bdy : printer = 
-    fun out -> 
+  let with_dtd bdy : printer =
+    fun out ->
     Xmlm.output out @@ `Dtd (Some "<!DOCTYPE html>");
     bdy out
 end
 
-let rec render_node (env : env) : Sem.node -> printer = 
-  function 
-  | Sem.Text txt -> 
+let rec render_node (env : env) : Sem.node -> printer =
+  function
+  | Sem.Text txt ->
     Printer.trimmedText txt
-  | Sem.Math bdy -> 
-    let module TP = RenderTeX.Printer in 
+  | Sem.Math bdy ->
+    let module TP = RenderTeX.Printer in
     Printer.text @@
     TP.contents @@
     TP.seq
       [TP.text "\\(";
        RenderTeX.render_nodes bdy;
        TP.text "\\)"]
-  | Sem.Wikilink (title, addr) -> 
+  | Sem.Wikilink (title, addr) ->
     let url = env#route addr in
     Html.tag "a" ["href", url; "class", "local"] [render env title]
-  | Sem.Tag (name, attrs, xs) -> 
+  | Sem.Tag (name, attrs, xs) ->
     Html.tag name attrs
       [xs |> Printer.iter ~sep:Printer.space (render env)]
-  | Sem.Transclude addr -> 
+  | Sem.Transclude addr ->
     env#transclude addr
 
-and render (env : env) : Sem.t -> printer = 
+and render (env : env) : Sem.t -> printer =
   Printer.iter ~sep:Printer.space (render_node env)
 
 let render_doc (env : env) (doc : Sem.doc) : printer =
-  Html.tag "section" ["class", "block"] 
-    [Html.tag "details" ["open","true"] 
-       [Html.tag "summary" [] 
-          [Html.tag "header" [] 
-             [Html.tag "h1" [] 
+  Html.tag "section" ["class", "block"]
+    [Html.tag "details" ["open","true"]
+       [Html.tag "summary" []
+          [Html.tag "header" []
+             [Html.tag "h1" []
                 [render env doc.title]]];
         Html.tag "div" ["class", "post-content"]
           [render env doc.body]]]
 
-module KaTeX = 
-struct 
-  open Printer 
+module KaTeX =
+struct
+  open Printer
   open Html
 
   let stylesheet : printer =
-    tag "link" 
+    tag "link"
       ["rel", "stylesheet";
        "href", "https://cdn.jsdelivr.net/npm/katex@0.16.6/dist/katex.min.css";
        "integrity", "sha384-mXD7x5S50Ko38scHSnD4egvoExgMPbrseZorkbE49evAfv9nNcbrXJ8LLNsDgh9d";
        "crossorigin", "anonymous"]
       []
 
-  let script : printer = 
-    tag "script" 
+  let script : printer =
+    tag "script"
       ["defer", "true";
        "src", "https://cdn.jsdelivr.net/npm/katex@0.16.6/dist/katex.min.js";
        "integrity", "sha384-j/ZricySXBnNMJy9meJCtyXTKMhIJ42heyr7oAdxTDBy/CYA9hzpMo+YTNV5C+1X";
-       "crossorigin", "anonymous"] 
+       "crossorigin", "anonymous"]
       [text ""]
 
-  let autorender : printer = 
+  let autorender : printer =
     tag "script"
       ["defer", "true";
        "src", "https://cdn.jsdelivr.net/npm/katex@0.16.6/dist/contrib/auto-render.min.js";
@@ -105,20 +100,20 @@ struct
        "onload", "renderMathInElement(document.body);"]
       [text ""]
 
-  let prelude : printer = 
+  let prelude : printer =
     seq [stylesheet; script; autorender]
 end
 
-let render_doc_page (env : env) (doc : Sem.doc) : printer = 
-  Html.with_dtd @@ 
+let render_doc_page (env : env) (doc : Sem.doc) : printer =
+  Html.with_dtd @@
   Html.tag "html" []
-    [Html.tag "head" [] 
+    [Html.tag "head" []
        [Html.tag "title" [] [render env doc.title];
-        Html.tag "link"  
+        Html.tag "link"
           ["rel", "stylesheet";
            "href", "style.css"]
           [];
-        Html.tag "link" 
+        Html.tag "link"
           ["rel", "stylesheet";
            "href", "https://fonts.googleapis.com/css2?family=Inria+Sans:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&amp;display=swap"]
           [];

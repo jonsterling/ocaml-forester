@@ -2,17 +2,14 @@ open Types
 
 module Printer =
 struct
-  include PrinterKit.Kit (struct type out = Format.formatter end)
+  module P0 = 
+  struct 
+    type out = Format.formatter 
+    let text txt fmt =  
+      Format.fprintf fmt "%s" txt
+  end
 
-  let text txt fmt =  
-    Format.fprintf fmt "%s" txt
-
-  let trimmedText (txt : string) : t =
-    let txt = String.trim txt in 
-    if String.length txt > 0 then 
-      text @@ txt 
-    else 
-      fun _ -> ()
+  include PrinterKit.Kit (P0)
 
   let contents (printer : t) : string = 
     Format.asprintf "%a" (fun fmt _ -> printer fmt) ()  
