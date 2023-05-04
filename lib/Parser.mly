@@ -9,15 +9,15 @@
   type frag = Syn.t -> Syn.t
 
   let extract_macro_binder args =
-    let name = get_text @@ List.hd args in
-    let rest = List.rev @@ List.tl args in
-    let xs = List.rev_map get_text @@ List.tl rest in
-    let body = List.hd rest in
-    name, xs, body
+    let rargs = List.rev args in
+    let xs = List.rev_map get_text @@ List.tl rargs in
+    let body = List.hd rargs in
+    xs, body
 
 %}
 
 %token <string> TEXT MACRO
+%token TITLE IMPORT DEF LET TEX TRANSCLUDE
 %token LBRACE RBRACE LSQUARE RSQUARE PIPE MATH BEGIN_TEX END_TEX
 %token EOF
 %type <frag> frag
@@ -39,31 +39,38 @@ frag:
 
 | MATH; body = arg
   { List.cons @@ Syn.Math body }
+  
+| TITLE; arg = arg
+  { List.cons @@ Syn.Title arg }
+  
+| IMPORT; addr = txt_arg; 
+  { List.cons @@ Syn.Import addr }
+  
+| DEF; name = txt_arg; args = list(arg)
+  { let xs, body = extract_macro_binder args in 
+    List.cons @@ Syn.DefMacro (name, xs, body) }
+    
+| TRANSCLUDE; addr = txt_arg 
+  { List.cons @@ Syn.Transclude addr }
+
+| TEX; arg = arg 
+  { List.cons @@ Syn.EmbedTeX arg }
+  
+| LET; name = txt_arg; args = list(arg) 
+  { fun cx ->
+    let xs, body = extract_macro_binder args in 
+    [Syn.Let (name, xs, body, cx)] }
 
 | name = MACRO; args = list(arg)
-  { match name with
-    | "title" ->
-      List.cons @@ Syn.Title (List.hd args)
-    | "import" ->
-      List.cons @@ Syn.Import (get_text (List.hd args))
-    | "def" ->
-      let name, xs, body = extract_macro_binder args in
-      List.cons @@ Syn.DefMacro (name, xs, body)
-    | "let" ->
-      fun cx ->
-      let name, xs, body = extract_macro_binder args in
-      [Syn.Let (name, xs, body, cx)]
-    | "tex" -> 
-      List.cons @@ Syn.EmbedTeX (List.hd args)
-    | "transclude" -> 
-      List.cons @@ Syn.Transclude (get_text (List.hd args))
-    | _ ->
-      List.cons @@ Syn.Tag (name, [], args) }
-
+  { List.cons @@ Syn.Tag (name, [], args) }
 
 body:
 | frags = list(frag)
   { List.fold_right Fun.id frags [] }
+
+txt_arg: 
+| LBRACE; txt = TEXT; RBRACE 
+  { txt }
 
 arg:
 | LBRACE; bdy = body; RBRACE

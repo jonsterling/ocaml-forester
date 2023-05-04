@@ -34,6 +34,12 @@ let text = [^ '#' '\\' '{' '}' '[' ']' '|' '`']+
 rule token =
   parse
   | '#' { Parser.MATH }
+  | "\\title" { Parser.TITLE }
+  | "\\import" { Parser.IMPORT }
+  | "\\def" { Parser.DEF }
+  | "\\let" { Parser.LET }
+  | "\\tex" { Parser.TEX }
+  | "\\transclude" { Parser.TRANSCLUDE }
   | macro { macro (Lexing.lexeme lexbuf) }
   | "`{" { Stack.push `Code mode_stk; Parser.BEGIN_TEX }
   | "`}" { let _ = Stack.pop mode_stk in Parser.END_TEX }
