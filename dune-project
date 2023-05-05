@@ -21,6 +21,6 @@
  (name entmoot)
  (synopsis "A short synopsis")
  (description "A longer description")
- (depends ocaml dune xmlm ppx_deriving shexp)
+ (depends ocaml dune xmlm ppx_deriving)
  (tags
   (topics "to describe" your project)))
