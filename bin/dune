@@ -2,3 +2,8 @@
  (public_name entmoot)
  (name main)
  (libraries entmoot))
+
+(env
+ (dev
+  (flags
+   (:standard -w -66-32-33-27))))

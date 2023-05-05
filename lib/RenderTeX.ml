@@ -23,6 +23,8 @@ let rec render_node : Sem.node -> Printer.t =
     render_nodes xs
   | Sem.Tag (name, attrs, args) -> 
     render_tag name attrs args
+  | Sem.Group xs ->
+    render_arg xs
   | _ -> 
     failwith "RenderTeX.render_node"
 
@@ -47,7 +49,10 @@ and render_attrs (attrs : Sem.attr list) : Printer.t =
 
 and render_attr (attr : Sem.attr) : Printer.t  = 
   let k, v = attr in 
-  Printer.seq [Printer.text k; Printer.text " = "; Printer.text v]
+  Printer.seq 
+    [Printer.text k;
+     Printer.text " = "; 
+     Printer.text v]
 
 and render_arg (arg : Sem.t) : Printer.t = 
   Printer.seq 

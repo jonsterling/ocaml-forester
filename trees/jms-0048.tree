@@ -1,0 +1,24 @@
+\title{deductive system}
+\taxon{definition}
+\import{basics}
+
+\def{kwd}{k}{#{\mathbf{\k}}}
+\def{ob}{D}{#{\kwd{ob}\sub{\D}}}
+\def{prn}{x}{#{\left(\x\right)}}
+\def{hom}{D}{A}{B}{#{\kwd{hom}\sub{\D}\prn{\A,\B}}}
+\def{idn}{A}{#{\kwd{idn}\sub{\A}}}
+\let{D}{#{\mathcal{D}}}
+
+\let{axioms}{body}{\ol{\body}}
+\let{axiom}{name}{body}{\li{\b{\name}: \body}}
+
+\p{A \def-em{deductive-system} \D is given by a type \ob{\D} of “objects”, and for every \mem{A,B}{\ob{\D}} a set \hom{\D}{A}{B} of “morphisms”, together with cut and identity laws:}
+
+\axioms{
+  \axiom{cut}{
+    for each \mem{A,B,C}{\ob{\D}} and \mem{f}{\hom{\D}{A}{B}} and \mem{g}{\hom{\D}{B}{C}}, a morphism \mem{f;g}{\hom{\D}{A}{C}};
+  }
+  \axiom{identity}{
+    for each \mem{A}{\ob{\D}}, a morphism \mem{\idn{A}}{\hom{\D}{A}{A}} such that #{\idn{A};f=f=f;\idn{B}} for each \mem{f}{\hom{\D}{A}{B}}.
+  }
+}

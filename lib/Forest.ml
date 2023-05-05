@@ -19,6 +19,7 @@ class forest =
     val mutable frozen = false
     val expansionQueue : (addr * Syn.t) Queue.t = Queue.create ()
     val titles : Syn.t Tbl.t = Tbl.create 100
+    val taxa : string Tbl.t = Tbl.create 100
     val trees : Sem.doc Tbl.t = Tbl.create 100
     val vertical : Gph.t = Gph.create ()
     val horizontal : Gph.t = Gph.create ()
@@ -46,6 +47,8 @@ class forest =
         Gph.add_edge imports dep scope
       | Syn.Title title ->
         Tbl.add titles scope title
+      | Syn.Taxon taxon -> 
+        Tbl.add taxa scope taxon
       | _ -> ()
 
     method private process_metas scope : Syn.t -> unit = 
@@ -64,6 +67,7 @@ class forest =
       function
       | Sem.Text _ -> ()
       | Sem.Transclude addr ->
+        Format.eprintf "processing transclusion of %s@." addr;
         Gph.add_edge vertical addr scope
       | Sem.Wikilink (title, addr) ->
         self#process_nodes scope title;
@@ -73,6 +77,8 @@ class forest =
       | Sem.Math x ->
         self#process_nodes scope x
       | Sem.EmbedTeX x -> 
+        self#process_nodes scope x
+      | Sem.Group x ->
         self#process_nodes scope x
 
     method private process_nodes scope : Sem.t -> unit = 
@@ -108,8 +114,12 @@ class forest =
         method route addr =
           addr ^ ".html"
         method transclude addr =
-          let doc = Tbl.find trees addr in
-          RenderHtml.render_doc self doc
+          match Tbl.find trees addr with 
+          | doc -> 
+            RenderHtml.render_doc self doc
+          | exception e ->
+            Format.eprintf "Transclusion error: failed to find tree with address %s@." addr;
+            raise e
       end
 
     method plant_tree addr (syn : Syn.t) : unit =

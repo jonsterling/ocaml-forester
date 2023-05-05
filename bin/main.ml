@@ -6,63 +6,51 @@ let colnum pos =
   pos.pos_cnum - pos.pos_bol - 1
 
 let pos_string pos =
-  Format.sprintf "line %i, column %i" pos.pos_lnum (colnum pos + 1)
+  Format.sprintf "%s: line %i, column %i" pos.pos_fname pos.pos_lnum (colnum pos + 1)
 
-let parse s =
-  let lexbuf = Lexing.from_string s in
+let parse_channel filename ch =
+  let lexbuf = Lexing.from_channel ch in
+  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = filename };
   try Parser.main Lexer.token lexbuf
-  with Parser.Error ->
+  with 
+  | Parser.Error ->
     failwith @@ "Parse error at " ^ pos_string lexbuf.lex_curr_p
+  | Lexer.SyntaxError err -> 
+    failwith @@ "Lexing error at " ^ pos_string lexbuf.lex_curr_p ^ ": " ^ err
+
+let parse_file filename = 
+  let ch = open_in filename in 
+  let result = 
+    try parse_channel filename ch 
+    with e -> 
+      close_in ch;
+      raise e
+  in
+  close_in ch;
+  result
+
+let process_file forest filename =
+  if Filename.check_suffix filename "tree" then 
+    let addr = Filename.chop_extension @@ Filename.basename filename in
+    Format.printf "Processing %s\n" addr;
+    forest#plant_tree addr @@ 
+    parse_file filename
+
+let process_dir forest dir = 
+  Sys.readdir dir |> Array.iter @@ fun filename ->
+  process_file forest @@ dir ^ "/" ^ filename
 
 let () =
   Format.print_newline ();
+
   let forest = new Forest.forest in
 
-  forest#plant_tree "basics" @@
-  parse {|
-    \def{mem}{u}{v}{#{\u\in\v}}
-    \def{def-em}{x}{\em{\strong{\x}}}
-  |};
-
-  forest#plant_tree "book" @@ 
-  parse {| 
-    \let{foo}{\transclude{jms-004F}}
-    \let{D}{#{\mathcal{D}}}
-
-    \foo
-    \transclude{jms-0050}
-
-    \tex`{
-      \begin{tikzpicture}[diagram]
-        \SpliceDiagramSquare{
-          nw = \D,
-        }
-      \end{tikzpicture}
-    `}
-
-  |};
-
-  forest#plant_tree "jms-004F" @@
-  parse {|
-    \title{preduploid}
-    \p{foo}
-  |};
-
-  forest#plant_tree "jms-0050" @@
-  parse {|
-    \title{duploid}
-    \import{basics}
-
-    \let{D}{#{\mathcal{D}}}
-
-    \p{A [preduploid|jms-004F] \D is called a \def-em{duploid} when it satisfies the following properties:}
-
-
-    \ul{
-      \li{the preduploid \D is univalent;}
-      \li{every positive object \mem{P}{\D} has an upshift;}
-      \li{every negative object of \mem{N}{\D} has a downshift.}
-    }
-  |};
-
-  forest#render_trees;
+  let usage_msg = "entmoot <dir> ..." in
+  let input_dirs = ref [] in
+  let anon_fun dir = input_dirs := dir :: !input_dirs  in
+  let () = Arg.parse [] anon_fun usage_msg in
+  begin 
+    !input_dirs |> List.iter @@ fun dir -> 
+    process_dir forest dir
+  end;
+  forest#render_trees

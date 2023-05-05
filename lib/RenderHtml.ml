@@ -39,7 +39,7 @@ end
 let rec render_node (env : env) : Sem.node -> printer =
   function
   | Sem.Text txt ->
-    Printer.trimmedText txt
+    Printer.text txt
   | Sem.Math bdy ->
     let module TP = RenderTeX.Printer in
     Printer.text @@
@@ -63,10 +63,11 @@ let rec render_node (env : env) : Sem.node -> printer =
       [Html.tag "summary" [] 
          [Html.tag "code" [] [Printer.text hash]];
        Html.tag "code" [] [Printer.text code]]
-
+  | Sem.Group bdy ->
+    render env bdy
 
 and render (env : env) : Sem.t -> printer =
-  Printer.iter ~sep:Printer.space (render_node env)
+  Printer.iter (render_node env)
 
 let render_doc (env : env) (doc : Sem.doc) : printer =
   Html.tag "section" ["class", "block"]

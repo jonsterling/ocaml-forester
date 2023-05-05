@@ -5,7 +5,9 @@
 
 (library
  (name entmoot)
- (libraries ocamlgraph bwd xmlm))
+ (preprocess
+  (pps ppx_deriving.show))
+ (libraries ocamlgraph bwd xmlm shexp))
 
 (env
  (dev

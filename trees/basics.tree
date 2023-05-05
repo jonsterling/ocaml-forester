@@ -1,0 +1,4 @@
+\def{mem}{u}{v}{#{\u\in\v}}
+\def{def-em}{x}{\em{\strong{\x}}}
+\def{sub}{x}{_\group{\x}}
+\def{sup}{x}{^\group{\x}}

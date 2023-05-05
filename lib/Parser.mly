@@ -17,8 +17,8 @@
 %}
 
 %token <string> TEXT MACRO
-%token TITLE IMPORT DEF LET TEX TRANSCLUDE
-%token LBRACE RBRACE LSQUARE RSQUARE PIPE MATH BEGIN_TEX END_TEX
+%token TITLE IMPORT DEF LET TEX TRANSCLUDE TAXON 
+%token LBRACE RBRACE LSQUARE RSQUARE PIPE MATH BEGIN_TEX END_TEX GROUP
 %token EOF
 %type <frag> frag
 %type <Syn.t> arg
@@ -43,6 +43,9 @@ frag:
 | TITLE; arg = arg
   { List.cons @@ Syn.Title arg }
   
+| TAXON; taxon = txt_arg
+  { List.cons @@ Syn.Taxon taxon }
+
 | IMPORT; addr = txt_arg; 
   { List.cons @@ Syn.Import addr }
   
@@ -55,7 +58,10 @@ frag:
 
 | TEX; arg = arg 
   { List.cons @@ Syn.EmbedTeX arg }
-  
+
+| GROUP; arg = arg 
+  { List.cons @@ Syn.Group arg }  
+
 | LET; name = txt_arg; args = list(arg) 
   { fun cx ->
     let xs, body = extract_macro_binder args in 

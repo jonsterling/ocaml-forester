@@ -15,13 +15,14 @@ let resolve globals env name =
     | None -> Undefined
 
 let extend_env = 
-  List.fold_right2 (fun x v -> Env.add (User x) (Val v))
+  List.fold_right2 @@ fun x v ->
+  Env.add (User x) (Val v)
 
 let rec expand_node globals env = 
   function 
   | Syn.Text text ->
     [Sem.Text text]
-  | Syn.Transclude addr -> 
+  | Syn.Transclude addr ->
     [Sem.Transclude addr]
   | Syn.Wikilink (title, dest) ->
     [Sem.Wikilink (expand_nodes globals env title, dest)]
@@ -39,12 +40,14 @@ let rec expand_node globals env =
     end
   | Syn.Math body -> 
     [Sem.Math (expand_nodes globals env body)]
-  | Syn.Let (name, xs, body, rest) -> 
+  | Syn.Let (name, xs, body, rest) ->
     let env' = Env.add (User name) (Clo (env, xs, body)) env in
     expand_nodes globals env' rest
   | Syn.EmbedTeX body ->
     [Sem.EmbedTeX (expand_nodes globals env body)]
-  | Syn.Title _ | Syn.DefMacro _ | Syn.Import _ -> 
+  | Syn.Group body -> 
+    [Sem.Group (expand_nodes globals env body)]
+  | Syn.Title _ | Syn.Taxon _ | Syn.DefMacro _ | Syn.Import _ -> 
     []
 
 and expand_nodes globals env =
