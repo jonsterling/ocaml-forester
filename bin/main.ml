@@ -23,7 +23,7 @@ let parse_file filename =
   parse_channel filename ch 
 
 let process_file forest filename =
-  if Filename.check_suffix filename "tree" then 
+  if Filename.extension filename = ".tree" then 
     let addr = Filename.chop_extension @@ Filename.basename filename in
     Format.printf "Processing %s\n" addr;
     forest#plant_tree addr @@ 
