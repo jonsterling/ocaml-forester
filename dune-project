@@ -7,20 +7,15 @@
 (generate_opam_files true)
 
 (source
- (github username/reponame))
+ (sourcehut jonsterling/entmoot))
 
 (authors "Jonathan Sterling")
 
 (maintainers "Jonathan Sterling")
 
-(license LICENSE)
-
-(documentation https://url/to/documentation)
+(license GPL-3.0-or-later)
 
 (package
  (name entmoot)
- (synopsis "A short synopsis")
- (description "A longer description")
- (depends ocaml dune xmlm ppx_deriving domainslib)
- (tags
-  (topics "to describe" your project)))
+ (synopsis "A tool for tending mathematical forests")
+ (depends ocaml dune xmlm ppx_deriving domainslib))
