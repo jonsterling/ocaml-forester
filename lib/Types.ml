@@ -9,7 +9,7 @@ struct
   type node = 
     | Text of string 
     | Transclude of addr
-    | Wikilink of t * addr
+    | Wikilink of {addr : addr; title : t option}
     | Tag of string * attr list * t list
     | Math of t
     | Title of t 
@@ -33,7 +33,7 @@ struct
   type node = 
     | Text of string 
     | Transclude of addr 
-    | Wikilink of t * addr 
+    | Wikilink of {addr : addr; title : t option}
     | Tag of string * attr list * t list
     | Math of t
     | EmbedTeX of t
@@ -50,7 +50,7 @@ struct
   let rec node_map_text (f : string -> string) : node -> node =
     function 
     | Text str -> Text (f str)
-    | Wikilink (x, addr) -> Wikilink (map_text f x, addr) 
+    | Wikilink {addr; title} -> Wikilink {title = Option.map (map_text f) title; addr}
     | Tag (tag, attrs, xs) -> Tag (tag, attrs, List.map (map_text f) xs)
     | Group x -> Group (map_text f x)
     | node -> node
@@ -61,7 +61,7 @@ struct
 
 end
 
-module Env = 
+module Env =
 struct 
   include Map.Make (Symbol)
   let pp (pp_el : Format.formatter -> 'a -> unit) : Format.formatter -> 'a t -> unit = 

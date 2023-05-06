@@ -24,8 +24,8 @@ let rec expand_node globals env =
     [Sem.Text text]
   | Syn.Transclude addr ->
     [Sem.Transclude addr]
-  | Syn.Wikilink (title, dest) ->
-    [Sem.Wikilink (expand_nodes globals env title, dest)]
+  | Syn.Wikilink {title; addr} ->
+    [Sem.Wikilink {title = Option.map (expand_nodes globals env) title; addr}]
   | Syn.Tag (name, attrs, args) -> 
     let args' = args |> List.map @@ expand_nodes globals env in
     begin

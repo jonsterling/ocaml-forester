@@ -10,31 +10,18 @@
     \end{tikzcd}
   `}
 }
+
+\def{ar}{opts}{dir}{lbl}{
+  \group`{\arrow[\opts]\group{\dir}\group{\lbl}`}
+}
+
 \let{foo}{x}{\boldsymbol{\x}}
 
 \tikzcd`{
-  A \arrow[r, "\foo{\phi}"] & B
-`}
-
-
-\tikzcd`{
-  C \arrow[r, "\foo{\phi}"] & B
+  A \ar{dashed}{r}{a}\ar{}{d}{} & B\\
+  C \ar{dashed}{r}{a} & D
 `}
 
 \tikzcd`{
-  C \arrow[r, "\foo{\phi}"] & E
-`}
-
-
-\tikzcd`{
-  A \arrow[r, "\foo{\phi}"] & I
-`}
-
-
-\tikzcd`{
-  C \arrow[r, "\foo{\phi}"] & H
-`}
-
-\tikzcd`{
-  C \arrow[r, "\foo{\phi}"] & G
+  A \ar{dashed}{r}{a} & C
 `}

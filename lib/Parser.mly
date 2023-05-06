@@ -30,13 +30,17 @@ addr:
 | txt = TEXT
   { String.trim txt }
 
+wikilink_title:
+| PIPE; title = body 
+  { title }
+
 frag:
 | txt = TEXT
   { List.cons @@ Syn.Text txt }
 
-| LSQUARE; title = body; PIPE; addr = addr; RSQUARE
-  { List.cons @@ Syn.Wikilink (title, addr)  }
-
+| LSQUARE LSQUARE; addr = addr; title = option(wikilink_title); RSQUARE RSQUARE
+  { List.cons @@ Syn.Wikilink {title; addr}  }
+  
 | MATH; body = arg
   { List.cons @@ Syn.Math body }
   

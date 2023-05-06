@@ -74,8 +74,8 @@ class forest =
       | Sem.Transclude addr ->
         Format.eprintf "processing transclusion of %s@." addr;
         Gph.add_edge vertical addr scope
-      | Sem.Wikilink (title, addr) ->
-        self#process_nodes scope title;
+      | Sem.Wikilink {title; addr} ->
+        title |> Option.iter @@ self#process_nodes scope;
         Gph.add_edge horizontal addr scope
       | Sem.Tag (_, _, xs) ->
         xs |> List.iter @@ self#process_nodes scope
@@ -118,6 +118,13 @@ class forest =
       object(self)
         method route addr =
           addr ^ ".html"
+
+        method get_title addr = 
+          match Tbl.find trees addr with 
+          | doc -> doc.title
+          | exception e -> 
+            Format.eprintf "Linking error: failed to find tree with address %s@." addr;
+            raise e
 
         method transclude addr =
           match Tbl.find trees addr with 

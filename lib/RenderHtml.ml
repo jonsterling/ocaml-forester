@@ -5,6 +5,7 @@ type printer = Xmlm.output -> unit
 class type env =
   object
     method route : addr -> string
+    method get_title : addr -> Sem.t
     method transclude : addr -> printer
     method enqueue_svg : name:string -> source:string -> unit
   end
@@ -49,9 +50,11 @@ let rec render_node (env : env) : Sem.node -> printer =
       [TP.text "\\(";
        RenderTeX.render_nodes bdy;
        TP.text "\\)"]
-  | Sem.Wikilink (title, addr) ->
+  | Sem.Wikilink {title; addr} ->
+    let real_title = env#get_title addr in
     let url = env#route addr in
-    Html.tag "a" ["href", url; "class", "local"] [render env title]
+    let title = render env @@ Option.value ~default:real_title title in
+    Html.tag "a" ["href", url; "class", "local"] [title]
   | Sem.Tag (name, attrs, xs) ->
     Html.tag name attrs
       [xs |> Printer.iter ~sep:Printer.space (render env)]
