@@ -182,6 +182,7 @@ class forest =
       begin
         trees |> Tbl.iter @@ fun addr doc ->
         let ch = open_out @@ "output/" ^ env#route addr in
+        Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
         let out = Xmlm.make_output @@ `Channel ch in
         RenderHtml.render_doc_page env doc out
       end;
