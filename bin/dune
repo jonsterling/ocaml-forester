@@ -1,7 +1,7 @@
 (executable
- (public_name entmoot)
+ (public_name forester)
  (name main)
- (libraries entmoot))
+ (libraries forester))
 
 (env
  (dev

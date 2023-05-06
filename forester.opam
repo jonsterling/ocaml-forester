@@ -4,8 +4,8 @@ synopsis: "A tool for tending mathematical forests"
 maintainer: ["Jonathan Sterling"]
 authors: ["Jonathan Sterling"]
 license: "GPL-3.0-or-later"
-homepage: "https://sr.ht/~jonsterling/entmoot"
-bug-reports: "https://todo.sr.ht/~jonsterling/entmoot"
+homepage: "https://sr.ht/~jonsterling/ocaml-forester"
+bug-reports: "https://todo.sr.ht/~jonsterling/ocaml-forester"
 depends: [
   "ocaml"
   "dune" {>= "3.7"}
@@ -28,4 +28,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://git.sr.ht/~jonsterling/entmoot"
+dev-repo: "git+https://git.sr.ht/~jonsterling/ocaml-forester"

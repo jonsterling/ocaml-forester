@@ -4,7 +4,7 @@
  (modules Parser))
 
 (library
- (name entmoot)
+ (name forester)
  (preprocess
   (pps ppx_deriving.show))
  (libraries ocamlgraph bwd xmlm unix domainslib))

@@ -1,4 +1,4 @@
-open Entmoot
+open Forester
 open Lexing
 
 let colnum pos =
@@ -38,7 +38,7 @@ let () =
 
   let forest = new Forest.forest in
 
-  let usage_msg = "entmoot <dir> ..." in
+  let usage_msg = "forester <dir> ..." in
   let input_dirs = ref [] in
   let anon_fun dir = input_dirs := dir :: !input_dirs  in
   let () = Arg.parse [] anon_fun usage_msg in
