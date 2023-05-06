@@ -9,10 +9,6 @@ let ensure_dir dir =
   | Unix.Unix_error (Unix.EEXIST, _, _) -> 
     ()
 
-let within_ensured_dir dir kont =
-  ensure_dir dir; 
-  within_dir dir kont
-
 let ensure_remove_file fp = 
   try Unix.unlink fp with 
   | Unix.Unix_error (Unix.ENOENT, _, _) ->

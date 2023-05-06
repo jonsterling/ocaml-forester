@@ -1,6 +1,8 @@
 open Types
 open Bwd
 
+module T = Domainslib.Task
+
 module Addr =
 struct
   type t = addr
@@ -20,7 +22,7 @@ class forest =
   object(self)
     val mutable frozen = false
     val expansion_queue : (addr * Syn.t) Queue.t = Queue.create ()
-    val svg_queue : svg_task Queue.t = Queue.create () 
+    val svg_queue : (string, string) Hashtbl.t = Hashtbl.create 100
     val titles : Syn.t Tbl.t = Tbl.create 100
     val taxa : string Tbl.t = Tbl.create 100
     val trees : Sem.doc Tbl.t = Tbl.create 100
@@ -126,7 +128,8 @@ class forest =
             raise e
 
         method enqueue_svg ~name ~source = 
-          svg_queue |> Queue.push @@ BuildSvg {name; source}
+          if not @@ Hashtbl.mem svg_queue name then
+            Hashtbl.add svg_queue name source
       end
 
     method plant_tree addr (syn : Syn.t) : unit =
@@ -137,12 +140,37 @@ class forest =
       self#process_metas addr syn;
       Queue.push (addr, syn) expansion_queue
 
+    method private build_svgs : unit = 
+      let n = Hashtbl.length svg_queue in
+      let tasks = Array.make n `Uninitialized in
+
+      begin
+        let i = ref 0 in
+        svg_queue |> Hashtbl.iter @@ fun name source -> 
+        tasks.(!i) <- `Task (BuildSvg {name; source});
+        i := !i + 1
+      end;
+
+      Hashtbl.clear svg_queue;
+
+      let worker i = 
+        match tasks.(i) with 
+        | `Task (BuildSvg {name; source}) -> BuildSvg.build_svg ~name ~source 
+        | `Uninitialized -> failwith "Unexpected uninitialized task in SVG queue"
+      in 
+
+      let pool = T.setup_pool ~num_domains:10 () in
+      T.run pool @@ fun _ ->
+      T.parallel_for pool ~start:0 ~finish:(n-1) ~body:worker
+
     method render_trees : unit =
       let open Sem in
       frozen <- true;
       let env = self#render_env in
       self#process_trees;
+      Shell.Proc.run "mkdir" ["-p"; "build"];
       Shell.Proc.run "mkdir" ["-p"; "output/resources"];
+
       begin
         trees |> Tbl.iter @@ fun addr doc ->
         let ch = open_out @@ "output/" ^ env#route addr in
@@ -150,7 +178,10 @@ class forest =
         RenderHtml.render_doc_page env doc out
       end;
 
-      let tasks = Array.init 100 in
+      begin
+        Shell.within_dir "build" @@ fun _ ->
+        self#build_svgs
+      end;
 
       Shell.Proc.run "cp" ["-rf"; "assets/*"; "output/"];
       Shell.Proc.run "cp" ["build/*.svg"; "output/resources/"]

@@ -1,7 +1,7 @@
 (executable
  (public_name entmoot)
  (name main)
- (libraries entmoot domainslib))
+ (libraries entmoot))
 
 (env
  (dev

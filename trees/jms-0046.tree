@@ -16,3 +16,25 @@
   A \arrow[r, "\foo{\phi}"] & B
 `}
 
+
+\tikzcd`{
+  C \arrow[r, "\foo{\phi}"] & B
+`}
+
+\tikzcd`{
+  C \arrow[r, "\foo{\phi}"] & E
+`}
+
+
+\tikzcd`{
+  A \arrow[r, "\foo{\phi}"] & I
+`}
+
+
+\tikzcd`{
+  C \arrow[r, "\foo{\phi}"] & H
+`}
+
+\tikzcd`{
+  C \arrow[r, "\foo{\phi}"] & G
+`}

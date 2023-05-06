@@ -32,7 +32,6 @@ let build_svg ~name ~source =
   let svg_fp = Format.sprintf "%s.svg" name in
 
   begin
-    within_ensured_dir "build" @@ fun _ ->
     if not @@ Sys.file_exists svg_fp then 
       begin
         write_tex_file ~name ~source;
