@@ -4,22 +4,29 @@ let within_dir dir kont =
   Unix.chdir dir;
   kont () 
 
-let ensure_dir dir = 
+let ensure_dir dir =
   try Unix.mkdir dir 0o755 with 
   | Unix.Unix_error (Unix.EEXIST, _, _) -> 
     ()
+
+let ensure_dir_path dirs = 
+  let rec loop prefix =
+    function 
+    | [] -> () 
+    | dir :: dirs -> 
+      let dir' = Format.sprintf "%s/%s" prefix dir in
+      ensure_dir dir';
+      loop dir' dirs
+  in 
+  loop "." dirs
 
 let ensure_remove_file fp = 
   try Unix.unlink fp with 
   | Unix.Unix_error (Unix.ENOENT, _, _) ->
     ()
 
-
-module Proc = 
-struct
-  let popen = Unix.open_process_args_full
-  let pclose = Unix.close_process_full
-
+module Chan = 
+struct 
   let dump ~inp ~out =
     try
       while true do
@@ -27,6 +34,12 @@ struct
       done
     with End_of_file -> 
       flush out
+end
+
+module Proc = 
+struct
+  let popen = Unix.open_process_args_full
+  let pclose = Unix.close_process_full
 
   exception Error of int
 
@@ -50,6 +63,7 @@ struct
   let run cmd args =
     let ic, oc, ec as proc = 
       let cmd' = String.concat " " @@ cmd :: args in
+      Format.eprintf "Running %s@." cmd';
       Unix.open_process_full cmd' (Unix.environment ())
     in
 
@@ -66,3 +80,14 @@ struct
       Format.eprintf "%s" (Buffer.contents err_buf);
       raise @@ Error code
 end
+
+let copy_file ~source ~dest =
+  let src_ch = open_in source in 
+  Fun.protect ~finally:(fun _ -> close_in src_ch) @@ fun _ ->
+  let dst_ch = open_out dest in
+  Fun.protect ~finally:(fun _ -> close_out dst_ch) @@ fun _ ->
+  Chan.dump ~inp:src_ch ~out:dst_ch
+
+let copy_file_to_dir ~source ~dest_dir =
+  let dest = Format.sprintf "%s/%s" dest_dir @@ Filename.basename source in
+  copy_file ~source ~dest

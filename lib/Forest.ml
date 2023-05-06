@@ -175,8 +175,9 @@ class forest =
       frozen <- true;
       let env = self#render_env in
       self#process_trees;
-      Shell.Proc.run "mkdir" ["-p"; "build"];
-      Shell.Proc.run "mkdir" ["-p"; "output/resources"];
+
+      Shell.ensure_dir "build";
+      Shell.ensure_dir_path ["output"; "resources"];
 
       begin
         trees |> Tbl.iter @@ fun addr doc ->
@@ -190,7 +191,17 @@ class forest =
         self#build_svgs
       end;
 
-      Shell.Proc.run "cp" ["-rf"; "assets/*"; "output/"];
-      Shell.Proc.run "cp" ["build/*.svg"; "output/resources/"]
+      begin 
+        Sys.readdir "assets" |> Array.iter @@ fun basename ->
+        let fp = Format.sprintf "assets/%s" basename in
+        Shell.copy_file_to_dir ~source:fp ~dest_dir:"output"
+      end;
+
+      begin
+        Sys.readdir "build" |> Array.iter @@ fun basename ->
+        if Filename.extension basename = ".svg" then 
+          let fp = Format.sprintf "build/%s" basename in
+          Shell.copy_file_to_dir ~source:fp ~dest_dir:"output/resources/"
+      end;
 
   end

@@ -30,13 +30,10 @@ let render_svg_file ~name ~source =
 
 let build_svg ~name ~source =
   let svg_fp = Format.sprintf "%s.svg" name in
-
-  begin
-    if not @@ Sys.file_exists svg_fp then 
-      begin
-        write_tex_file ~name ~source;
-        render_dvi_file ~name ~source;
-        render_svg_file ~name ~source;
-        Format.printf "Rendered %s@." svg_fp;
-      end
-  end
+  if not @@ Sys.file_exists svg_fp then 
+    begin
+      write_tex_file ~name ~source;
+      render_dvi_file ~name ~source;
+      render_svg_file ~name ~source;
+      Format.printf "Rendered %s@." svg_fp;
+    end
