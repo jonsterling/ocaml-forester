@@ -194,7 +194,8 @@ class forest =
       begin 
         Sys.readdir "assets" |> Array.iter @@ fun basename ->
         let fp = Format.sprintf "assets/%s" basename in
-        Shell.copy_file_to_dir ~source:fp ~dest_dir:"output"
+        if not @@ Sys.is_directory fp then 
+          Shell.copy_file_to_dir ~source:fp ~dest_dir:"output"
       end;
 
       begin
