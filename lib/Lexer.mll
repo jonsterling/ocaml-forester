@@ -34,6 +34,7 @@ let text = [^ '#' '\\' '{' '}' '[' ']' '|' '`' '\n']+
 rule token =
   parse
   | '#' { Parser.MATH }
+  | "\\\\" { Parser.MACRO {|\|} }
   | "\\title" { Parser.TITLE }
   | "\\taxon" { Parser.TAXON }
   | "\\import" { Parser.IMPORT }
