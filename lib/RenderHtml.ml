@@ -6,6 +6,7 @@ class type env =
   object
     method route : addr -> string
     method transclude : addr -> printer
+    method enqueue_svg : name:string -> source:string -> unit
   end
 
 module Printer =
@@ -58,7 +59,8 @@ let rec render_node (env : env) : Sem.node -> printer =
     env#transclude addr
   | Sem.EmbedTeX bdy ->
     let code = RenderTeX.Printer.contents @@ RenderTeX.render_nodes bdy in
-    let hash = Digest.to_hex @@ Digest.string code in
+    let hash = TeXHash.hash code in
+    env#enqueue_svg ~name:hash ~source:code;
     Html.tag "details" ["open", "true"] 
       [Html.tag "summary" [] 
          [Html.tag "code" [] [Printer.text hash]];

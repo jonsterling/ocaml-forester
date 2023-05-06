@@ -1,5 +1,4 @@
 open Entmoot
-
 open Lexing
 
 let colnum pos =
@@ -20,14 +19,8 @@ let parse_channel filename ch =
 
 let parse_file filename = 
   let ch = open_in filename in 
-  let result = 
-    try parse_channel filename ch 
-    with e -> 
-      close_in ch;
-      raise e
-  in
-  close_in ch;
-  result
+  Fun.protect ~finally:(fun _ -> close_in ch) @@ fun _ -> 
+  parse_channel filename ch 
 
 let process_file forest filename =
   if Filename.check_suffix filename "tree" then 
@@ -36,7 +29,7 @@ let process_file forest filename =
     forest#plant_tree addr @@ 
     parse_file filename
 
-let process_dir forest dir = 
+let process_dir forest dir =
   Sys.readdir dir |> Array.iter @@ fun filename ->
   process_file forest @@ dir ^ "/" ^ filename
 

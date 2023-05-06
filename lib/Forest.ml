@@ -17,20 +17,20 @@ module Clo = Graph.Traverse
 class forest =
   object(self)
     val mutable frozen = false
-    val expansionQueue : (addr * Syn.t) Queue.t = Queue.create ()
+    val expansion_queue : (addr * Syn.t) Queue.t = Queue.create ()
     val titles : Syn.t Tbl.t = Tbl.create 100
     val taxa : string Tbl.t = Tbl.create 100
     val trees : Sem.doc Tbl.t = Tbl.create 100
     val vertical : Gph.t = Gph.create ()
     val horizontal : Gph.t = Gph.create ()
     val imports : Gph.t = Gph.create ()
-    val macroTable : (addr, (Symbol.t, clo) Hashtbl.t) Hashtbl.t = Hashtbl.create 1000
+    val macro_table : (addr, (Symbol.t, clo) Hashtbl.t) Hashtbl.t = Hashtbl.create 1000
 
     method private get_macros (addr : addr) : (Symbol.t, clo) Hashtbl.t =
-      match Hashtbl.find_opt macroTable addr with
+      match Hashtbl.find_opt macro_table addr with
       | None ->
         let macros = Hashtbl.create 10 in
-        Hashtbl.add macroTable addr macros;
+        Hashtbl.add macro_table addr macros;
         macros
       | Some macros -> macros
 
@@ -97,7 +97,7 @@ class forest =
     method private expand_trees : unit =
       self#expand_imports;
       let rec loop () =
-        match Queue.take expansionQueue with 
+        match Queue.take expansion_queue with 
         | addr, tree -> self#expand_tree addr tree; loop () 
         | exception Queue.Empty -> ()
       in 
@@ -113,6 +113,7 @@ class forest =
       object(self)
         method route addr =
           addr ^ ".html"
+
         method transclude addr =
           match Tbl.find trees addr with 
           | doc -> 
@@ -120,6 +121,9 @@ class forest =
           | exception e ->
             Format.eprintf "Transclusion error: failed to find tree with address %s@." addr;
             raise e
+
+        method enqueue_svg ~name ~source = 
+          RenderSvg.render_svg ~name ~source
       end
 
     method plant_tree addr (syn : Syn.t) : unit =
@@ -128,7 +132,7 @@ class forest =
       Gph.add_vertex vertical addr;
       Gph.add_vertex imports addr;
       self#process_metas addr syn;
-      Queue.push (addr, syn) expansionQueue
+      Queue.push (addr, syn) expansion_queue
 
     method render_trees : unit =
       let open Sem in

@@ -14,8 +14,6 @@ depends: [
   "dune" {>= "3.7"}
   "xmlm"
   "ppx_deriving"
-  "bos"
-  "fpath"
   "odoc" {with-doc}
 ]
 build: [
