@@ -14,10 +14,13 @@ module Gph = Graph.Imperative.Digraph.Concrete (Addr)
 module Topo = Graph.Topological.Make (Gph)
 module Clo = Graph.Traverse
 
+type svg_task = BuildSvg of {name : string; source : string}
+
 class forest =
   object(self)
     val mutable frozen = false
     val expansion_queue : (addr * Syn.t) Queue.t = Queue.create ()
+    val svg_queue : svg_task Queue.t = Queue.create () 
     val titles : Syn.t Tbl.t = Tbl.create 100
     val taxa : string Tbl.t = Tbl.create 100
     val trees : Sem.doc Tbl.t = Tbl.create 100
@@ -123,7 +126,7 @@ class forest =
             raise e
 
         method enqueue_svg ~name ~source = 
-          BuildSvg.build_svg ~name ~source
+          svg_queue |> Queue.push @@ BuildSvg {name; source}
       end
 
     method plant_tree addr (syn : Syn.t) : unit =
@@ -146,6 +149,9 @@ class forest =
         let out = Xmlm.make_output @@ `Channel ch in
         RenderHtml.render_doc_page env doc out
       end;
+
+      let tasks = Array.init 100 in
+
       Shell.Proc.run "cp" ["-rf"; "assets/*"; "output/"];
       Shell.Proc.run "cp" ["build/*.svg"; "output/resources/"]
 

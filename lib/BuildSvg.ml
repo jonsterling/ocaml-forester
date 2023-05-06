@@ -29,7 +29,6 @@ let render_svg_file ~name ~source =
   ensure_remove_file dvi_fp
 
 let build_svg ~name ~source =
-  let dvi_fp = Format.sprintf "%s.dvi" name in
   let svg_fp = Format.sprintf "%s.svg" name in
 
   begin
@@ -38,6 +37,7 @@ let build_svg ~name ~source =
       begin
         write_tex_file ~name ~source;
         render_dvi_file ~name ~source;
-        render_svg_file ~name ~source
+        render_svg_file ~name ~source;
+        Format.printf "Rendered %s@." svg_fp;
       end
   end
