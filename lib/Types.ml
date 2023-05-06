@@ -43,8 +43,22 @@ struct
   and t = node list
 
   type doc = 
-    {title : t; 
+    {title : t;
+     taxon : string option;
      body : t}
+
+  let rec node_map_text (f : string -> string) : node -> node =
+    function 
+    | Text str -> Text (f str)
+    | Wikilink (x, addr) -> Wikilink (map_text f x, addr) 
+    | Tag (tag, attrs, xs) -> Tag (tag, attrs, List.map (map_text f) xs)
+    | Group x -> Group (map_text f x)
+    | node -> node
+
+  and map_text (f : string -> string) : t -> t =
+    List.map @@ node_map_text f
+
+
 end
 
 module Env = 

@@ -97,7 +97,7 @@ class forest =
         | None -> [Sem.Text addr]
         | Some title -> Expand.expand_nodes globals Env.empty title
       in
-      Tbl.add trees addr {title; body};
+      Tbl.add trees addr {title; body; taxon = Tbl.find_opt taxa addr};
 
     method private expand_trees : unit =
       self#expand_imports;
@@ -110,7 +110,7 @@ class forest =
 
     method private process_trees : unit =
       self#expand_trees;
-      trees |> Tbl.iter @@ fun addr Sem.{body; title} ->
+      trees |> Tbl.iter @@ fun addr Sem.{body; title; _} ->
       self#process_nodes addr body;
       self#process_nodes addr title
 

@@ -71,12 +71,25 @@ and render (env : env) : Sem.t -> printer =
   Printer.iter (render_node env)
 
 let render_doc (env : env) (doc : Sem.doc) : printer =
+  let module TP = RenderTeX.Printer in
+  let heading_content =
+    match doc.taxon with 
+    | Some taxon ->
+      Printer.seq ~sep:Printer.space
+        [Printer.text @@ StringUtil.title_case taxon;
+         Printer.seq 
+           [Printer.text "(";
+            render env doc.title;
+            Printer.text ")"]]
+    | None ->
+      render env @@ 
+      Sem.map_text StringUtil.title_case doc.title 
+  in
   Html.tag "section" ["class", "block"]
     [Html.tag "details" ["open","true"]
        [Html.tag "summary" []
           [Html.tag "header" []
-             [Html.tag "h1" []
-                [render env doc.title]]];
+             [Html.tag "h1" [] [heading_content]]];
         Html.tag "div" ["class", "post-content"]
           [render env doc.body]]]
 
