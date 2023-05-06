@@ -1,4 +1,6 @@
 node_modules
+build
+output
 
 # -*- mode: gitignore; -*-
 *.install

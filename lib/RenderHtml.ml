@@ -61,10 +61,9 @@ let rec render_node (env : env) : Sem.node -> printer =
     let code = RenderTeX.Printer.contents @@ RenderTeX.render_nodes bdy in
     let hash = TeXHash.hash code in
     env#enqueue_svg ~name:hash ~source:code;
-    Html.tag "details" ["open", "true"] 
-      [Html.tag "summary" [] 
-         [Html.tag "code" [] [Printer.text hash]];
-       Html.tag "code" [] [Printer.text code]]
+    let path = Format.sprintf "resources/%s.svg" hash in
+    Html.tag "center" [] 
+      [Html.tag "img" ["src", path] []]
   | Sem.Group bdy ->
     render env bdy
 

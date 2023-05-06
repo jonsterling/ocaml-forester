@@ -123,7 +123,7 @@ class forest =
             raise e
 
         method enqueue_svg ~name ~source = 
-          RenderSvg.render_svg ~name ~source
+          BuildSvg.build_svg ~name ~source
       end
 
     method plant_tree addr (syn : Syn.t) : unit =
@@ -139,9 +139,14 @@ class forest =
       frozen <- true;
       let env = self#render_env in
       self#process_trees;
-      trees |> Tbl.iter @@ fun addr doc ->
-      let ch = open_out @@ "output/" ^ env#route addr in
-      let out = Xmlm.make_output @@ `Channel ch in
-      RenderHtml.render_doc_page env doc out
+      Shell.Proc.run "mkdir" ["-p"; "output/resources"];
+      begin
+        trees |> Tbl.iter @@ fun addr doc ->
+        let ch = open_out @@ "output/" ^ env#route addr in
+        let out = Xmlm.make_output @@ `Channel ch in
+        RenderHtml.render_doc_page env doc out
+      end;
+      Shell.Proc.run "cp" ["-rf"; "assets/*"; "output/"];
+      Shell.Proc.run "cp" ["build/*.svg"; "output/resources/"]
 
   end

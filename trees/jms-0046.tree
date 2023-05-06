@@ -2,3 +2,11 @@
 \title{conventions of univalent mathematics}
 
 \p{A category has hom sets, and is always assumed to be univalent / Rezk-complete; we use the term precategory to refer to a structure that has hom sets and a type of objects with no univalence condition.}
+
+\let{foo}{x}{\boldsymbol{\x}}
+
+\tex`{
+  \begin{tikzcd}
+  A \arrow[r, "\foo{\phi}"] & B
+  \end{tikzcd}
+`}

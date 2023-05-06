@@ -1,7 +1,7 @@
 let before = 
   {| 
   \documentclass[crop,dvisvgm]{standalone}
-  \usepackage{tikz, tikzcd}
+  \usepackage{tikz, tikz-cd, mathtools, amssymb, stmaryrd}
   \begin{document}
   |}
 
