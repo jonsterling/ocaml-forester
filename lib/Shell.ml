@@ -70,8 +70,8 @@ struct
     let out_buf = Buffer.create 32 in 
     let err_buf = Buffer.create 32 in
 
-    ignore (read_to_EOF out_buf ic);
-    ignore (read_to_EOF err_buf ec);
+    read_to_EOF out_buf ic;
+    read_to_EOF err_buf ec;
 
     let s = Unix.close_process_full proc in
     match status_code s with 
