@@ -26,7 +26,7 @@ let macro = '\\' (alpha) (alpha|digit|'-')*
 let addr = (alpha) (alpha|digit|'_'|'-')* 
 let whitespace = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
-let text = [^ '#' '\\' '{' '}' '[' ']' '(' ')' '`' '\n']+
+let text = [^ '%' '#' '\\' '{' '}' '[' ']' '(' ')' '`' '\n']+ newline?
  
 rule token =
   parse
@@ -67,5 +67,5 @@ rule token =
 
 and comment = 
   parse 
-  | '\n' { Lexing.new_line lexbuf; token lexbuf }
+  | newline { Lexing.new_line lexbuf; token lexbuf }
   | _ { comment lexbuf }
