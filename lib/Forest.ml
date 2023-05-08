@@ -162,8 +162,11 @@ class forest =
       in 
 
       let pool = T.setup_pool ~num_domains:10 () in
-      T.run pool @@ fun _ ->
-      T.parallel_for pool ~start:0 ~finish:(n-1) ~body:worker
+      begin
+        T.run pool @@ fun _ ->
+        T.parallel_for pool ~start:0 ~finish:(n-1) ~body:worker
+      end;
+      T.teardown_pool pool
 
     method render_trees : unit =
       let open Sem in
