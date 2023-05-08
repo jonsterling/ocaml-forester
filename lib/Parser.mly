@@ -4,7 +4,7 @@
 
 %token <string> TEXT MACRO
 %token TITLE IMPORT DEF LET TEX TRANSCLUDE TAXON
-%token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE
+%token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token EOF
 
 %type <Expr.frontmatter -> Expr.frontmatter> front
@@ -21,7 +21,9 @@ node:
 | expr = parens(expr)
   { Expr.Group (Parens, expr) }
 | HASH_LBRACE expr = expr RBRACE
-  { Expr.Math expr }
+  { Expr.InlineMath expr }
+| HASH_HASH_LBRACE expr = expr RBRACE
+  { Expr.DisplayMath expr }
 | TRANSCLUDE addr = braces(TEXT)
   { Expr.Transclude addr }
 | tag = MACRO 

@@ -29,8 +29,10 @@ let rec expand (globals : globals) env : Expr.t -> Sem.t =
     link :: expand globals env rest
   | Expr.Group (delim, e) :: rest -> 
     Sem.Group (delim, expand globals env e) :: expand globals env rest
-  | Expr.Math e :: rest -> 
-    Sem.Math (expand globals env e) :: expand globals env rest
+  | Expr.InlineMath e :: rest -> 
+    Sem.InlineMath (expand globals env e) :: expand globals env rest
+  | Expr.DisplayMath e :: rest -> 
+    Sem.DisplayMath (expand globals env e) :: expand globals env rest  
   | Expr.Tag name :: rest -> 
     expand_tag globals env name rest
   | Expr.Transclude name :: rest -> 

@@ -10,7 +10,8 @@ struct
   type node = 
     | Text of string 
     | Group of delim * t
-    | Math of t
+    | InlineMath of t
+    | DisplayMath of t
     | Tag of string
     | Transclude of string
     | TeX of t
@@ -43,7 +44,8 @@ struct
     | Transclude of addr 
     | Link of {addr : addr; title : t}
     | Tag of string * attr list * t list
-    | Math of t
+    | InlineMath of t
+    | DisplayMath of t
     | EmbedTeX of t
     | Group of delim * t
   [@@deriving show]
