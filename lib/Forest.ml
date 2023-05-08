@@ -93,13 +93,16 @@ class forest =
         | None -> [Sem.Text addr]
         | Some title -> Expander.expand globals Env.empty title
       in
-      Tbl.add trees addr {title; body; taxon = fm.taxon};
+      Sem.{title; body; taxon = fm.taxon};
 
     method private expand_trees : unit =
       self#expand_imports;
       let rec loop () =
         match Queue.take expansion_queue with 
-        | addr, doc -> self#expand_tree addr doc; loop () 
+        | addr, doc -> 
+          let doc = self#expand_tree addr doc in
+          Tbl.add trees addr doc;
+          loop () 
         | exception Queue.Empty -> ()
       in 
       loop ()
@@ -120,6 +123,7 @@ class forest =
           | doc -> doc.title
           | exception e -> 
             Format.eprintf "Linking error: failed to find tree with address %s@." addr;
+            flush_all ();
             raise e
 
         method transclude addr =
