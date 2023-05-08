@@ -30,6 +30,7 @@ struct
      taxon : string option;
      imports : addr list;
      authors : addr list;
+     tags : addr list;
      macros : (string * macro) list}
   [@@deriving show]
 

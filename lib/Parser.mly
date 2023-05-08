@@ -25,18 +25,22 @@
     let author addr fm = 
       {fm with authors = addr :: fm.authors}
       
+    let tag addr fm = 
+      {fm with tags = addr :: fm.tags}
+      
     let def (name, xs, body) fm = 
       let macro = name, (xs, body) in 
       {fm with macros = macro :: fm.macros}
       
     let fold frontlets = 
-      let init = Expr.{title = None; taxon = None; imports = []; macros = []; authors = []} in
+      let open Expr in
+      let init = {title = None; taxon = None; imports = []; macros = []; authors = []; tags = []} in
       List.fold_right Fun.id frontlets init
   end
 %}
 
-%token <string> TEXT TAG
-%token TITLE IMPORT DEF LET TEX TRANSCLUDE TAXON AUTHOR
+%token <string> TEXT FUN
+%token TITLE IMPORT DEF LET TEX TRANSCLUDE TAXON AUTHOR TAG
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token EOF
 
@@ -60,13 +64,13 @@ let node :=
 | TRANSCLUDE; ~ = txt_arg; <Expr.Transclude>
 | LET; (~,~,~) = fun_spec; <Expr.Let>
 | TEX; ~ = arg; <Expr.EmbedTeX>
-| ~ = TAG; <Expr.Tag>
+| ~ = FUN; <Expr.Tag>
 | ~ = TEXT; <Expr.Text>
 
 let expr == list(node)
 let arg == braces(expr)
 let txt_arg == braces(TEXT)
-let fun_spec == ~ = TAG; ~ = binder; ~ = arg; <>
+let fun_spec == ~ = FUN; ~ = binder; ~ = arg; <>
 
 let frontlet := 
 | TITLE; ~ = arg; <Frontlet.title>
@@ -74,6 +78,7 @@ let frontlet :=
 | IMPORT; ~ = txt_arg; <Frontlet.import>
 | AUTHOR; ~ = txt_arg; <Frontlet.author>
 | DEF; ~ = fun_spec; <Frontlet.def>
+| TAG; ~ = txt_arg; <Frontlet.tag>
 
 let frontmatter == ~ = list(frontlet); <Frontlet.fold>
 let main :=  ~ = frontmatter; ~ = expr; EOF; <> 

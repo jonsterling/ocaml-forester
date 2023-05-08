@@ -35,9 +35,10 @@ class forest =
     val svg_queue : (string, string) Hashtbl.t = Hashtbl.create 100
 
     val trees : Sem.doc Tbl.t = Tbl.create 100
-    val vertical : Gph.t = Gph.create ()
-    val horizontal : Gph.t = Gph.create ()
-    val imports : Gph.t = Gph.create ()
+    val transclusion_graph : Gph.t = Gph.create ()
+    val link_graph : Gph.t = Gph.create ()
+    val tag_graph : Gph.t = Gph.create ()
+    val import_graph : Gph.t = Gph.create ()
 
     val macro_table : (addr, (Symbol.t, clo) Hashtbl.t) Hashtbl.t = 
       Hashtbl.create 1000
@@ -55,9 +56,13 @@ class forest =
 
     method private analyze_frontmatter scope (fm : Expr.frontmatter) = 
       let macros = self#get_macros scope in 
+      begin 
+        fm.tags |> List.iter @@ fun addr -> 
+        Gph.add_edge tag_graph addr scope
+      end;
       begin
         fm.imports |> List.iter @@ fun dep -> 
-        Gph.add_edge imports dep scope
+        Gph.add_edge import_graph dep scope
       end;
       begin 
         fm.macros |> List.iter @@ fun (name, (xs, body)) -> 
@@ -66,22 +71,22 @@ class forest =
       end
 
     method private expand_imports : unit =
-      imports |> Topo.iter @@ fun addr ->
+      import_graph |> Topo.iter @@ fun addr ->
       let macros = self#get_macros addr in
       let task addr' =
         self#get_macros addr' |>
         Hashtbl.iter @@ Hashtbl.add macros
       in
-      Gph.iter_pred task imports addr
+      Gph.iter_pred task import_graph addr
 
     method private analyze_node scope : Sem.node -> unit =
       function
       | Sem.Text _ -> ()
       | Sem.Transclude addr ->
-        Gph.add_edge vertical addr scope
+        Gph.add_edge transclusion_graph addr scope
       | Sem.Link {title; addr} ->
         self#analyze_nodes scope title;
-        Gph.add_edge horizontal addr scope
+        Gph.add_edge link_graph addr scope
       | Sem.Tag (_, _, xs) ->
         xs |> List.iter @@ self#analyze_nodes scope
       | Sem.Math (_, x) ->
@@ -132,8 +137,10 @@ class forest =
     method plant_tree addr (doc : Expr.doc) : unit =
       assert (not frozen);
       let frontmatter, body = doc in 
-      Gph.add_vertex vertical addr;
-      Gph.add_vertex imports addr;
+      Gph.add_vertex transclusion_graph addr;
+      Gph.add_vertex link_graph addr;
+      Gph.add_vertex import_graph addr;
+      Gph.add_vertex tag_graph addr;
       self#analyze_frontmatter addr frontmatter;
       Queue.push (addr, doc) expansion_queue
 
