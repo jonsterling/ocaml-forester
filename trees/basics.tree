@@ -1,5 +1,0 @@
-\def\mem[u][v]{#{\u\in\v}}
-\def\def-em[x]{\em{\strong{\x}}}
-\def\sub[x]{_{\x}}
-\def\sup[x]{^{\x}}
-
