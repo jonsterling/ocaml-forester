@@ -35,7 +35,7 @@
   end
 %}
 
-%token <string> TEXT MACRO
+%token <string> TEXT TAG
 %token TITLE IMPORT DEF LET TEX TRANSCLUDE TAXON AUTHOR
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token EOF
@@ -46,30 +46,34 @@
 
 %%
 
-let braces(p) == LBRACE; ~ = p; RBRACE; <>
-let squares(p) == LSQUARE; ~ = p; RSQUARE; <>
-let parens(p) == LPAREN; ~ = p; RPAREN; <>
+let braces(p) == delimited(LBRACE, p, RBRACE)
+let squares(p) == delimited(LSQUARE, p, RSQUARE)
+let parens(p) == delimited(LPAREN, p, RPAREN)
+let binder == list(squares(TEXT))
 
 let node :=
 | ~ = braces(expr); <Expr.braces>
 | ~ = squares(expr); <Expr.squares>
 | ~ = parens(expr); <Expr.parens> 
-| HASH_LBRACE; ~ = expr; RBRACE; <Expr.display_math>
-| HASH_HASH_LBRACE; ~ = expr; RBRACE; <Expr.display_math>
-| TRANSCLUDE; ~ = braces(TEXT); <Expr.Transclude>
-| ~ = MACRO; <Expr.Tag>
+| ~ = delimited(HASH_LBRACE, expr, RBRACE); <Expr.display_math>
+| ~ = delimited(HASH_HASH_LBRACE, expr, RBRACE); <Expr.display_math>
+| TRANSCLUDE; ~ = txt_arg; <Expr.Transclude>
+| LET; (~,~,~) = fun_spec; <Expr.Let>
+| TEX; ~ = arg; <Expr.EmbedTeX>
+| ~ = TAG; <Expr.Tag>
 | ~ = TEXT; <Expr.Text>
-| LET; ~ = MACRO; ~ = list(squares(TEXT)); ~ = braces(expr); <Expr.Let>
-| TEX; ~ = braces(expr); <Expr.EmbedTeX>
 
-let expr == ~ = list(node); <>
+let expr == list(node)
+let arg == braces(expr)
+let txt_arg == braces(TEXT)
+let fun_spec == ~ = TAG; ~ = binder; ~ = arg; <>
 
 let frontlet := 
-| TITLE; ~ = braces(expr); <Frontlet.title>
-| TAXON; ~ = braces(TEXT); <Frontlet.taxon>
-| IMPORT; ~ = braces(TEXT); <Frontlet.import>
-| AUTHOR; ~ = braces(TEXT); <Frontlet.author>
-| DEF; ~ = MACRO; ~ = list(squares(TEXT)); ~ = braces(expr); <Frontlet.def>
+| TITLE; ~ = arg; <Frontlet.title>
+| TAXON; ~ = txt_arg; <Frontlet.taxon>
+| IMPORT; ~ = txt_arg; <Frontlet.import>
+| AUTHOR; ~ = txt_arg; <Frontlet.author>
+| DEF; ~ = fun_spec; <Frontlet.def>
 
 let frontmatter == ~ = list(frontlet); <Frontlet.fold>
 let main :=  ~ = frontmatter; ~ = expr; EOF; <> 

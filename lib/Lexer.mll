@@ -1,7 +1,7 @@
 {
   exception SyntaxError of string
   let drop_sigil c str = 1 |> List.nth @@ String.split_on_char c str
-  let macro str = Parser.MACRO (drop_sigil '\\' str)
+  let macro str = Parser.TAG (drop_sigil '\\' str)
   let illegal str = raise @@ SyntaxError ("Lexer - Illegal character: [" ^ str ^ "].")
   
   let text str = Parser.TEXT str
@@ -33,18 +33,18 @@ rule token =
   | "%" { comment lexbuf }
   | "##{" { return lexbuf @@ Parser.HASH_HASH_LBRACE }
   | "#{" { return lexbuf @@ Parser.HASH_LBRACE }
-  | "\\\\" { return lexbuf @@ Parser.MACRO {|\|} }
-  | "\\," { return lexbuf @@ Parser.MACRO {|,|} }
-  | "\\_" { return lexbuf @@ Parser.MACRO {|_|} }
-  | "\\;" { return lexbuf @@ Parser.MACRO {|;|} }
-  | "\\#" { return lexbuf @@ Parser.MACRO {|#|} }
-  | "\\{" { return lexbuf @@ Parser.MACRO {|{|} }
-  | "\\}" { return lexbuf @@ Parser.MACRO {|}|} }
-  | "\\[" { return lexbuf @@ Parser.MACRO {|[|} }
-  | "\\]" { return lexbuf @@ Parser.MACRO {|]|} }
+  | "\\\\" { return lexbuf @@ Parser.TAG {|\|} }
+  | "\\," { return lexbuf @@ Parser.TAG {|,|} }
+  | "\\_" { return lexbuf @@ Parser.TAG {|_|} }
+  | "\\;" { return lexbuf @@ Parser.TAG {|;|} }
+  | "\\#" { return lexbuf @@ Parser.TAG {|#|} }
+  | "\\{" { return lexbuf @@ Parser.TAG {|{|} }
+  | "\\}" { return lexbuf @@ Parser.TAG {|}|} }
+  | "\\[" { return lexbuf @@ Parser.TAG {|[|} }
+  | "\\]" { return lexbuf @@ Parser.TAG {|]|} }
   | "\\startverb" { verbatim := true; token lexbuf }
   | "\\stopverb" { verbatim := false; token lexbuf }
-  | "\\ " { return lexbuf @@ Parser.MACRO {| |} }
+  | "\\ " { return lexbuf @@ Parser.TAG {| |} }
   | "\\title" { return lexbuf @@ Parser.TITLE }
   | "\\taxon" { return lexbuf @@ Parser.TAXON }
   | "\\import" { return lexbuf @@ Parser.IMPORT }
