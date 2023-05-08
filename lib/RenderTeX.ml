@@ -71,25 +71,3 @@ and render_arg delim (arg : Sem.t) : Printer.t =
 
 and render_args (args : Sem.t list) : Printer.t = 
   Printer.iter (render_arg Braces) args
-
-
-let render_macro_def (name : string) (clo : clo) : Printer.t = 
-  match clo with 
-  | Val v ->
-    Printer.seq 
-      [Printer.text "\\newcommand\\";
-       Printer.text name;
-       Printer.text "[0]";
-       render_arg Braces v]
-  | Clo (env, xs, bdy) ->
-    let envxs, n = 
-      let alg x (env, i) = Env.add (User x) (Val [Text ("#" ^ string_of_int (i + 1))]) env, i+1 in
-      List.fold_right alg xs (env, 0) 
-    in 
-    let bspec = Format.sprintf "[%i]" n in
-    let bdy' = Expander.expand (fun _ -> None) envxs bdy in
-    Printer.seq
-      [Printer.text "\\newcommand\\";
-       Printer.text name;
-       Printer.text bspec;
-       render_arg Braces bdy']
