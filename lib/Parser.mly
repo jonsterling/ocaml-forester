@@ -1,9 +1,6 @@
 %{
   open Types
   
-  let empty_frontmatter = 
-    Expr.{title = None; taxon = None; imports = []; macros = []; authors = []}
-    
   module Frontlet = 
   struct
     open Expr
@@ -33,7 +30,8 @@
       {fm with macros = macro :: fm.macros}
       
     let fold frontlets = 
-      List.fold_right Fun.id frontlets empty_frontmatter
+      let init = Expr.{title = None; taxon = None; imports = []; macros = []; authors = []} in
+      List.fold_right Fun.id frontlets init
   end
 %}
 
