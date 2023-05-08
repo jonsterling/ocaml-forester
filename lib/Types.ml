@@ -29,6 +29,7 @@ struct
     {title : t option;
      taxon : string option;
      imports : addr list;
+     authors : addr list;
      macros : (string * macro) list}
   [@@deriving show]
 

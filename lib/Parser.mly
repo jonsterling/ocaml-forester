@@ -1,9 +1,12 @@
 %{
   open Types
+  
+  let empty_frontmatter = 
+    Expr.{title = None; taxon = None; imports = []; macros = []; authors = []}
 %}
 
 %token <string> TEXT MACRO
-%token TITLE IMPORT DEF LET TEX TRANSCLUDE TAXON
+%token TITLE IMPORT DEF LET TEX TRANSCLUDE TAXON AUTHOR
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token EOF
 
@@ -56,17 +59,30 @@ parens(p):
 
 front:
 | TITLE expr = braces(expr)
-  { fun fm -> {fm with title = Some expr} }
+  { function
+    | ({title = None; _} as fm) ->
+      {fm with title = Some expr}
+    | _ -> 
+      failwith "Cannot set title twice" }
+
 | TAXON tax = braces(TEXT)
-  { fun fm -> {fm with taxon = Some tax} }
+  { function
+    | ({taxon = None; _} as fm) ->
+      {fm with taxon = Some tax}
+    | _ -> 
+      failwith "Cannot set taxon twice" }
+
 | IMPORT addr = braces(TEXT)
-  { fun fm -> {fm with imports = fm.imports @ [addr] }}
+  { fun fm -> {fm with imports = addr :: fm.imports } }
+  
+| AUTHOR addr = braces(TEXT)
+  { fun fm -> {fm with authors = addr :: fm.authors } }
+
 | DEF name = MACRO xs = list(squares(TEXT)) body = braces(expr)
   { fun fm -> 
     let macro = name, (xs, body) in 
-    {fm with macros = fm.macros @ [macro]} }
+    {fm with macros = macro :: fm.macros} }
 
 main: 
 | fronts = list(front) expr = expr EOF
-  { let init = Expr.{title = None; taxon = None; imports = []; macros = []} in 
-    List.fold_left (fun fm phi -> phi fm) init fronts, expr }
+  { List.fold_right Fun.id fronts empty_frontmatter , expr }
