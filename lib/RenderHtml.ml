@@ -51,9 +51,8 @@ let rec render_node (env : env) (scope : addr) : Sem.node -> printer =
        RenderTeX.render_nodes bdy;
        TP.text "\\)"]
   | Sem.Link {title; addr} ->
-    let real_title = env#get_title addr in
     let url = env#route addr in
-    let title = render env scope @@ Option.value ~default:real_title title in
+    let title = render env scope title in
     Html.tag "a" ["href", url; "class", "local"] [title]
   | Sem.Tag (name, attrs, xs) ->
     Html.tag name attrs

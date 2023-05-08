@@ -25,7 +25,8 @@ let rec expand (globals : globals) env : Expr.t -> Sem.t =
     Sem.Text txt :: expand globals env rest
   | Expr.Group (Squares, title) :: Expr.Group (Parens, [Expr.Text addr]) :: rest -> 
     let title = expand globals env title in
-    Sem.Link {addr; title = Some title} :: expand globals env rest
+    let link = Sem.Link {addr; title} in 
+    link :: expand globals env rest
   | Expr.Group (delim, e) :: rest -> 
     Sem.Group (delim, expand globals env e) :: expand globals env rest
   | Expr.Math e :: rest -> 

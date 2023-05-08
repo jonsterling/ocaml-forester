@@ -78,7 +78,7 @@ class forest =
         (* Format.eprintf "processing transclusion of %s@." addr; *)
         Gph.add_edge vertical addr scope
       | Sem.Link {title; addr} ->
-        title |> Option.iter @@ self#process_nodes scope;
+        self#process_nodes scope title;
         Gph.add_edge horizontal addr scope
       | Sem.Tag (_, _, xs) ->
         xs |> List.iter @@ self#process_nodes scope

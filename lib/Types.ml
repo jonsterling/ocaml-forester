@@ -41,7 +41,7 @@ struct
   type node = 
     | Text of string 
     | Transclude of addr 
-    | Link of {addr : addr; title : t option}
+    | Link of {addr : addr; title : t}
     | Tag of string * attr list * t list
     | Math of t
     | EmbedTeX of t
@@ -58,7 +58,7 @@ struct
   let rec node_map_text (f : string -> string) : node -> node =
     function 
     | Text str -> Text (f str)
-    | Link {addr; title} -> Link {title = Option.map (map_text f) title; addr}
+    | Link {addr; title} -> Link {title = map_text f title; addr}
     | Tag (tag, attrs, xs) -> Tag (tag, attrs, List.map (map_text f) xs)
     | Group (delim, x) -> Group (delim, map_text f x)
     | node -> node
