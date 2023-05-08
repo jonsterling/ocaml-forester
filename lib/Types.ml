@@ -34,6 +34,13 @@ struct
   [@@deriving show]
 
   type doc = frontmatter * t
+
+  let inline_math e = Math (Inline, e)
+  let display_math e = Math (Display, e)
+  let parens e = Group (Parens, e)
+  let squares e = Group (Squares, e)
+  let braces e = Group (Braces, e)
+
 end
 
 module Sem = 

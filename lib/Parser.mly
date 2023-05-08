@@ -3,6 +3,38 @@
   
   let empty_frontmatter = 
     Expr.{title = None; taxon = None; imports = []; macros = []; authors = []}
+    
+  module Frontlet = 
+  struct
+    open Expr
+    
+    let title title =
+      function
+      | ({title = None; _} as fm) ->
+        {fm with title = Some title}
+      | _ -> 
+        failwith "Cannot set title twice"
+        
+    let taxon taxon =
+      function
+      | ({taxon = None; _} as fm) ->
+        {fm with taxon = Some taxon}
+      | _ -> 
+        failwith "Cannot set taxon twice"
+    
+    let import addr fm = 
+      {fm with imports = addr :: fm.imports}
+
+    let author addr fm = 
+      {fm with authors = addr :: fm.authors}
+      
+    let def (name, xs, body) fm = 
+      let macro = name, (xs, body) in 
+      {fm with macros = macro :: fm.macros}
+      
+    let fold frontlets = 
+      List.fold_right Fun.id frontlets empty_frontmatter
+  end
 %}
 
 %token <string> TEXT MACRO
@@ -10,79 +42,36 @@
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token EOF
 
-%type <Expr.frontmatter -> Expr.frontmatter> front
+%type <Expr.frontmatter -> Expr.frontmatter> frontlet
 %type <Expr.t> expr
 %start <Expr.doc> main
 
 %%
 
-node:
-| expr = braces(expr)
-  { Expr.Group (Braces, expr) }
-| expr = squares(expr) 
-  { Expr.Group (Squares, expr) }
-| expr = parens(expr)
-  { Expr.Group (Parens, expr) }
-| HASH_LBRACE expr = expr RBRACE
-  { Expr.Math (Inline, expr) }
-| HASH_HASH_LBRACE expr = expr RBRACE
-  { Expr.Math (Display, expr) }
-| TRANSCLUDE addr = braces(TEXT)
-  { Expr.Transclude addr }
-| tag = MACRO 
-  { Expr.Tag tag }
-| text = TEXT
-  { Expr.Text text }
-| LET name = MACRO xs = list(squares(TEXT)) body = braces(expr)
-  { Expr.Let (name, xs, body) }
-| TEX expr = braces(expr)
-  { Expr.EmbedTeX expr }
+let braces(p) == LBRACE; ~ = p; RBRACE; <>
+let squares(p) == LSQUARE; ~ = p; RSQUARE; <>
+let parens(p) == LPAREN; ~ = p; RPAREN; <>
 
-expr:
-| expr = list(node)
-  { expr }
+let node :=
+| ~ = braces(expr); <Expr.braces>
+| ~ = squares(expr); <Expr.squares>
+| ~ = parens(expr); <Expr.parens> 
+| HASH_LBRACE; ~ = expr; RBRACE; <Expr.display_math>
+| HASH_HASH_LBRACE; ~ = expr; RBRACE; <Expr.display_math>
+| TRANSCLUDE; ~ = braces(TEXT); <Expr.Transclude>
+| ~ = MACRO; <Expr.Tag>
+| ~ = TEXT; <Expr.Text>
+| LET; ~ = MACRO; ~ = list(squares(TEXT)); ~ = braces(expr); <Expr.Let>
+| TEX; ~ = braces(expr); <Expr.EmbedTeX>
 
-%inline
-braces(p):
-| LBRACE p = p RBRACE
-  { p }
-  
-%inline
-squares(p):
-| LSQUARE p = p RSQUARE
-  { p }
+let expr == ~ = list(node); <>
 
-%inline
-parens(p):
-| LPAREN p = p RPAREN 
-  { p }
+let frontlet := 
+| TITLE; ~ = braces(expr); <Frontlet.title>
+| TAXON; ~ = braces(TEXT); <Frontlet.taxon>
+| IMPORT; ~ = braces(TEXT); <Frontlet.import>
+| AUTHOR; ~ = braces(TEXT); <Frontlet.author>
+| DEF; ~ = MACRO; ~ = list(squares(TEXT)); ~ = braces(expr); <Frontlet.def>
 
-front:
-| TITLE expr = braces(expr)
-  { function
-    | ({title = None; _} as fm) ->
-      {fm with title = Some expr}
-    | _ -> 
-      failwith "Cannot set title twice" }
-
-| TAXON tax = braces(TEXT)
-  { function
-    | ({taxon = None; _} as fm) ->
-      {fm with taxon = Some tax}
-    | _ -> 
-      failwith "Cannot set taxon twice" }
-
-| IMPORT addr = braces(TEXT)
-  { fun fm -> {fm with imports = addr :: fm.imports } }
-  
-| AUTHOR addr = braces(TEXT)
-  { fun fm -> {fm with authors = addr :: fm.authors } }
-
-| DEF name = MACRO xs = list(squares(TEXT)) body = braces(expr)
-  { fun fm -> 
-    let macro = name, (xs, body) in 
-    {fm with macros = macro :: fm.macros} }
-
-main: 
-| fronts = list(front) expr = expr EOF
-  { List.fold_right Fun.id fronts empty_frontmatter , expr }
+let frontmatter == ~ = list(frontlet); <Frontlet.fold>
+let main :=  ~ = frontmatter; ~ = expr; EOF; <> 
