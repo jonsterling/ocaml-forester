@@ -48,12 +48,12 @@ let rec render_node (env : env) (scope : addr) : Sem.node -> printer =
       | Inline -> "\\(", "\\)"
       | Display -> "\\[", "\\]"
     in 
-    let module TP = RenderTeX.Printer in
+    let module TP = RenderMathMode.Printer in
     Printer.text @@
     TP.contents @@
     TP.seq
       [TP.text l;
-       RenderTeX.render_nodes bdy;
+       RenderMathMode.render_nodes bdy;
        TP.text r]
   | Sem.Link {title; addr} ->
     let url = env#route addr in
@@ -65,7 +65,7 @@ let rec render_node (env : env) (scope : addr) : Sem.node -> printer =
   | Sem.Transclude addr ->
     env#transclude addr
   | Sem.EmbedTeX bdy ->
-    let code = RenderTeX.Printer.contents @@ RenderTeX.render_nodes bdy in
+    let code = RenderMathMode.Printer.contents @@ RenderMathMode.render_nodes bdy in
     let hash = TeXHash.hash code in
     env#enqueue_svg ~name:hash ~source:code;
     let path = Format.sprintf "resources/%s.svg" hash in
@@ -87,7 +87,7 @@ and render (env : env) (scope : addr) : Sem.t -> printer =
   Printer.iter (render_node env scope)
 
 let render_doc (env : env) (scope : addr) (doc : Sem.doc) : printer =
-  let module TP = RenderTeX.Printer in
+  let module TP = RenderMathMode.Printer in
   let heading_content =
     match doc.taxon with 
     | Some taxon ->
