@@ -9,10 +9,14 @@
   
   let verbatim = ref false
   
-  let return lexbuf tok = 
+  let return_thunk lexbuf thunk = 
     match !verbatim with 
     | true -> text (Lexing.lexeme lexbuf)
-    | false -> tok
+    | false -> thunk ()
+
+  let return lexbuf tok =
+    return_thunk lexbuf @@ fun _ -> tok
+    
 }
 
 let digit = ['0'-'9']
@@ -26,6 +30,7 @@ let text = [^ '#' '\\' '{' '}' '[' ']' '(' ')' '`' '\n']+
  
 rule token =
   parse
+  | "%" { comment lexbuf }
   | "#{" { return lexbuf @@ Parser.HASH_LBRACE }
   | "\\\\" { return lexbuf @@ Parser.MACRO {|\|} }
   | "\\," { return lexbuf @@ Parser.MACRO {|,|} }
@@ -55,7 +60,12 @@ rule token =
   | '(' { return lexbuf @@ Parser.LPAREN }
   | ')' { return lexbuf @@ Parser.RPAREN }
   | text { text (Lexing.lexeme lexbuf) }
-  | whitespace { token lexbuf }
-  | newline { Lexing.new_line lexbuf; token lexbuf } 
+  | whitespace { return_thunk lexbuf @@ fun _ -> token lexbuf }
+  | newline { Lexing.new_line lexbuf; return_thunk lexbuf @@ fun _ -> token lexbuf }
   | eof { Parser.EOF }
   | _ { illegal @@ Lexing.lexeme lexbuf }
+
+and comment = 
+  parse 
+  | '\n' { Lexing.new_line lexbuf; token lexbuf }
+  | _ { comment lexbuf }
