@@ -15,8 +15,6 @@ module Gph = Graph.Imperative.Digraph.Concrete (Addr)
 module Topo = Graph.Topological.Make (Gph)
 module Clo = Graph.Traverse
 
-type svg_task = BuildSvg of {name : string; source : string}
-
 let expand_tree globals addr (doc : Expr.doc) = 
   let fm, tree = doc in
   let body = Expander.expand globals Env.empty tree in
@@ -151,7 +149,7 @@ class forest =
       begin
         let i = ref 0 in
         svg_queue |> Hashtbl.iter @@ fun name source -> 
-        tasks.(!i) <- `Task (BuildSvg {name; source});
+        tasks.(!i) <- `Task (name, source);
         i := !i + 1
       end;
 
@@ -159,7 +157,7 @@ class forest =
 
       let worker i = 
         match tasks.(i) with 
-        | `Task (BuildSvg {name; source}) -> BuildSvg.build_svg ~name ~source 
+        | `Task (name, source) -> BuildSvg.build_svg ~name ~source 
         | `Uninitialized -> failwith "Unexpected uninitialized task in SVG queue"
       in 
 
