@@ -12,7 +12,7 @@ let parse_channel filename ch =
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = filename };
   try Parser.main Lexer.token lexbuf
   with 
-  | Parser.Error ->
+  | Parser.Error -> 
     failwith @@ "Parse error at " ^ pos_string lexbuf.lex_curr_p
   | Lexer.SyntaxError err -> 
     failwith @@ "Lexing error at " ^ pos_string lexbuf.lex_curr_p ^ ": " ^ err

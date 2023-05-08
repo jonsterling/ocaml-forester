@@ -1,1 +1,1 @@
-val write : out_channel -> string -> unit
+val write : out_channel -> source:string -> unit

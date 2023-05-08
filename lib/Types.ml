@@ -1,28 +1,36 @@
 type addr = string
 [@@deriving show]
 
-module Syn =
-struct
-  type attr = string * string
-  [@@deriving show]
+type delim = Braces | Squares | Parens
+[@@deriving show]
 
+
+module Expr = 
+struct 
   type node = 
     | Text of string 
-    | Transclude of addr
-    | Wikilink of {addr : addr; title : t option}
-    | Tag of string * attr list * t list
+    | Group of delim * t
     | Math of t
-    | Title of t 
-    | Taxon of string
-    | Import of addr 
-    | DefMacro of string * string list * t
-    | Let of string * string list * t * t
-    | EmbedTeX of t
-    | Group of t
+    | Tag of string
+    | Transclude of string
+    | TeX of t
+    | Let of string * string list * t
   [@@deriving show]
 
   and t = node list
+  [@@deriving show]
 
+  type macro = string list * t
+  [@@deriving show]
+
+  type frontmatter = 
+    {title : t option;
+     taxon : string option;
+     imports : addr list;
+     macros : (string * macro) list}
+  [@@deriving show]
+
+  type doc = frontmatter * t
 end
 
 module Sem = 
@@ -33,11 +41,11 @@ struct
   type node = 
     | Text of string 
     | Transclude of addr 
-    | Wikilink of {addr : addr; title : t option}
+    | Link of {addr : addr; title : t option}
     | Tag of string * attr list * t list
     | Math of t
     | EmbedTeX of t
-    | Group of t
+    | Group of delim * t
   [@@deriving show]
 
   and t = node list
@@ -50,9 +58,9 @@ struct
   let rec node_map_text (f : string -> string) : node -> node =
     function 
     | Text str -> Text (f str)
-    | Wikilink {addr; title} -> Wikilink {title = Option.map (map_text f) title; addr}
+    | Link {addr; title} -> Link {title = Option.map (map_text f) title; addr}
     | Tag (tag, attrs, xs) -> Tag (tag, attrs, List.map (map_text f) xs)
-    | Group x -> Group (map_text f x)
+    | Group (delim, x) -> Group (delim, map_text f x)
     | node -> node
 
   and map_text (f : string -> string) : t -> t =
@@ -74,7 +82,7 @@ struct
     Format.fprintf fmt "}@]"
 end
 
-type clo = Clo of env * string list * Syn.t | Val of Sem.t
+type clo = Clo of env * string list * Expr.t | Val of Sem.t
 [@@deriving show]
 
 and env = clo Env.t

@@ -9,12 +9,12 @@ let dvi_fp name =
 let write_tex_file ~name ~source =
   let tex_ch = open_out @@ tex_fp name in
   Fun.protect ~finally:(fun _ -> close_out tex_ch) @@ fun _ ->
-  LaTeXTemplate.write tex_ch source
+  LaTeXTemplate.write tex_ch ~source
 
 let render_dvi_file ~name ~source =
   let tex_fp = tex_fp name in
   ensure_remove_file @@ dvi_fp name;
-  Proc.run "latex" [tex_fp]
+  Proc.run "latex" ["-halt-on-error"; "-interaction=nonstopmode"; tex_fp]
 
 let render_svg_file ~name ~source =
   let dvi_fp = dvi_fp name in

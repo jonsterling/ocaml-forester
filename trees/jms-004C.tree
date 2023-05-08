@@ -1,5 +1,5 @@
 \title{deductive systems}
 
-\p{The most basic construct of duploid theory is a [[jms-0048|deductive system]], a variant on the concept of a \em{precategory} that relaxes the associativity axiom to reflect the evaluation order of execution in effectful programming languages and proof theories. In this section, we define deductive systems and develop their basic properties.}
+\p{The most basic construct of duploid theory is a [deductive system](jms-0048), a variant on the concept of a \em{precategory} that relaxes the associativity axiom to reflect the evaluation order of execution in effectful programming languages and proof theories. In this section, we define deductive systems and develop their basic properties.}
 
 \transclude{jms-0048}

@@ -21,9 +21,9 @@ type svg_task = BuildSvg of {name : string; source : string}
 class forest =
   object(self)
     val mutable frozen = false
-    val expansion_queue : (addr * Syn.t) Queue.t = Queue.create ()
+    val expansion_queue : (addr * Expr.doc) Queue.t = Queue.create ()
     val svg_queue : (string, string) Hashtbl.t = Hashtbl.create 100
-    val titles : Syn.t Tbl.t = Tbl.create 100
+    val titles : Expr.t Tbl.t = Tbl.create 100
     val taxa : string Tbl.t = Tbl.create 100
     val trees : Sem.doc Tbl.t = Tbl.create 100
     val vertical : Gph.t = Gph.create ()
@@ -39,25 +39,28 @@ class forest =
         macros
       | Some macros -> macros
 
-    method private global_resolver (addr : addr) : Expand.globals =
+    method private global_resolver (addr : addr) : Expander.globals =
       Hashtbl.find_opt @@ self#get_macros addr
 
-    method private process_metas_in_node scope : Syn.node -> unit =
-      function
-      | Syn.DefMacro (name, xs, code) ->
-        let macros = self#get_macros scope in
-        let clo = Clo (Env.empty, xs, code) in
-        Hashtbl.add macros (User name) clo
-      | Syn.Import dep ->
+    method private process_frontmatter scope (fm : Expr.frontmatter) = 
+      let macros = self#get_macros scope in 
+      begin
+        fm.imports |> List.iter @@ fun dep -> 
         Gph.add_edge imports dep scope
-      | Syn.Title title ->
-        Tbl.add titles scope title
-      | Syn.Taxon taxon -> 
+      end;
+      begin 
+        fm.macros |> List.iter @@ fun (name, (xs, body)) -> 
+        let clo = Clo (Env.empty, xs, body) in 
+        Hashtbl.add macros (User name) clo
+      end;
+      begin 
+        fm.taxon |> Option.iter @@ fun taxon ->
         Tbl.add taxa scope taxon
-      | _ -> ()
-
-    method private process_metas scope : Syn.t -> unit = 
-      List.iter @@ self#process_metas_in_node scope
+      end;
+      begin 
+        fm.title |> Option.iter @@ fun title -> 
+        Tbl.add titles scope title
+      end
 
     method private expand_imports : unit =
       imports |> Topo.iter @@ fun addr ->
@@ -74,7 +77,7 @@ class forest =
       | Sem.Transclude addr ->
         Format.eprintf "processing transclusion of %s@." addr;
         Gph.add_edge vertical addr scope
-      | Sem.Wikilink {title; addr} ->
+      | Sem.Link {title; addr} ->
         title |> Option.iter @@ self#process_nodes scope;
         Gph.add_edge horizontal addr scope
       | Sem.Tag (_, _, xs) ->
@@ -83,7 +86,7 @@ class forest =
         self#process_nodes scope x
       | Sem.EmbedTeX x -> 
         self#process_nodes scope x
-      | Sem.Group x ->
+      | Sem.Group (_, x) ->
         self#process_nodes scope x
 
     method private process_nodes scope : Sem.t -> unit = 
@@ -91,11 +94,11 @@ class forest =
 
     method private expand_tree addr tree = 
       let globals = self#global_resolver addr in
-      let body = Expand.expand_nodes globals Env.empty tree in
+      let body = Expander.expand globals Env.empty tree in
       let title =
         match Tbl.find_opt titles addr with
         | None -> [Sem.Text addr]
-        | Some title -> Expand.expand_nodes globals Env.empty title
+        | Some title -> Expander.expand globals Env.empty title
       in
       Tbl.add trees addr {title; body; taxon = Tbl.find_opt taxa addr};
 
@@ -103,7 +106,7 @@ class forest =
       self#expand_imports;
       let rec loop () =
         match Queue.take expansion_queue with 
-        | addr, tree -> self#expand_tree addr tree; loop () 
+        | addr, (_, tree) -> self#expand_tree addr tree; loop () 
         | exception Queue.Empty -> ()
       in 
       loop ()
@@ -129,7 +132,7 @@ class forest =
         method transclude addr =
           match Tbl.find trees addr with 
           | doc -> 
-            RenderHtml.render_doc self doc
+            RenderHtml.render_doc self addr doc
           | exception e ->
             Format.eprintf "Transclusion error: failed to find tree with address %s@." addr;
             raise e
@@ -139,13 +142,13 @@ class forest =
             Hashtbl.add svg_queue name source
       end
 
-    method plant_tree addr (syn : Syn.t) : unit =
+    method plant_tree addr (doc : Expr.doc) : unit =
       assert (not frozen);
-      let open Syn in
+      let frontmatter, body = doc in 
       Gph.add_vertex vertical addr;
       Gph.add_vertex imports addr;
-      self#process_metas addr syn;
-      Queue.push (addr, syn) expansion_queue
+      self#process_frontmatter addr frontmatter;
+      Queue.push (addr, doc) expansion_queue
 
     method private build_svgs : unit = 
       let n = Hashtbl.length svg_queue in
@@ -181,10 +184,12 @@ class forest =
 
       begin
         trees |> Tbl.iter @@ fun addr doc ->
-        let ch = open_out @@ "output/" ^ env#route addr in
-        Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
-        let out = Xmlm.make_output @@ `Channel ch in
-        RenderHtml.render_doc_page env doc out
+        begin
+          let ch = open_out @@ "output/" ^ env#route addr in
+          Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
+          let out = Xmlm.make_output @@ `Channel ch in
+          RenderHtml.render_doc_page env addr doc out
+        end
       end;
 
       begin

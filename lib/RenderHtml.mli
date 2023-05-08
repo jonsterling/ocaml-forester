@@ -10,6 +10,6 @@ class type env =
     method enqueue_svg : name:string -> source:string -> unit
   end
 
-val render : env -> Sem.t -> printer
-val render_doc : env -> Sem.doc -> printer
-val render_doc_page : env -> Sem.doc -> printer
+val render : env -> addr -> Sem.t -> printer
+val render_doc : env -> addr -> Sem.doc -> printer
+val render_doc_page : env -> addr -> Sem.doc -> printer

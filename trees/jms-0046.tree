@@ -1,27 +1,23 @@
 \taxon{convention}
 \title{conventions of univalent mathematics}
 
-\p{A category has hom sets, and is always assumed to be univalent / Rezk-complete; we use the term precategory to refer to a structure that has hom sets and a type of objects with no univalence condition.}
-
-\def{tikzcd}{body}{
-  \tex`{
+\def\tikzcd[body]{
+  \tex{
     \begin{tikzcd} 
     \body
     \end{tikzcd}
-  `}
+  }
 }
 
-\def{ar}{opts}{dir}{lbl}{
-  \group`{\arrow[\opts]\group{\dir}\group{\lbl}`}
+\p{A category has hom sets, and is always assumed to be univalent / Rezk-complete; we use the term precategory to refer to a structure that has hom sets and a type of objects with no univalence condition.}
+
+\let\foo[x]{\boldsymbol{\x}}
+
+\tikzcd{
+  A \arrow[r, "a"] & B\\
+  C \arrow[dashed,r,"\foo{\phi}"] & D
 }
 
-\let{foo}{x}{\boldsymbol{\x}}
-
-\tikzcd`{
-  A \ar{dashed}{r}{a}\ar{}{d}{} & B\\
-  C \ar{dashed}{r}{a} & D
-`}
-
-\tikzcd`{
-  A \ar{dashed}{r}{a} & C
-`}
+\tikzcd{
+  A \arrow[dotted,r,"\phi"] & C
+}

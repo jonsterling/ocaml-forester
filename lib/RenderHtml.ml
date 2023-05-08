@@ -38,7 +38,7 @@ struct
     bdy out
 end
 
-let rec render_node (env : env) : Sem.node -> printer =
+let rec render_node (env : env) (scope : addr) : Sem.node -> printer =
   function
   | Sem.Text txt ->
     Printer.text txt
@@ -50,14 +50,14 @@ let rec render_node (env : env) : Sem.node -> printer =
       [TP.text "\\(";
        RenderTeX.render_nodes bdy;
        TP.text "\\)"]
-  | Sem.Wikilink {title; addr} ->
+  | Sem.Link {title; addr} ->
     let real_title = env#get_title addr in
     let url = env#route addr in
-    let title = render env @@ Option.value ~default:real_title title in
+    let title = render env scope @@ Option.value ~default:real_title title in
     Html.tag "a" ["href", url; "class", "local"] [title]
   | Sem.Tag (name, attrs, xs) ->
     Html.tag name attrs
-      [xs |> Printer.iter ~sep:Printer.space (render env)]
+      [xs |> Printer.iter ~sep:Printer.space (render env scope)]
   | Sem.Transclude addr ->
     env#transclude addr
   | Sem.EmbedTeX bdy ->
@@ -67,13 +67,22 @@ let rec render_node (env : env) : Sem.node -> printer =
     let path = Format.sprintf "resources/%s.svg" hash in
     Html.tag "center" [] 
       [Html.tag "img" ["src", path] []]
-  | Sem.Group bdy ->
-    render env bdy
+  | Sem.Group (delim, bdy) ->
+    let l, r = 
+      match delim with 
+      | Braces -> "{","}"
+      | Squares -> "[","]"
+      | Parens -> "(", ")"
+    in 
+    Printer.seq
+      [Printer.text l;
+       render env scope bdy;
+       Printer.text r]
 
-and render (env : env) : Sem.t -> printer =
-  Printer.iter (render_node env)
+and render (env : env) (scope : addr) : Sem.t -> printer =
+  Printer.iter (render_node env scope)
 
-let render_doc (env : env) (doc : Sem.doc) : printer =
+let render_doc (env : env) (scope : addr) (doc : Sem.doc) : printer =
   let module TP = RenderTeX.Printer in
   let heading_content =
     match doc.taxon with 
@@ -82,10 +91,10 @@ let render_doc (env : env) (doc : Sem.doc) : printer =
         [Printer.text @@ StringUtil.title_case taxon;
          Printer.seq 
            [Printer.text "(";
-            render env doc.title;
+            render env scope doc.title;
             Printer.text ")"]]
     | None ->
-      render env @@ 
+      render env scope @@ 
       Sem.map_text StringUtil.title_case doc.title 
   in
   Html.tag "section" ["class", "block"]
@@ -94,7 +103,7 @@ let render_doc (env : env) (doc : Sem.doc) : printer =
           [Html.tag "header" []
              [Html.tag "h1" [] [heading_content]]];
         Html.tag "div" ["class", "post-content"]
-          [render env doc.body]]]
+          [render env scope doc.body]]]
 
 module KaTeX =
 struct
@@ -130,11 +139,11 @@ struct
     seq [stylesheet; script; autorender]
 end
 
-let render_doc_page (env : env) (doc : Sem.doc) : printer =
+let render_doc_page (env : env) (scope : addr) (doc : Sem.doc) : printer =
   Html.with_dtd @@
   Html.tag "html" []
     [Html.tag "head" []
-       [Html.tag "title" [] [render env doc.title];
+       [Html.tag "title" [] [render env scope doc.title];
         Html.tag "link"
           ["rel", "stylesheet";
            "href", "style.css"]
@@ -144,4 +153,4 @@ let render_doc_page (env : env) (doc : Sem.doc) : printer =
            "href", "https://fonts.googleapis.com/css2?family=Inria+Sans:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&amp;display=swap"]
           [];
         KaTeX.prelude];
-     Html.tag "body" [] [render_doc env doc]]
+     Html.tag "body" [] [render_doc env scope doc]]

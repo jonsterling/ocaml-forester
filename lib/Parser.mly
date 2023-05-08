@@ -1,93 +1,70 @@
 %{
   open Types
-  
-  let get_text =
-    function
-    | [Syn.Text txt] -> txt
-    | _ -> failwith "get_text"
-
-  type frag = Syn.t -> Syn.t
-
-  let extract_macro_binder args =
-    let rargs = List.rev args in
-    let xs = List.rev_map get_text @@ List.tl rargs in
-    let body = List.hd rargs in
-    xs, body
-
 %}
 
 %token <string> TEXT MACRO
-%token TITLE IMPORT DEF LET TEX TRANSCLUDE TAXON 
-%token LBRACE RBRACE LSQUARE RSQUARE PIPE MATH BEGIN_TEX END_TEX GROUP
+%token TITLE IMPORT DEF LET TEX TRANSCLUDE TAXON
+%token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN MATH
 %token EOF
-%type <frag> frag
-%type <Syn.t> arg
-%type <Syn.t> body
-%start <Syn.t> main
+
+%type <Expr.frontmatter -> Expr.frontmatter> front
+%type <Expr.t> expr
+%start <Expr.doc> main
 
 %%
-addr:
-| txt = TEXT
-  { String.trim txt }
 
-wikilink_title:
-| PIPE; title = body 
-  { title }
+node:
+| expr = braces(expr)
+  { Expr.Group (Braces, expr) }
+| expr = squares(expr) 
+  { Expr.Group (Squares, expr) }
+| expr = parens(expr)
+  { Expr.Group (Parens, expr) }
+| MATH expr = braces(expr)
+  { Expr.Math expr }
+| TRANSCLUDE addr = braces(TEXT)
+  { Expr.Transclude addr }
+| tag = MACRO 
+  { Expr.Tag tag }
+| text = TEXT
+  { Expr.Text text }
+| LET name = MACRO xs = list(squares(TEXT)) body = braces(expr)
+  { Expr.Let (name, xs, body) }
+| TEX expr = braces(expr)
+  { Expr.TeX expr }
 
-frag:
-| txt = TEXT
-  { List.cons @@ Syn.Text txt }
+expr:
+| expr = list(node)
+  { expr }
 
-| LSQUARE LSQUARE; addr = addr; title = option(wikilink_title); RSQUARE RSQUARE
-  { List.cons @@ Syn.Wikilink {title; addr}  }
+%inline
+braces(p):
+| LBRACE p = p RBRACE
+  { p }
   
-| MATH; body = arg
-  { List.cons @@ Syn.Math body }
-  
-| TITLE; arg = arg
-  { List.cons @@ Syn.Title arg }
-  
-| TAXON; taxon = txt_arg
-  { List.cons @@ Syn.Taxon taxon }
+%inline
+squares(p):
+| LSQUARE p = p RSQUARE
+  { p }
 
-| IMPORT; addr = txt_arg; 
-  { List.cons @@ Syn.Import addr }
-  
-| DEF; name = txt_arg; args = list(arg)
-  { let xs, body = extract_macro_binder args in 
-    List.cons @@ Syn.DefMacro (name, xs, body) }
-    
-| TRANSCLUDE; addr = txt_arg 
-  { List.cons @@ Syn.Transclude addr }
+%inline
+parens(p):
+| LPAREN p = p RPAREN 
+  { p }
 
-| TEX; arg = arg 
-  { List.cons @@ Syn.EmbedTeX arg }
+front:
+| TITLE expr = braces(expr)
+  { fun fm -> {fm with title = Some expr} }
+| TAXON tax = braces(TEXT)
+  { fun fm -> {fm with taxon = Some tax} }
+| IMPORT addr = braces(TEXT)
+  { fun fm -> {fm with imports = fm.imports @ [addr] }}
+| DEF name = MACRO xs = list(squares(TEXT)) body = braces(expr)
+  { fun fm -> 
+    let macro = name, (xs, body) in 
+    {fm with macros = fm.macros @ [macro]} }
 
-| GROUP; arg = arg 
-  { List.cons @@ Syn.Group arg }  
-
-| LET; name = txt_arg; args = list(arg) 
-  { fun cx ->
-    let xs, body = extract_macro_binder args in 
-    [Syn.Let (name, xs, body, cx)] }
-
-| name = MACRO; args = list(arg)
-  { List.cons @@ Syn.Tag (name, [], args) }
-
-body:
-| frags = list(frag)
-  { List.fold_right Fun.id frags [] }
-
-txt_arg: 
-| LBRACE; txt = TEXT; RBRACE 
-  { txt }
-
-arg:
-| LBRACE; bdy = body; RBRACE
-  { bdy }
-| BEGIN_TEX; body = body; END_TEX
-  { body }
-
-main:
-| body = body; EOF
-  { body }
+main: 
+| fronts = list(front) expr = expr EOF
+  { let init = Expr.{title = None; taxon = None; imports = []; macros = []} in 
+    List.fold_left (fun fm phi -> phi fm) init fronts, expr }
