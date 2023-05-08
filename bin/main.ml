@@ -36,7 +36,7 @@ let process_dir forest dir =
 let () =
   Format.print_newline ();
 
-  let forest = new Forest.forest in
+  let forest = new Forest.forest ~size:100 in
 
   let usage_msg = "forester <dir> ..." in
   let input_dirs = ref [] in

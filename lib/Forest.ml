@@ -25,21 +25,21 @@ let expand_tree globals addr (doc : Expr.doc) =
   in
   Sem.{title; body; taxon = fm.taxon};
 
-class forest =
+class forest ~size =
   object(self)
     val mutable frozen = false
 
     val expansion_queue : (addr * Expr.doc) Queue.t = Queue.create ()
     val svg_queue : (string, string) Hashtbl.t = Hashtbl.create 100
 
-    val trees : Sem.doc Tbl.t = Tbl.create 100
+    val trees : Sem.doc Tbl.t = Tbl.create size
     val transclusion_graph : Gph.t = Gph.create ()
     val link_graph : Gph.t = Gph.create ()
     val tag_graph : Gph.t = Gph.create ()
     val import_graph : Gph.t = Gph.create ()
 
     val macro_table : (addr, (Symbol.t, clo) Hashtbl.t) Hashtbl.t = 
-      Hashtbl.create 1000
+      Hashtbl.create size
 
     method private get_macros (addr : addr) : (Symbol.t, clo) Hashtbl.t =
       match Hashtbl.find_opt macro_table addr with
