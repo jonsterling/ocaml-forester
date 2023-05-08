@@ -6,6 +6,13 @@
   
   let text str = Parser.TEXT str
   let dbg str = Format.printf "%s\n" str; flush stdout
+  
+  let verbatim = ref false
+  
+  let return lexbuf tok = 
+    match !verbatim with 
+    | true -> text (Lexing.lexeme lexbuf)
+    | false -> tok
 }
 
 let digit = ['0'-'9']
@@ -19,32 +26,34 @@ let text = [^ '#' '\\' '{' '}' '[' ']' '(' ')' '`' '\n']+
  
 rule token =
   parse
-  | "#{" { Parser.HASH_LBRACE }
-  | "\\\\" { Parser.MACRO {|\|} }
-  | "\\," { Parser.MACRO {|,|} }
-  | "\\_" { Parser.MACRO {|_|} }
-  | "\\;" { Parser.MACRO {|;|} }
-  | "\\#" { Parser.MACRO {|#|} }
-  | "\\{" { Parser.MACRO {|{|} }
-  | "\\}" { Parser.MACRO {|}|} }
-  | "\\[" { Parser.MACRO {|[|} }
-  | "\\]" { Parser.MACRO {|]|} }
-  | "\\ " { Parser.MACRO {| |} }
-  | "\\title" { Parser.TITLE }
-  | "\\taxon" { Parser.TAXON }
-  | "\\import" { Parser.IMPORT }
-  | "\\def" { Parser.DEF }
-  | "\\let" { Parser.LET }
-  | "\\tex" { Parser.TEX }
-  | "\\transclude" { Parser.TRANSCLUDE }
-  | "#" { Parser.TEXT "#" }
-  | macro { macro (Lexing.lexeme lexbuf) }
-  | '{' { Parser.LBRACE }
-  | '}' { Parser.RBRACE }
-  | '[' { Parser.LSQUARE }
-  | ']' { Parser.RSQUARE }
-  | '(' { Parser.LPAREN }
-  | ')' { Parser.RPAREN }
+  | "#{" { return lexbuf @@ Parser.HASH_LBRACE }
+  | "\\\\" { return lexbuf @@ Parser.MACRO {|\|} }
+  | "\\," { return lexbuf @@ Parser.MACRO {|,|} }
+  | "\\_" { return lexbuf @@ Parser.MACRO {|_|} }
+  | "\\;" { return lexbuf @@ Parser.MACRO {|;|} }
+  | "\\#" { return lexbuf @@ Parser.MACRO {|#|} }
+  | "\\{" { return lexbuf @@ Parser.MACRO {|{|} }
+  | "\\}" { return lexbuf @@ Parser.MACRO {|}|} }
+  | "\\[" { return lexbuf @@ Parser.MACRO {|[|} }
+  | "\\]" { return lexbuf @@ Parser.MACRO {|]|} }
+  | "\\startverb" { verbatim := true; token lexbuf }
+  | "\\stopverb" { verbatim := false; token lexbuf }
+  | "\\ " { return lexbuf @@ Parser.MACRO {| |} }
+  | "\\title" { return lexbuf @@ Parser.TITLE }
+  | "\\taxon" { return lexbuf @@ Parser.TAXON }
+  | "\\import" { return lexbuf @@ Parser.IMPORT }
+  | "\\def" { return lexbuf @@ Parser.DEF }
+  | "\\let" { return lexbuf @@ Parser.LET }
+  | "\\tex" { return lexbuf @@ Parser.TEX }
+  | "\\transclude" { return lexbuf @@ Parser.TRANSCLUDE }
+  | "#" { return lexbuf @@ Parser.TEXT "#" }
+  | macro { return lexbuf @@ macro (Lexing.lexeme lexbuf) }
+  | '{' { return lexbuf @@ Parser.LBRACE }
+  | '}' { return lexbuf @@ Parser.RBRACE }
+  | '[' { return lexbuf @@ Parser.LSQUARE }
+  | ']' { return lexbuf @@ Parser.RSQUARE }
+  | '(' { return lexbuf @@ Parser.LPAREN }
+  | ')' { return lexbuf @@ Parser.RPAREN }
   | text { text (Lexing.lexeme lexbuf) }
   | whitespace { token lexbuf }
   | newline { Lexing.new_line lexbuf; token lexbuf } 
