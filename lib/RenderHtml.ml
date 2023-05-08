@@ -5,8 +5,7 @@ type printer = Xmlm.output -> unit
 class type env =
   object
     method route : addr -> string
-    method get_title : addr -> Sem.t
-    method transclude : addr -> printer
+    method get_doc : addr -> Sem.doc
     method enqueue_svg : name:string -> source:string -> unit
   end
 
@@ -63,7 +62,8 @@ let rec render_node (env : env) (scope : addr) : Sem.node -> printer =
     Html.tag name attrs
       [xs |> Printer.iter ~sep:Printer.space (render env scope)]
   | Sem.Transclude addr ->
-    env#transclude addr
+    let doc = env#get_doc addr in 
+    render_doc env addr doc
   | Sem.EmbedTeX bdy ->
     let code = 
       RenderMathMode.Printer.contents @@ 
@@ -89,7 +89,7 @@ let rec render_node (env : env) (scope : addr) : Sem.node -> printer =
 and render (env : env) (scope : addr) : Sem.t -> printer =
   Printer.iter (render_node env scope)
 
-let render_doc (env : env) (scope : addr) (doc : Sem.doc) : printer =
+and render_doc (env : env) (scope : addr) (doc : Sem.doc) : printer =
   let module TP = RenderMathMode.Printer in
   let heading_content =
     match doc.taxon with 

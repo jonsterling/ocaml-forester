@@ -17,6 +17,16 @@ module Clo = Graph.Traverse
 
 type svg_task = BuildSvg of {name : string; source : string}
 
+let expand_tree globals addr (doc : Expr.doc) = 
+  let fm, tree = doc in
+  let body = Expander.expand globals Env.empty tree in
+  let title =
+    match fm.title with
+    | None -> [Sem.Text addr]
+    | Some title -> Expander.expand globals Env.empty title
+  in
+  Sem.{title; body; taxon = fm.taxon};
+
 class forest =
   object(self)
     val mutable frozen = false
@@ -43,7 +53,7 @@ class forest =
     method private global_resolver (addr : addr) : Expander.globals =
       Hashtbl.find_opt @@ self#get_macros addr
 
-    method private process_frontmatter scope (fm : Expr.frontmatter) = 
+    method private analyze_frontmatter scope (fm : Expr.frontmatter) = 
       let macros = self#get_macros scope in 
       begin
         fm.imports |> List.iter @@ fun dep -> 
@@ -64,76 +74,55 @@ class forest =
       in
       Gph.iter_pred task imports addr
 
-    method private process_node scope : Sem.node -> unit =
+    method private analyze_node scope : Sem.node -> unit =
       function
       | Sem.Text _ -> ()
       | Sem.Transclude addr ->
         Gph.add_edge vertical addr scope
       | Sem.Link {title; addr} ->
-        self#process_nodes scope title;
+        self#analyze_nodes scope title;
         Gph.add_edge horizontal addr scope
       | Sem.Tag (_, _, xs) ->
-        xs |> List.iter @@ self#process_nodes scope
+        xs |> List.iter @@ self#analyze_nodes scope
       | Sem.Math (_, x) ->
-        self#process_nodes scope x
+        self#analyze_nodes scope x
       | Sem.EmbedTeX x -> 
-        self#process_nodes scope x
+        self#analyze_nodes scope x
       | Sem.Group (_, x) ->
-        self#process_nodes scope x
+        self#analyze_nodes scope x
 
-    method private process_nodes scope : Sem.t -> unit = 
-      List.iter @@ self#process_node scope
-
-    method private expand_tree addr (doc : Expr.doc) = 
-      let fm, tree = doc in
-      let globals = self#global_resolver addr in
-      let body = Expander.expand globals Env.empty tree in
-      let title =
-        match fm.title with
-        | None -> [Sem.Text addr]
-        | Some title -> Expander.expand globals Env.empty title
-      in
-      Sem.{title; body; taxon = fm.taxon};
+    method private analyze_nodes scope : Sem.t -> unit = 
+      List.iter @@ self#analyze_node scope
 
     method private expand_trees : unit =
       self#expand_imports;
       let rec loop () =
         match Queue.take expansion_queue with 
         | addr, doc -> 
-          let doc = self#expand_tree addr doc in
+          let globals = self#global_resolver addr in
+          let doc = expand_tree globals addr doc in
           Tbl.add trees addr doc;
           loop () 
         | exception Queue.Empty -> ()
       in 
       loop ()
 
-    method private process_trees : unit =
+    method private analyze_trees : unit =
       self#expand_trees;
       trees |> Tbl.iter @@ fun addr Sem.{body; title; _} ->
-      self#process_nodes addr body;
-      self#process_nodes addr title
+      self#analyze_nodes addr body;
+      self#analyze_nodes addr title
 
     method private render_env : RenderHtml.env =
       object(self)
         method route addr =
           addr ^ ".html"
 
-        method get_title addr = 
+        method get_doc addr = 
           match Tbl.find trees addr with 
-          | doc -> doc.title
-          | exception e -> 
-            Format.eprintf "Linking error: failed to find tree with address %s@." addr;
-            flush_all ();
-            raise e
-
-        method transclude addr =
-          match Tbl.find trees addr with 
-          | doc -> 
-            RenderHtml.render_doc self addr doc
-          | exception e ->
-            Format.eprintf "Transclusion error: failed to find tree with address %s@." addr;
-            flush_all ();
-            raise e
+          | doc -> doc
+          | exception Not_found -> 
+            failwith @@ Format.sprintf "render_env: could not get doc with address %s" addr
 
         method enqueue_svg ~name ~source = 
           if not @@ Hashtbl.mem svg_queue name then
@@ -145,7 +134,7 @@ class forest =
       let frontmatter, body = doc in 
       Gph.add_vertex vertical addr;
       Gph.add_vertex imports addr;
-      self#process_frontmatter addr frontmatter;
+      self#analyze_frontmatter addr frontmatter;
       Queue.push (addr, doc) expansion_queue
 
     method private build_svgs : unit = 
@@ -175,7 +164,7 @@ class forest =
       let open Sem in
       frozen <- true;
       let env = self#render_env in
-      self#process_trees;
+      self#analyze_trees;
 
       Shell.ensure_dir "build";
       Shell.ensure_dir_path ["output"; "resources"];
