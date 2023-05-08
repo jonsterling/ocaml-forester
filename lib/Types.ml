@@ -15,7 +15,7 @@ struct
     | Math of math_mode * t
     | Tag of string
     | Transclude of string
-    | TeX of t
+    | EmbedTeX of t
     | Let of string * string list * t
   [@@deriving show]
 

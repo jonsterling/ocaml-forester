@@ -33,7 +33,7 @@ node:
 | LET name = MACRO xs = list(squares(TEXT)) body = braces(expr)
   { Expr.Let (name, xs, body) }
 | TEX expr = braces(expr)
-  { Expr.TeX expr }
+  { Expr.EmbedTeX expr }
 
 expr:
 | expr = list(node)

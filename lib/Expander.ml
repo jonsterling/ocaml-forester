@@ -35,7 +35,7 @@ let rec expand (globals : globals) env : Expr.t -> Sem.t =
     expand_tag globals env name rest
   | Expr.Transclude name :: rest -> 
     Sem.Transclude name :: expand globals env rest
-  | Expr.TeX e :: rest -> 
+  | Expr.EmbedTeX e :: rest -> 
     Sem.EmbedTeX (expand globals env e) :: expand globals env rest
   | Expr.Let (name, xs, bdy) :: rest -> 
     let env' = Env.add (User name) (Clo (env, xs, bdy)) env in

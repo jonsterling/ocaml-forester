@@ -20,13 +20,13 @@ let rec render_node : Sem.node -> Printer.t =
   | Sem.Text txt -> 
     Printer.text txt
   | Sem.Math(_, xs) ->
-    render_nodes xs
+    render xs
   | Sem.Tag (name, attrs, args) -> 
     render_tag name attrs args
   | Sem.Group (delim, xs) ->
     render_arg delim xs
   | Sem.EmbedTeX x -> 
-    render_nodes x
+    render x
   | node -> 
     Format.eprintf "missing case: %a@." Sem.pp_node node;
     failwith "RenderMathMode.render_node"
@@ -38,7 +38,7 @@ and render_tag name attrs args =
      render_attrs attrs;
      render_args args]
 
-and render_nodes xs =
+and render xs =
   Printer.iter ~sep:Printer.space render_node xs
 
 and render_attrs (attrs : Sem.attr list) : Printer.t = 
@@ -66,7 +66,7 @@ and render_arg delim (arg : Sem.t) : Printer.t =
   in
   Printer.seq 
     [Printer.text l;
-     render_nodes arg;
+     render arg;
      Printer.text r]
 
 and render_args (args : Sem.t list) : Printer.t = 

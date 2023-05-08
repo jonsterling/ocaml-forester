@@ -21,15 +21,17 @@ type svg_task = BuildSvg of {name : string; source : string}
 class forest =
   object(self)
     val mutable frozen = false
+
     val expansion_queue : (addr * Expr.doc) Queue.t = Queue.create ()
     val svg_queue : (string, string) Hashtbl.t = Hashtbl.create 100
-    val titles : Expr.t Tbl.t = Tbl.create 100
-    val taxa : string Tbl.t = Tbl.create 100
+
     val trees : Sem.doc Tbl.t = Tbl.create 100
     val vertical : Gph.t = Gph.create ()
     val horizontal : Gph.t = Gph.create ()
     val imports : Gph.t = Gph.create ()
-    val macro_table : (addr, (Symbol.t, clo) Hashtbl.t) Hashtbl.t = Hashtbl.create 1000
+
+    val macro_table : (addr, (Symbol.t, clo) Hashtbl.t) Hashtbl.t = 
+      Hashtbl.create 1000
 
     method private get_macros (addr : addr) : (Symbol.t, clo) Hashtbl.t =
       match Hashtbl.find_opt macro_table addr with
@@ -52,14 +54,6 @@ class forest =
         fm.macros |> List.iter @@ fun (name, (xs, body)) -> 
         let clo = Clo (Env.empty, xs, body) in 
         Hashtbl.add macros (User name) clo
-      end;
-      begin 
-        fm.taxon |> Option.iter @@ fun taxon ->
-        Tbl.add taxa scope taxon
-      end;
-      begin 
-        fm.title |> Option.iter @@ fun title -> 
-        Tbl.add titles scope title
       end
 
     method private expand_imports : unit =
@@ -75,7 +69,6 @@ class forest =
       function
       | Sem.Text _ -> ()
       | Sem.Transclude addr ->
-        (* Format.eprintf "processing transclusion of %s@." addr; *)
         Gph.add_edge vertical addr scope
       | Sem.Link {title; addr} ->
         self#process_nodes scope title;
@@ -92,21 +85,22 @@ class forest =
     method private process_nodes scope : Sem.t -> unit = 
       List.iter @@ self#process_node scope
 
-    method private expand_tree addr tree = 
+    method private expand_tree addr (doc : Expr.doc) = 
+      let fm, tree = doc in
       let globals = self#global_resolver addr in
       let body = Expander.expand globals Env.empty tree in
       let title =
-        match Tbl.find_opt titles addr with
+        match fm.title with
         | None -> [Sem.Text addr]
         | Some title -> Expander.expand globals Env.empty title
       in
-      Tbl.add trees addr {title; body; taxon = Tbl.find_opt taxa addr};
+      Tbl.add trees addr {title; body; taxon = fm.taxon};
 
     method private expand_trees : unit =
       self#expand_imports;
       let rec loop () =
         match Queue.take expansion_queue with 
-        | addr, (_, tree) -> self#expand_tree addr tree; loop () 
+        | addr, doc -> self#expand_tree addr doc; loop () 
         | exception Queue.Empty -> ()
       in 
       loop ()

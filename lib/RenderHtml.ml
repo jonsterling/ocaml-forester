@@ -53,7 +53,7 @@ let rec render_node (env : env) (scope : addr) : Sem.node -> printer =
     TP.contents @@
     TP.seq
       [TP.text l;
-       RenderMathMode.render_nodes bdy;
+       RenderMathMode.render bdy;
        TP.text r]
   | Sem.Link {title; addr} ->
     let url = env#route addr in
@@ -65,7 +65,10 @@ let rec render_node (env : env) (scope : addr) : Sem.node -> printer =
   | Sem.Transclude addr ->
     env#transclude addr
   | Sem.EmbedTeX bdy ->
-    let code = RenderMathMode.Printer.contents @@ RenderMathMode.render_nodes bdy in
+    let code = 
+      RenderMathMode.Printer.contents @@ 
+      RenderMathMode.render bdy 
+    in
     let hash = TeXHash.hash code in
     env#enqueue_svg ~name:hash ~source:code;
     let path = Format.sprintf "resources/%s.svg" hash in
