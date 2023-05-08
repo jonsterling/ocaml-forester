@@ -61,9 +61,9 @@ struct
 
 
   let run cmd args =
+    let cmd' = String.concat " " @@ cmd :: args in
     let ic, oc, ec as proc = 
-      let cmd' = String.concat " " @@ cmd :: args in
-      Format.eprintf "Running %s@." cmd';
+      (* Format.eprintf "Running %s@." cmd'; *)
       Unix.open_process_full cmd' (Unix.environment ())
     in
 
@@ -77,8 +77,8 @@ struct
     match status_code s with 
     | 0 -> () 
     | code -> 
-      Format.eprintf "%s" (Buffer.contents err_buf);
-      raise @@ Error code
+      failwith @@ 
+      Format.sprintf "ERROR RUNNING [%s]: %s" cmd' (Buffer.contents err_buf);
 end
 
 let copy_file ~source ~dest =

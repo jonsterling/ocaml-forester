@@ -18,7 +18,7 @@ end
 let rec render_node : Sem.node -> Printer.t =
   function 
   | Sem.Text txt -> 
-    Printer.trimmedText txt
+    Printer.text txt
   | Sem.Math xs -> 
     render_nodes xs
   | Sem.Tag (name, attrs, args) -> 
@@ -39,7 +39,7 @@ and render_tag name attrs args =
      render_args args]
 
 and render_nodes xs =
-  Printer.iter render_node xs
+  Printer.iter ~sep:Printer.space render_node xs
 
 and render_attrs (attrs : Sem.attr list) : Printer.t = 
   match List.length attrs with 

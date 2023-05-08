@@ -9,9 +9,9 @@
 }
 
 let digit = ['0'-'9']
-let alpha = ['a'-'z' 'A'-'Z' '_']
+let alpha = ['a'-'z' 'A'-'Z']
 let int = '-'? digit+  
-let macro = '\\' (alpha) (alpha|digit|'_'|'-')*
+let macro = '\\' (alpha) (alpha|digit|'-')*
 let addr = (alpha) (alpha|digit|'_'|'-')* 
 let whitespace = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
@@ -19,10 +19,17 @@ let text = [^ '#' '\\' '{' '}' '[' ']' '(' ')' '`' '\n']+
  
 rule token =
   parse
-  | '#' { Parser.MATH }
+  | "#{" { Parser.HASH_LBRACE }
   | "\\\\" { Parser.MACRO {|\|} }
-  | "\\," { Parser.MACRO {|\,|} }
-  | "\\;" { Parser.MACRO {|\;|} }
+  | "\\," { Parser.MACRO {|,|} }
+  | "\\_" { Parser.MACRO {|_|} }
+  | "\\;" { Parser.MACRO {|;|} }
+  | "\\#" { Parser.MACRO {|#|} }
+  | "\\{" { Parser.MACRO {|{|} }
+  | "\\}" { Parser.MACRO {|}|} }
+  | "\\[" { Parser.MACRO {|[|} }
+  | "\\]" { Parser.MACRO {|]|} }
+  | "\\ " { Parser.MACRO {| |} }
   | "\\title" { Parser.TITLE }
   | "\\taxon" { Parser.TAXON }
   | "\\import" { Parser.IMPORT }
@@ -30,6 +37,7 @@ rule token =
   | "\\let" { Parser.LET }
   | "\\tex" { Parser.TEX }
   | "\\transclude" { Parser.TRANSCLUDE }
+  | "#" { Parser.TEXT "#" }
   | macro { macro (Lexing.lexeme lexbuf) }
   | '{' { Parser.LBRACE }
   | '}' { Parser.RBRACE }

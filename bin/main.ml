@@ -25,7 +25,7 @@ let parse_file filename =
 let process_file forest filename =
   if Filename.extension filename = ".tree" then 
     let addr = Filename.chop_extension @@ Filename.basename filename in
-    Format.printf "Processing %s\n" addr;
+    (* Format.printf "Processing %s\n" addr; *)
     forest#plant_tree addr @@ 
     parse_file filename
 

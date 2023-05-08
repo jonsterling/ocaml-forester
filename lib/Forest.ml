@@ -75,7 +75,7 @@ class forest =
       function
       | Sem.Text _ -> ()
       | Sem.Transclude addr ->
-        Format.eprintf "processing transclusion of %s@." addr;
+        (* Format.eprintf "processing transclusion of %s@." addr; *)
         Gph.add_edge vertical addr scope
       | Sem.Link {title; addr} ->
         title |> Option.iter @@ self#process_nodes scope;
@@ -135,6 +135,7 @@ class forest =
             RenderHtml.render_doc self addr doc
           | exception e ->
             Format.eprintf "Transclusion error: failed to find tree with address %s@." addr;
+            flush_all ();
             raise e
 
         method enqueue_svg ~name ~source = 
