@@ -10,8 +10,7 @@ let pp_pos fmt pos =
 let parse_channel filename ch =
   let lexbuf = Lexing.from_channel ch in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = filename };
-  try Parser.main Lexer.token lexbuf
-  with 
+  try Parser.main Lexer.token lexbuf with 
   | Parser.Error -> 
     failwith @@ Format.asprintf "Parse error at %a" pp_pos lexbuf.lex_curr_p
   | Lexer.SyntaxError err -> 
