@@ -15,7 +15,7 @@ let parse_channel filename ch =
   | Parser.Error -> 
     failwith @@ Format.asprintf "Parse error at %a" pp_pos lexbuf.lex_curr_p
   | Lexer.SyntaxError err -> 
-    failwith @@  Format.asprintf "Lexing error at %a : %s" pp_pos lexbuf.lex_curr_p err
+    failwith @@ Format.asprintf "Lexing error at %a : %s" pp_pos lexbuf.lex_curr_p err
 
 let parse_file filename = 
   let ch = open_in filename in 
