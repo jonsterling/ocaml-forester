@@ -82,7 +82,7 @@ class forest =
         Gph.add_edge horizontal addr scope
       | Sem.Tag (_, _, xs) ->
         xs |> List.iter @@ self#process_nodes scope
-      | Sem.InlineMath x | Sem.DisplayMath x ->
+      | Sem.Math (_, x) ->
         self#process_nodes scope x
       | Sem.EmbedTeX x -> 
         self#process_nodes scope x

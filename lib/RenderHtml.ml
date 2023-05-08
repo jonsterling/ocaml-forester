@@ -42,22 +42,19 @@ let rec render_node (env : env) (scope : addr) : Sem.node -> printer =
   function
   | Sem.Text txt ->
     Printer.text txt
-  | Sem.InlineMath bdy ->
+  | Sem.Math (mode, bdy) ->
+    let l, r = 
+      match mode with 
+      | Inline -> "\\(", "\\)"
+      | Display -> "\\[", "\\]"
+    in 
     let module TP = RenderTeX.Printer in
     Printer.text @@
     TP.contents @@
     TP.seq
-      [TP.text "\\(";
+      [TP.text l;
        RenderTeX.render_nodes bdy;
-       TP.text "\\)"]
-  | Sem.DisplayMath bdy ->
-    let module TP = RenderTeX.Printer in
-    Printer.text @@
-    TP.contents @@
-    TP.seq
-      [TP.text "\\[";
-       RenderTeX.render_nodes bdy;
-       TP.text "\\]"]
+       TP.text r]
   | Sem.Link {title; addr} ->
     let url = env#route addr in
     let title = render env scope title in

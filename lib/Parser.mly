@@ -21,9 +21,9 @@ node:
 | expr = parens(expr)
   { Expr.Group (Parens, expr) }
 | HASH_LBRACE expr = expr RBRACE
-  { Expr.InlineMath expr }
+  { Expr.Math (Inline, expr) }
 | HASH_HASH_LBRACE expr = expr RBRACE
-  { Expr.DisplayMath expr }
+  { Expr.Math (Display, expr) }
 | TRANSCLUDE addr = braces(TEXT)
   { Expr.Transclude addr }
 | tag = MACRO 

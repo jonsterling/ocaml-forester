@@ -19,7 +19,7 @@ let rec render_node : Sem.node -> Printer.t =
   function 
   | Sem.Text txt -> 
     Printer.text txt
-  | Sem.InlineMath xs | Sem.DisplayMath xs -> 
+  | Sem.Math(_, xs) ->
     render_nodes xs
   | Sem.Tag (name, attrs, args) -> 
     render_tag name attrs args

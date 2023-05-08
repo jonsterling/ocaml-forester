@@ -4,14 +4,15 @@ type addr = string
 type delim = Braces | Squares | Parens
 [@@deriving show]
 
+type math_mode = Inline | Display
+[@@deriving show]
 
 module Expr = 
 struct 
   type node = 
     | Text of string 
     | Group of delim * t
-    | InlineMath of t
-    | DisplayMath of t
+    | Math of math_mode * t
     | Tag of string
     | Transclude of string
     | TeX of t
@@ -44,8 +45,7 @@ struct
     | Transclude of addr 
     | Link of {addr : addr; title : t}
     | Tag of string * attr list * t list
-    | InlineMath of t
-    | DisplayMath of t
+    | Math of math_mode * t
     | EmbedTeX of t
     | Group of delim * t
   [@@deriving show]
@@ -67,7 +67,6 @@ struct
 
   and map_text (f : string -> string) : t -> t =
     List.map @@ node_map_text f
-
 
 end
 
