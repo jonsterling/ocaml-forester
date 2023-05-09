@@ -2,14 +2,7 @@ open Types
 
 module T = Domainslib.Task
 
-module Addr =
-struct
-  type t = addr
-  let compare = compare
-  let hash = Hashtbl.hash
-  let equal = (=)
-end
-
+module Addr = String
 module Tbl = Hashtbl.Make (Addr)
 module Gph = Graph.Imperative.Digraph.Concrete (Addr)
 module Topo = Graph.Topological.Make (Gph)
