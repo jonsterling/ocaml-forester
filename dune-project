@@ -18,4 +18,4 @@
 (package
  (name forester)
  (synopsis "A tool for tending mathematical forests")
- (depends ocaml dune xmlm ppx_deriving domainslib))
+ (depends ocamlgraph ocaml dune xmlm ppx_deriving domainslib))
