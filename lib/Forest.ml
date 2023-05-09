@@ -186,7 +186,11 @@ class forest ~size =
       begin 
         Sys.readdir "assets" |> Array.iter @@ fun basename ->
         let fp = Format.sprintf "assets/%s" basename in
-        if not @@ Sys.is_directory fp then 
+        if Sys.is_directory fp then 
+          failwith @@ 
+          Format.sprintf "Expected flat directory structure in 'assets' but found '%s'" 
+            basename
+        else
           Shell.copy_file_to_dir ~source:fp ~dest_dir:"output"
       end;
 
