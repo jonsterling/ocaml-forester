@@ -100,13 +100,11 @@ class forest ~size =
     method private expand_trees : unit =
       self#expand_imports;
       let rec loop () =
-        match Queue.take expansion_queue with 
-        | addr, doc -> 
-          let globals = self#global_resolver addr in
-          let doc = expand_tree globals addr doc in
-          Tbl.add trees addr doc;
-          loop () 
-        | exception Queue.Empty -> ()
+        Queue.take_opt expansion_queue |> Option.iter @@ fun (addr, doc) ->
+        let globals = self#global_resolver addr in
+        let doc = expand_tree globals addr doc in
+        Tbl.add trees addr doc;
+        loop () 
       in 
       loop ()
 
