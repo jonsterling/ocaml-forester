@@ -1,13 +1,14 @@
 open Types
 
 type printer = Xmlm.output -> unit
+type env = RenderEnv.t
 
-class type env =
-  object
-    method route : addr -> string
-    method get_doc : addr -> Sem.doc
-    method enqueue_svg : name:string -> source:string -> unit
-  end
+type part = 
+  | Frontmatter
+  | Mainmatter 
+  | Backmatter
+
+type cfg = {part : part}
 
 module Printer =
 struct
@@ -37,7 +38,7 @@ struct
     bdy out
 end
 
-let rec render_node (env : env) (scope : addr) : Sem.node -> printer =
+let rec render_node ~cfg (env : env) : Sem.node -> printer =
   function
   | Sem.Text txt ->
     Printer.text txt
@@ -56,14 +57,23 @@ let rec render_node (env : env) (scope : addr) : Sem.node -> printer =
        TP.text r]
   | Sem.Link {title; addr} ->
     let url = env#route addr in
-    let title = render env scope title in
+    let title = render ~cfg env title in
     Html.tag "a" ["href", url; "class", "local"] [title]
   | Sem.Tag (name, attrs, xs) ->
     Html.tag name attrs
-      [xs |> Printer.iter ~sep:Printer.space (render env scope)]
+      [xs |> Printer.iter ~sep:Printer.space (render ~cfg env)]
   | Sem.Transclude addr ->
-    let doc = env#get_doc addr in 
-    render_doc env addr doc
+    begin
+      let doc = env#get_doc addr in 
+      match cfg.part with 
+      | Mainmatter -> 
+        render_doc ~cfg env doc
+      | _ -> 
+        Html.tag "div" ["class", "cutout"] 
+          [Printer.text "… ";
+           render ~cfg env doc.title;
+           Printer.text " …"]
+    end
   | Sem.EmbedTeX bdy ->
     let code = 
       RenderMathMode.Printer.contents @@ 
@@ -83,13 +93,13 @@ let rec render_node (env : env) (scope : addr) : Sem.node -> printer =
     in 
     Printer.seq
       [Printer.text l;
-       render env scope bdy;
+       render ~cfg env bdy;
        Printer.text r]
 
-and render (env : env) (scope : addr) : Sem.t -> printer =
-  Printer.iter (render_node env scope)
+and render ~cfg (env : env) : Sem.t -> printer =
+  Printer.iter (render_node ~cfg env)
 
-and render_doc (env : env) (scope : addr) (doc : Sem.doc) : printer =
+and render_doc ~cfg (env : env) (doc : Sem.doc) : printer =
   let module TP = RenderMathMode.Printer in
   let heading_content =
     match doc.taxon with 
@@ -98,19 +108,45 @@ and render_doc (env : env) (scope : addr) (doc : Sem.doc) : printer =
         [Printer.text @@ StringUtil.title_case taxon;
          Printer.seq 
            [Printer.text "(";
-            render env scope doc.title;
+            render ~cfg env doc.title;
             Printer.text ")"]]
     | None ->
-      render env scope @@ 
+      render ~cfg env @@ 
       Sem.map_text StringUtil.title_case doc.title 
   in
+  let details_attrs =
+    match cfg.part with 
+    | Mainmatter -> ["open", ""]
+    | _ -> []
+  in
   Html.tag "section" ["class", "block"]
-    [Html.tag "details" ["open","true"]
+    [Html.tag "details" details_attrs
        [Html.tag "summary" []
           [Html.tag "header" []
              [Html.tag "h1" [] [heading_content]]];
         Html.tag "div" ["class", "post-content"]
-          [render env scope doc.body]]]
+          [render ~cfg env doc.body]]]
+
+
+let render_links_section (env : env) (heading : string) (docs : Sem.doc list): printer = 
+  match docs with 
+  | [] -> Printer.nil
+  | docs -> 
+    let inner = 
+      docs |> Printer.iter @@
+      render_doc ~cfg:{part = Backmatter} env
+    in
+    Html.tag "section" [] 
+      [Html.tag "h4" [] [Printer.text heading];
+       inner]
+
+let render_backmatter (env : env) (scope : addr) : printer = 
+  Printer.seq
+    [render_links_section env "Context" @@ env#get_parents scope;
+     render_links_section env "Related" @@ env#get_links scope;
+     render_links_section env "Backlinks" @@ env#get_backlinks scope]
+
+
 
 module KaTeX =
 struct
@@ -150,7 +186,7 @@ let render_doc_page (env : env) (scope : addr) (doc : Sem.doc) : printer =
   Html.with_dtd @@
   Html.tag "html" []
     [Html.tag "head" []
-       [Html.tag "title" [] [render env scope doc.title];
+       [Html.tag "title" [] [render ~cfg:{part = Frontmatter} env doc.title];
         Html.tag "link"
           ["rel", "stylesheet";
            "href", "style.css"]
@@ -160,4 +196,6 @@ let render_doc_page (env : env) (scope : addr) (doc : Sem.doc) : printer =
            "href", "https://fonts.googleapis.com/css2?family=Inria+Sans:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&amp;display=swap"]
           [];
         KaTeX.prelude];
-     Html.tag "body" [] [render_doc env scope doc]]
+     Html.tag "body" [] 
+       [render_doc ~cfg:{part = Mainmatter} env doc;
+        render_backmatter env scope]]

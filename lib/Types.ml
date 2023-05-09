@@ -64,6 +64,7 @@ struct
   type doc = 
     {title : t;
      taxon : string option;
+     addr : addr;
      body : t}
 
   let rec node_map_text (f : string -> string) : node -> node =

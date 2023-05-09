@@ -16,7 +16,9 @@ let expand_tree globals addr (doc : Expr.doc) =
     | None -> [Sem.Text addr]
     | Some title -> Expander.expand globals Env.empty title
   in
-  Sem.{title; body; taxon = fm.taxon};
+  Sem.{title; body; addr; taxon = fm.taxon}
+
+
 
 class forest ~size =
   object(self)
@@ -33,6 +35,48 @@ class forest ~size =
 
     val macro_table : (addr, (Symbol.t, clo) Hashtbl.t) Hashtbl.t = 
       Hashtbl.create size
+
+    method private render_env : RenderHtml.env =
+      object(self)
+        method route addr =
+          addr ^ ".html"
+
+        method get_doc addr = 
+          match Tbl.find trees addr with 
+          | doc -> doc
+          | exception Not_found -> 
+            failwith @@ Format.sprintf "render_env: could not get doc with address %s" addr
+
+        method enqueue_svg ~name ~source = 
+          if not @@ Hashtbl.mem svg_queue name then
+            Hashtbl.add svg_queue name source
+
+        (* TODO: sort by dates once we have them *)
+        method private get_sorted_trees addrs : Sem.doc list = 
+          let unsorted =           
+            addrs |> List.concat_map @@ fun addr ->
+            match Tbl.find_opt trees addr with 
+            | Some doc -> [doc]
+            | None -> []
+          in
+          let peek_title doc = 
+            match Sem.(doc.title) with 
+            | Sem.Text txt :: _ -> txt
+            | _ -> doc.addr
+          in
+          let compare_doc u v = String.compare (peek_title u) (peek_title v) in
+          List.sort compare_doc unsorted
+
+        method get_backlinks scope =
+          self#get_sorted_trees @@ Gph.succ link_graph scope
+
+        method get_links scope = 
+          self#get_sorted_trees @@ Gph.pred link_graph scope
+
+        method get_parents scope =
+          self#get_sorted_trees @@ Gph.succ transclusion_graph scope
+
+      end
 
     method private get_macros (addr : addr) : (Symbol.t, clo) Hashtbl.t =
       match Hashtbl.find_opt macro_table addr with
@@ -106,22 +150,6 @@ class forest ~size =
       trees |> Tbl.iter @@ fun addr Sem.{body; title; _} ->
       self#analyze_nodes addr body;
       self#analyze_nodes addr title
-
-    method private render_env : RenderHtml.env =
-      object(self)
-        method route addr =
-          addr ^ ".html"
-
-        method get_doc addr = 
-          match Tbl.find trees addr with 
-          | doc -> doc
-          | exception Not_found -> 
-            failwith @@ Format.sprintf "render_env: could not get doc with address %s" addr
-
-        method enqueue_svg ~name ~source = 
-          if not @@ Hashtbl.mem svg_queue name then
-            Hashtbl.add svg_queue name source
-      end
 
     method plant_tree addr (doc : Expr.doc) : unit =
       assert (not frozen);
