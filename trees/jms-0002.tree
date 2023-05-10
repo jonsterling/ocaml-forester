@@ -1,0 +1,16 @@
+\title{A subtree}
+\date{2023-05-11}
+\author{jonsterling}
+
+This text is in the subree. [A link](jms-0001).
+
+\tex{
+  \DiagramSquare{
+    nw = A,
+    ne = B,
+    sw = C,
+    se = D,
+    height = 1.5cm,
+    width = 1.5cm,
+  }
+}
