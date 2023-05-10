@@ -140,6 +140,21 @@ and render_doc_authors ~cfg (env : env) (doc : Sem.doc) =
     Html.tag "address" ["class", "author"] 
       [authors]
 
+and render_doc_metadata ~cfg (env : env) (doc : Sem.doc) = 
+  let date = 
+    match doc.date with 
+    | None -> Printer.nil
+    | Some date -> 
+      Printer.seq
+        [Html.tag "span" ["class", "date"] 
+           [Printer.text @@ Format.asprintf "%a" Date.pp_human date];
+         Printer.text " · "]
+  in
+  let authors = render_doc_authors ~cfg env doc in
+  Html.tag "div" ["class", "metadata"] 
+    [date;
+     render_doc_authors ~cfg env doc]
+
 and render_doc ~cfg (env : env) (doc : Sem.doc) : printer =
   let module TP = RenderMathMode.Printer in
   let details_attrs =
@@ -152,7 +167,7 @@ and render_doc ~cfg (env : env) (doc : Sem.doc) : printer =
        [Html.tag "summary" []
           [Html.tag "header" []
              [render_doc_title ~cfg env doc;
-              render_doc_authors ~cfg env doc]];
+              render_doc_metadata ~cfg env doc]];
         Html.tag "div" ["class", "tree-content"]
           [render ~cfg env doc.body]]]
 

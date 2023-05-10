@@ -22,8 +22,12 @@ body {
   line-height: 1.5em;
 }
 
-footer address, .tree-content address {
+footer .metadata, .tree-content .metadata {
   display: none
+}
+
+.metadata>address {
+  display: inline;
 }
 
 @media only screen and (max-width: 999px) {

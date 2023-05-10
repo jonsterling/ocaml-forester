@@ -31,6 +31,7 @@ struct
      imports : addr list;
      authors : addr list;
      tags : addr list;
+     date: Date.t option;
      macros : (string * macro) list}
   [@@deriving show]
 
@@ -65,6 +66,7 @@ struct
     {title : t;
      taxon : string option;
      authors : addr list;
+     date: Date.t option;
      addr : addr;
      body : t}
 

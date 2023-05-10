@@ -49,6 +49,7 @@ rule token =
   | "\\taxon" { return lexbuf @@ Parser.TAXON }
   | "\\author" { return lexbuf @@ Parser.AUTHOR }
   | "\\tag" { return lexbuf @@ Parser.TAG }
+  | "\\date" { return lexbuf @@ Parser.DATE }
   | "\\import" { return lexbuf @@ Parser.IMPORT }
   | "\\def" { return lexbuf @@ Parser.DEF }
   | "\\let" { return lexbuf @@ Parser.LET }

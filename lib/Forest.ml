@@ -16,7 +16,7 @@ let expand_tree globals addr (doc : Expr.doc) =
     | None -> [Sem.Text addr]
     | Some title -> Expander.expand globals Env.empty title
   in
-  Sem.{title; body; addr; taxon = fm.taxon; authors = fm.authors}
+  Sem.{title; body; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date}
 
 class forest ~size =
   object(self)

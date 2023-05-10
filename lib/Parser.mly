@@ -18,6 +18,13 @@
         {fm with taxon = Some taxon}
       | _ -> 
         failwith "Cannot set taxon twice"
+
+    let date str =
+      function
+      | ({date = None; _} as fm) ->
+        {fm with date = Some (Date.parse str)}
+      | _ -> 
+        failwith "Cannot set title twice"
     
     let import addr fm = 
       {fm with imports = addr :: fm.imports}
@@ -34,13 +41,13 @@
       
     let fold frontlets = 
       let open Expr in
-      let init = {title = None; taxon = None; imports = []; macros = []; authors = []; tags = []} in
+      let init = {title = None; taxon = None; date = None; imports = []; macros = []; authors = []; tags = []} in
       List.fold_right Fun.id frontlets init
   end
 %}
 
 %token <string> TEXT FUN
-%token TITLE IMPORT DEF LET TEX TRANSCLUDE TAXON AUTHOR TAG
+%token TITLE IMPORT DEF LET TEX TRANSCLUDE TAXON AUTHOR TAG DATE
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token EOF
 
@@ -77,6 +84,7 @@ let frontlet :=
 | TAXON; ~ = txt_arg; <Frontlet.taxon>
 | IMPORT; ~ = txt_arg; <Frontlet.import>
 | AUTHOR; ~ = txt_arg; <Frontlet.author>
+| DATE; ~ = txt_arg; <Frontlet.date>
 | DEF; ~ = fun_spec; <Frontlet.def>
 | TAG; ~ = txt_arg; <Frontlet.tag>
 
