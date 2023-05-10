@@ -1,31 +1,49 @@
-type t = {yyyy : int; mm : int; dd : int}
+type t = {yyyy : int; mm : int option; dd : int option}
 
-let to_seconds (date : t) : float = 
-  fst @@ 
-  Unix.mktime 
-    {Unix.tm_sec=0;
-     tm_min=0;
-     tm_hour=0;
-     tm_mday=date.dd;
-     tm_mon=date.mm-1;
-     tm_year=date.yyyy-1900;
-     tm_wday=0;
-     tm_yday=0;
-     tm_isdst=false}
+(* approximate, only for sorting *)
+let to_int (date : t) : int = 
+  let dd = Option.value ~default:1 date.dd in 
+  let mm = Option.value ~default:1 date.mm in 
+  date.yyyy * 365 + mm * 30 + dd
 
 let compare (d0 : t) (d1 : t) = 
-  compare (to_seconds d0) (to_seconds d1)
+  Int.compare (to_int d0) (to_int d1)
 
-let parse str = 
-  try 
-    Scanf.sscanf str "%04d-%02d-%02d" @@ fun yyyy mm dd ->
-    {yyyy; mm; dd}
-  with _ -> 
+let parse_date str = 
+  match String.split_on_char '-' str with 
+  | yyyy :: rest -> 
+    let yyyy = int_of_string yyyy in 
+    begin
+      match rest with 
+      | mm :: rest -> 
+        let mm = Some (int_of_string mm) in 
+        begin
+          match rest with
+          | [dd] -> 
+            let dd = Some (int_of_string dd) in 
+            {yyyy; mm; dd}
+          | _ -> 
+            {yyyy; mm; dd = None}
+        end
+      | _ ->
+        {yyyy; mm = None; dd = None}
+    end
+  | _ ->
+    failwith @@ Format.sprintf "Invalid date string: %s" str
+
+let parse str =
+  match String.split_on_char 'T' str with 
+  | [date] -> parse_date date
+  | date :: _ -> parse_date date
+  | _ -> 
     failwith @@ Format.sprintf "Invalid date string: %s" str
 
 let pp fmt date =
-  Format.fprintf fmt "%04d-%02d-%02d"
-    date.yyyy date.mm date.dd
+  Format.fprintf fmt "%04d" date.yyyy;
+  date.mm |> Option.iter @@ fun mm ->
+  Format.fprintf fmt "-%02d" mm;
+  date.dd |> Option.iter @@ fun dd ->
+  Format.fprintf fmt "-%02d" dd
 
 let pp_month fmt i = 
   Format.fprintf fmt "%s" @@ 
@@ -46,5 +64,12 @@ let pp_month fmt i =
     failwith @@ Format.sprintf "Invalid date: %i" i
 
 let pp_human fmt date =
-  Format.fprintf fmt "%a %i, %04d" 
-    pp_month date.mm date.dd date.yyyy
+  match date.mm with 
+  | None ->
+    Format.fprintf fmt "%04d" date.yyyy
+  | Some mm ->
+    match date.dd with 
+    | None ->
+      Format.fprintf fmt "%a %04d" pp_month mm date.yyyy
+    | Some dd -> 
+      Format.fprintf fmt "%a %i, %04d" pp_month mm dd date.yyyy
