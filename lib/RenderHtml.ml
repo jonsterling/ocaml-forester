@@ -132,25 +132,37 @@ and render_doc_title ~cfg (env : env) (doc : Sem.doc) =
   in
   Html.tag "h1" [] [content; link]
 
+and render_author ~cfg (env : env) (author : string) = 
+  (* If the author string is an address to a biographical page, then link to it *)
+  match env#get_doc author with 
+  | Some bio -> 
+    let url = env#route bio.addr in
+    Html.tag "a" 
+      ["href", url; "class", "local"; "rel", "author"] 
+      [render ~cfg env bio.title]
+  | None -> 
+    Printer.text author
+
 and render_doc_authors ~cfg (env : env) (doc : Sem.doc) = 
   match doc.authors with 
   | [] -> Printer.nil 
   | authors ->
+    let comma = Printer.text ", " in
+
     let authors = 
-      let comma = Printer.text ", " in
-      authors |> Printer.iter ~sep:comma @@ fun author ->
-      (* If the author string is an address to a biographical page, then link to it *)
-      match env#get_doc author with 
-      | Some bio -> 
-        let url = env#route bio.addr in
-        Html.tag "a" 
-          ["href", url; "class", "local"; "rel", "author"] 
-          [render ~cfg env bio.title]
-      | None -> 
-        Printer.text author
+      authors |> Printer.iter ~sep:comma @@ 
+      render_author ~cfg env
+    in
+    let contributors =
+      match env#get_contributors doc.addr with 
+      | [] -> Printer.nil
+      | contributors -> 
+        Printer.seq 
+          [Printer.text " with contributions from ";
+           contributors |> Printer.iter ~sep:comma @@ render_author ~cfg env]
     in
     Html.tag "address" ["class", "author"] 
-      [authors]
+      [authors; contributors]
 
 and render_doc_metadata ~cfg (env : env) (doc : Sem.doc) = 
   let date = 

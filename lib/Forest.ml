@@ -31,6 +31,7 @@ class forest ~size =
     val tag_graph : Gph.t = Gph.create ()
     val import_graph : Gph.t = Gph.create ()
     val author_pages : addr Tbl.t = Tbl.create 10
+    val contributors : addr Tbl.t = Tbl.create 100
 
     val macro_table : (addr, (Symbol.t, clo) Hashtbl.t) Hashtbl.t = 
       Hashtbl.create size
@@ -69,6 +70,34 @@ class forest ~size =
         method get_pages_authored scope = 
           self#get_sorted_trees @@ Tbl.find_all author_pages scope
 
+        method get_contributors scope = 
+          let module C =
+          struct
+            type t = string
+            let peek_name c =
+              match Tbl.find_opt trees c with
+              | Some doc -> 
+                begin 
+                  match doc.title with 
+                  | Sem.Text txt :: _ -> txt
+                  | _ -> c
+                end
+              | None -> c
+
+            let compare c0 c1 =
+              String.compare (peek_name c0) (peek_name c1)
+          end 
+          in
+          let module S = Set.Make (C) in
+          let doc = Tbl.find trees scope in
+          let authors = S.of_list doc.authors in
+          let contributors = S.of_list @@ Tbl.find_all contributors scope in
+          let proper_contributors = 
+            contributors |> S.filter @@ fun contr ->
+            not @@ S.mem contr authors
+          in
+          S.elements proper_contributors
+
       end
 
     method private get_macros (addr : addr) : (Symbol.t, clo) Hashtbl.t =
@@ -102,7 +131,7 @@ class forest ~size =
         Tbl.add author_pages author scope
       end
 
-    method private expand_imports : unit =
+    method private expand_transitive_imports : unit =
       import_graph |> Topo.iter @@ fun addr ->
       let macros = self#get_macros addr in
       let task addr' =
@@ -110,6 +139,14 @@ class forest ~size =
         Hashtbl.iter @@ Hashtbl.add macros
       in
       Gph.iter_pred task import_graph addr
+
+    method private expand_transitive_contributors : unit = 
+      transclusion_graph |> Topo.iter @@ fun addr -> 
+      let task addr' = 
+        let doc = Tbl.find trees addr' in
+        doc.authors |> List.iter @@ Tbl.add contributors addr
+      in 
+      Gph.iter_pred task transclusion_graph addr
 
     method private analyze_node scope : Sem.node -> unit =
       function
@@ -132,7 +169,7 @@ class forest ~size =
       List.iter @@ self#analyze_node scope
 
     method private expand_trees : unit =
-      self#expand_imports;
+      self#expand_transitive_imports;
       let rec loop () =
         Queue.take_opt expansion_queue |> Option.iter @@ fun (addr, doc) ->
         let globals = self#global_resolver addr in
@@ -144,9 +181,13 @@ class forest ~size =
 
     method private analyze_trees : unit =
       self#expand_trees;
-      trees |> Tbl.iter @@ fun addr Sem.{body; title; _} ->
-      self#analyze_nodes addr body;
-      self#analyze_nodes addr title
+      begin
+        trees |> Tbl.iter @@ fun addr Sem.{body; title; _} ->
+        self#analyze_nodes addr body;
+        self#analyze_nodes addr title
+      end;
+      self#expand_transitive_contributors;
+
 
     method plant_tree addr (doc : Expr.doc) : unit =
       assert (not frozen);
