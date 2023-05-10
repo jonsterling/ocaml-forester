@@ -110,15 +110,27 @@ and render_doc_title ~cfg (env : env) (doc : Sem.doc) =
     | Some taxon ->
       Printer.seq ~sep:Printer.space
         [Printer.text @@ StringUtil.title_case taxon;
-         Printer.seq 
-           [Printer.text "(";
-            render ~cfg env doc.title;
-            Printer.text ")"]]
+         match doc.title with 
+         | [] -> Printer.nil 
+         | _ ->
+           Printer.seq 
+             [Printer.text "(";
+              render ~cfg env doc.title;
+              Printer.text ")"]]
     | None ->
-      render ~cfg env @@ 
-      Sem.map_text StringUtil.title_case doc.title 
+      match doc.title with 
+      | [] -> 
+        Printer.text "Untitled tree"
+      | _ -> 
+        render ~cfg env @@
+        Sem.map_text StringUtil.title_case doc.title
   in
-  Html.tag "h1" [] [content]
+  let url = env#route doc.addr in
+  let link =
+    Html.tag "a" ["class", "slug"; "href", url] 
+      [Printer.text @@ Format.sprintf "[%s]" doc.addr]
+  in
+  Html.tag "h1" [] [content; link]
 
 and render_doc_authors ~cfg (env : env) (doc : Sem.doc) = 
   match doc.authors with 

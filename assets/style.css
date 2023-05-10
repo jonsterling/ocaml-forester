@@ -35,6 +35,7 @@ body {
     margin-top: 1em;
     margin-left: .5em;
     margin-right: .5em;
+    `
   }
 }
 
@@ -190,7 +191,7 @@ section+p {
 .slug, .doi {
   font-family: 'Inria Sans';
   color: gray;
-  font-weight: normal;
+  font-weight: 200;
 }
 
 .error {
