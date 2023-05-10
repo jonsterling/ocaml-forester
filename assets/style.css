@@ -26,6 +26,14 @@ h4 {
   margin-top: .5em;
 }
 
+pre,
+img,
+.katex-display,
+section,
+center {
+  overflow: scroll;
+}
+
 body {
   font-family: "Inria Sans";
   font-size: 12pt;
@@ -85,7 +93,7 @@ a.heading-link {
 details h1,
 details h2,
 details h3 {
-  font-size: 12pt;
+  font-size: 13pt;
   margin: 0 0 0 0;
   display: inline;
 }
