@@ -153,7 +153,7 @@ and render_doc ~cfg (env : env) (doc : Sem.doc) : printer =
           [Html.tag "header" []
              [render_doc_title ~cfg env doc;
               render_doc_authors ~cfg env doc]];
-        Html.tag "div" ["class", "post-content"]
+        Html.tag "div" ["class", "tree-content"]
           [render ~cfg env doc.body]]]
 
 
@@ -172,7 +172,8 @@ let render_links_section (env : env) (heading : string) (docs : Sem.doc list): p
 let render_backmatter (env : env) (scope : addr) : printer = 
   Html.tag "footer" []
     [Printer.seq
-       [render_links_section env "Context" @@ env#get_parents scope;
+       [render_links_section env "Contributions" @@ env#get_pages_authored scope;
+        render_links_section env "Context" @@ env#get_parents scope;
         render_links_section env "Related" @@ env#get_links scope;
         render_links_section env "Backlinks" @@ env#get_backlinks scope]]
 

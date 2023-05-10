@@ -30,6 +30,7 @@ class forest ~size =
     val link_graph : Gph.t = Gph.create ()
     val tag_graph : Gph.t = Gph.create ()
     val import_graph : Gph.t = Gph.create ()
+    val author_pages : addr Tbl.t = Tbl.create 10
 
     val macro_table : (addr, (Symbol.t, clo) Hashtbl.t) Hashtbl.t = 
       Hashtbl.create size
@@ -71,6 +72,9 @@ class forest ~size =
         method get_parents scope =
           self#get_sorted_trees @@ Gph.succ transclusion_graph scope
 
+        method get_pages_authored scope = 
+          self#get_sorted_trees @@ Tbl.find_all author_pages scope
+
       end
 
     method private get_macros (addr : addr) : (Symbol.t, clo) Hashtbl.t =
@@ -98,6 +102,10 @@ class forest ~size =
         fm.macros |> List.iter @@ fun (name, (xs, body)) -> 
         let clo = Clo (Env.empty, xs, body) in 
         Hashtbl.add macros (User name) clo
+      end;
+      begin 
+        fm.authors |> List.iter @@ fun author ->
+        Tbl.add author_pages author scope
       end
 
     method private expand_imports : unit =
@@ -148,7 +156,7 @@ class forest ~size =
 
     method plant_tree addr (doc : Expr.doc) : unit =
       assert (not frozen);
-      let frontmatter, body = doc in 
+      let frontmatter, body = doc in
       Gph.add_vertex transclusion_graph addr;
       Gph.add_vertex link_graph addr;
       Gph.add_vertex import_graph addr;

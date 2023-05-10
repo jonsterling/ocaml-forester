@@ -7,5 +7,6 @@ class type t =
     method get_backlinks : addr -> Sem.doc list 
     method get_links : addr -> Sem.doc list 
     method get_parents : addr -> Sem.doc list
+    method get_pages_authored : addr -> Sem.doc list
     method enqueue_svg : name:string -> source:string -> unit
   end

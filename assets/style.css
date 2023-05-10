@@ -22,6 +22,10 @@ body {
   line-height: 1.5em;
 }
 
+footer address, .tree-content address {
+  display: none
+}
+
 @media only screen and (max-width: 999px) {
   body {
     margin-top: 1em;
@@ -335,7 +339,7 @@ td.macro-doc {
   color: var(--secondary);
 }
 
-.post-content blockquote {
+.tree-content blockquote {
   border-inline-start: 1px solid var(--secondary);
 }
 
