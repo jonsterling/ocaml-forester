@@ -89,6 +89,12 @@ let rec render_node ~cfg (env : env) : Sem.node -> printer =
       [Printer.text l;
        render ~cfg env bdy;
        Printer.text r]
+  | Sem.Block (title, body) -> 
+    Html.tag "section" ["class", "block"]
+      [Html.tag "details" ["open", ""]
+         [Html.tag "summary" [] [render ~cfg env title];
+          render ~cfg env body]]
+
 
 and render_internal_link ~cfg env ~title ~addr = 
   let url = env#route addr in

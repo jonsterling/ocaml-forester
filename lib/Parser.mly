@@ -47,7 +47,7 @@
 %}
 
 %token <string> TEXT FUN
-%token TITLE IMPORT DEF LET TEX TRANSCLUDE TAXON AUTHOR TAG DATE
+%token TITLE IMPORT DEF LET TEX TRANSCLUDE TAXON AUTHOR TAG DATE BLOCK
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token EOF
 
@@ -71,6 +71,7 @@ let node :=
 | TRANSCLUDE; ~ = txt_arg; <Expr.Transclude>
 | LET; (~,~,~) = fun_spec; <Expr.Let>
 | TEX; ~ = arg; <Expr.EmbedTeX>
+| BLOCK; x = arg; y = arg; <Expr.Block>
 | ~ = FUN; <Expr.Tag>
 | ~ = TEXT; <Expr.Text>
 

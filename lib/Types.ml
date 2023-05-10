@@ -17,6 +17,7 @@ struct
     | Transclude of string
     | EmbedTeX of t
     | Let of string * string list * t
+    | Block of t * t
   [@@deriving show]
 
   and t = node list
@@ -58,6 +59,7 @@ struct
     | Math of math_mode * t
     | EmbedTeX of t
     | Group of delim * t
+    | Block of t * t
   [@@deriving show]
 
   and t = node list

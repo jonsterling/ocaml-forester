@@ -40,6 +40,9 @@ let rec expand (globals : globals) env : Expr.t -> Sem.t =
   | Expr.Let (name, xs, bdy) :: rest -> 
     let env' = Env.add (User name) (Clo (env, xs, bdy)) env in
     expand globals env' rest
+  | Expr.Block (title, body) :: rest -> 
+    Sem.Block (expand globals env title, expand globals env body)
+    :: expand globals env rest
 
 
 and expand_no_op globals env msg =

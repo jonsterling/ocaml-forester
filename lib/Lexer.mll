@@ -54,6 +54,7 @@ rule token =
   | "\\def" { return lexbuf @@ Parser.DEF }
   | "\\let" { return lexbuf @@ Parser.LET }
   | "\\tex" { return lexbuf @@ Parser.TEX }
+  | "\\block" { return lexbuf @@ Parser.BLOCK }
   | "\\transclude" { return lexbuf @@ Parser.TRANSCLUDE }
   | "#" { return lexbuf @@ Parser.TEXT "#" }
   | macro { return lexbuf @@ macro (Lexing.lexeme lexbuf) }

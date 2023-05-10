@@ -141,7 +141,7 @@ class forest ~size =
       Gph.iter_pred task import_graph addr
 
     method private expand_transitive_contributors : unit = 
-      transclusion_graph |> Topo.iter @@ fun addr -> 
+      transclusion_graph |> Topo.iter @@ fun addr ->
       let task addr' = 
         let doc = Tbl.find trees addr in
         begin
@@ -167,6 +167,9 @@ class forest ~size =
         self#analyze_nodes scope x
       | Sem.Group (_, x) ->
         self#analyze_nodes scope x
+      | Sem.Block (title, body) -> 
+        self#analyze_nodes scope title;
+        self#analyze_nodes scope body
 
     method private analyze_nodes scope : Sem.t -> unit = 
       List.iter @@ self#analyze_node scope
