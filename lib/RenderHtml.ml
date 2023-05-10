@@ -141,10 +141,11 @@ let render_links_section (env : env) (heading : string) (docs : Sem.doc list): p
        inner]
 
 let render_backmatter (env : env) (scope : addr) : printer = 
-  Printer.seq
-    [render_links_section env "Context" @@ env#get_parents scope;
-     render_links_section env "Related" @@ env#get_links scope;
-     render_links_section env "Backlinks" @@ env#get_backlinks scope]
+  Html.tag "footer" []
+    [Printer.seq
+       [render_links_section env "Context" @@ env#get_parents scope;
+        render_links_section env "Related" @@ env#get_links scope;
+        render_links_section env "Backlinks" @@ env#get_backlinks scope]]
 
 
 
@@ -187,6 +188,7 @@ let render_doc_page (env : env) (scope : addr) (doc : Sem.doc) : printer =
   Html.tag "html" []
     [Html.tag "head" []
        [Html.tag "title" [] [render ~cfg:{part = Frontmatter} env doc.title];
+        Html.tag "meta" ["name", "viewport"; "content", "width=device-width"] [];
         Html.tag "link"
           ["rel", "stylesheet";
            "href", "style.css"]
@@ -197,5 +199,6 @@ let render_doc_page (env : env) (scope : addr) (doc : Sem.doc) : printer =
           [];
         KaTeX.prelude];
      Html.tag "body" [] 
-       [render_doc ~cfg:{part = Mainmatter} env doc;
-        render_backmatter env scope]]
+       [Html.tag "article" []
+          [render_doc ~cfg:{part = Mainmatter} env doc;
+           render_backmatter env scope]]]
