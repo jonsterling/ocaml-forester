@@ -3,16 +3,26 @@
   --radius: 5px;
 }
 
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   line-height: 1.2;
   margin-bottom: 0;
 }
 
-h5, h6, p {
+h5,
+h6,
+p {
   margin-top: 0;
 }
 
-h1, h2, h3, h4 {
+h1,
+h2,
+h3,
+h4 {
   margin-top: .5em;
 }
 
@@ -22,8 +32,17 @@ body {
   line-height: 1.5em;
 }
 
-.tree-content .metadata {
+.tree-content .metadata,
+footer .metadata {
   display: none
+}
+
+footer>section {
+  margin-bottom: 1em;
+}
+
+footer h2 {
+  font-size: 13pt;
 }
 
 .metadata>address {
@@ -63,11 +82,9 @@ a.heading-link {
   box-shadow: none;
 }
 
-details>summary>h1 {
-  font-size: 1em;
-}
-
-details h1, details h2, details h3 {
+details h1,
+details h2,
+details h3 {
   font-size: 12pt;
   margin: 0 0 0 0;
   display: inline;
@@ -81,7 +98,8 @@ article>section>details>summary {
   list-style-type: none;
 }
 
-article>section>details>summary::marker, article>section>details>summary::-webkit-details-marker {
+article>section>details>summary::marker,
+article>section>details>summary::-webkit-details-marker {
   display: none;
 }
 
@@ -116,15 +134,8 @@ section+p {
   font-size: 1.2em;
 }
 
-.block, .cutout {
+.block {
   border-radius: var(--radius)
-}
-
-.cutout {
-  border-style: dashed;
-  border-width: 0.8pt;
-  padding: 3pt;
-  border-color: gray;
 }
 
 .block.splice {
@@ -166,14 +177,6 @@ section+p {
   border-color: rgba(255, 174, 69, 0.4);
 }
 
-.entry-content a:hover, .post-single a:hover {
-  background-color: rgba(0, 100, 255, 0.1);
-}
-
-.dark .entry-content a:hover, .dark .post-single a:hover {
-  background-color: rgba(255, 255, 255, 0.1);
-}
-
 .block>.block-uid {
   visibility: hidden;
   display: flex;
@@ -188,7 +191,8 @@ section+p {
   filter: invert(0.884);
 }
 
-.slug, .doi {
+.slug,
+.doi {
   font-family: 'Inria Sans';
   color: gray;
   font-weight: 200;
@@ -223,14 +227,11 @@ a.external {
   text-decoration: underline;
 }
 
-a.local, a.slug {
+a.local,
+a.slug {
   box-shadow: none;
   text-decoration: underline;
   text-decoration-style: dotted;
-}
-
-.first-entry .entry-content {
-  color: var(--content);
 }
 
 ninja-keys::part(ninja-action) {
@@ -253,7 +254,8 @@ table.macros td {
   vertical-align: baseline;
 }
 
-td.macro-name, td.macro-body {
+td.macro-name,
+td.macro-body {
   white-space: nowrap;
 }
 
@@ -346,6 +348,14 @@ td.macro-doc {
 
 .tree-content blockquote {
   border-inline-start: 1px solid var(--secondary);
+}
+
+.tree-content a:hover {
+  background-color: rgba(0, 100, 255, .1);
+}
+
+a {
+  color: black;
 }
 
 .taxon {

@@ -143,10 +143,13 @@ class forest ~size =
     method private expand_transitive_contributors : unit = 
       transclusion_graph |> Topo.iter @@ fun addr -> 
       let task addr' = 
-        let doc = Tbl.find trees addr' in
-        doc.authors |> List.iter @@ Tbl.add contributors addr
+        let doc = Tbl.find trees addr in
+        begin
+          doc.authors @ Tbl.find_all contributors addr |> List.iter @@ fun contributor ->
+          Tbl.add contributors addr' contributor
+        end
       in 
-      Gph.iter_pred task transclusion_graph addr
+      Gph.iter_succ task transclusion_graph addr
 
     method private analyze_node scope : Sem.node -> unit =
       function

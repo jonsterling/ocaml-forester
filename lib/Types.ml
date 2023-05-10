@@ -81,6 +81,7 @@ struct
      date: Date.t option;
      addr : addr;
      body : t}
+  [@@deriving show]
 
 
   module Doc =

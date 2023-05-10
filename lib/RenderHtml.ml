@@ -65,13 +65,8 @@ let rec render_node ~cfg (env : env) : Sem.node -> printer =
       match env#get_doc addr, cfg.part with 
       | None, _ -> 
         failwith @@ Format.sprintf "Failed to transclude non-existent tree with address '%s'" addr
-      | Some doc, Mainmatter -> 
-        render_doc ~cfg env doc
       | Some doc, _ -> 
-        Html.tag "div" ["class", "cutout"] 
-          [Printer.text "… ";
-           render ~cfg env doc.title;
-           Printer.text " …"]
+        render_doc ~cfg env doc
     end
   | Sem.EmbedTeX bdy ->
     let code = 
@@ -204,7 +199,7 @@ let render_links_section (env : env) (heading : string) (docs : Sem.doc list): p
       render_doc ~cfg:{part = Backmatter} env
     in
     Html.tag "section" ["class", "block"] 
-      [Html.tag "h4" [] [Printer.text heading];
+      [Html.tag "h2" [] [Printer.text heading];
        inner]
 
 let render_backmatter (env : env) (scope : addr) : printer = 

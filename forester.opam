@@ -14,7 +14,6 @@ depends: [
   "xmlm"
   "ppx_deriving"
   "domainslib"
-  "ISO8601"
   "odoc" {with-doc}
 ]
 build: [
