@@ -144,19 +144,18 @@ and render_author ~cfg (env : env) (author : string) =
     Printer.text author
 
 and render_doc_authors ~cfg (env : env) (doc : Sem.doc) = 
-  match doc.authors with 
-  | [] -> Printer.nil 
-  | authors ->
+  match doc.authors, env#get_contributors doc.addr with 
+  | [], [] -> Printer.nil 
+  | authors, contributors ->
     let comma = Printer.text ", " in
-
     let authors = 
       authors |> Printer.iter ~sep:comma @@ 
       render_author ~cfg env
     in
     let contributors =
-      match env#get_contributors doc.addr with 
-      | [] -> Printer.nil
-      | contributors -> 
+      match contributors with 
+      | [] -> Printer.nil 
+      | _ -> 
         Printer.seq 
           [Printer.text " with contributions from ";
            contributors |> Printer.iter ~sep:comma @@ render_author ~cfg env]
