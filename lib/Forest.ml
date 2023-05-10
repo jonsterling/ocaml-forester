@@ -16,9 +16,7 @@ let expand_tree globals addr (doc : Expr.doc) =
     | None -> [Sem.Text addr]
     | Some title -> Expander.expand globals Env.empty title
   in
-  Sem.{title; body; addr; taxon = fm.taxon}
-
-
+  Sem.{title; body; addr; taxon = fm.taxon; authors = fm.authors}
 
 class forest ~size =
   object(self)
@@ -41,11 +39,8 @@ class forest ~size =
         method route addr =
           addr ^ ".html"
 
-        method get_doc addr = 
-          match Tbl.find trees addr with 
-          | doc -> doc
-          | exception Not_found -> 
-            failwith @@ Format.sprintf "render_env: could not get doc with address %s" addr
+        method get_doc  = 
+          Tbl.find_opt trees
 
         method enqueue_svg ~name ~source = 
           if not @@ Hashtbl.mem svg_queue name then

@@ -47,6 +47,7 @@ rule token =
   | "\\ " { return lexbuf @@ Parser.FUN {| |} }
   | "\\title" { return lexbuf @@ Parser.TITLE }
   | "\\taxon" { return lexbuf @@ Parser.TAXON }
+  | "\\author" { return lexbuf @@ Parser.AUTHOR }
   | "\\tag" { return lexbuf @@ Parser.TAG }
   | "\\import" { return lexbuf @@ Parser.IMPORT }
   | "\\def" { return lexbuf @@ Parser.DEF }

@@ -22,18 +22,28 @@ body {
   line-height: 1.5em;
 }
 
-body {
+@media only screen and (max-width: 999px) {
+  body {
+    margin-top: 1em;
+    margin-left: .5em;
+    margin-right: .5em;
+  }
+}
+
+@media only screen and (min-width: 1000px) {
+  body {
+    margin-top: 2em;
+    margin-left: 2em;
+  }
+}
+
+article.container {
   max-width: 90ex;
-  margin-left: auto;
   margin-right: auto;
 }
 
 details>summary>header {
   display: inline;
-}
-
-nav>section {
-  margin-bottom: 0pt;
 }
 
 details>summary::marker {
@@ -106,14 +116,6 @@ section+p {
   border-width: 0.8pt;
   padding: 3pt;
   border-color: gray;
-}
-
-.post-content {
-  margin-bottom: .2em;
-}
-
-.post-footer {
-  margin-top: 2em;
 }
 
 .block.splice {

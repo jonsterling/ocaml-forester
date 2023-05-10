@@ -56,19 +56,18 @@ let rec render_node ~cfg (env : env) : Sem.node -> printer =
        RenderMathMode.render bdy;
        TP.text r]
   | Sem.Link {title; addr} ->
-    let url = env#route addr in
-    let title = render ~cfg env title in
-    Html.tag "a" ["href", url; "class", "local"] [title]
+    render_internal_link ~cfg env ~title ~addr
   | Sem.Tag (name, attrs, xs) ->
     Html.tag name attrs
       [xs |> Printer.iter ~sep:Printer.space (render ~cfg env)]
   | Sem.Transclude addr ->
     begin
-      let doc = env#get_doc addr in 
-      match cfg.part with 
-      | Mainmatter -> 
+      match env#get_doc addr, cfg.part with 
+      | None, _ -> 
+        failwith @@ Format.sprintf "Failed to transclude non-existent tree with address '%s'" addr
+      | Some doc, Mainmatter -> 
         render_doc ~cfg env doc
-      | _ -> 
+      | Some doc, _ -> 
         Html.tag "div" ["class", "cutout"] 
           [Printer.text "… ";
            render ~cfg env doc.title;
@@ -96,12 +95,17 @@ let rec render_node ~cfg (env : env) : Sem.node -> printer =
        render ~cfg env bdy;
        Printer.text r]
 
+and render_internal_link ~cfg env ~title ~addr = 
+  let url = env#route addr in
+  Html.tag "a" 
+    ["href", url; "class", "local"] 
+    [render ~cfg env title]
+
 and render ~cfg (env : env) : Sem.t -> printer =
   Printer.iter (render_node ~cfg env)
 
-and render_doc ~cfg (env : env) (doc : Sem.doc) : printer =
-  let module TP = RenderMathMode.Printer in
-  let heading_content =
+and render_doc_title ~cfg (env : env) (doc : Sem.doc) = 
+  let content =
     match doc.taxon with 
     | Some taxon ->
       Printer.seq ~sep:Printer.space
@@ -114,6 +118,30 @@ and render_doc ~cfg (env : env) (doc : Sem.doc) : printer =
       render ~cfg env @@ 
       Sem.map_text StringUtil.title_case doc.title 
   in
+  Html.tag "h1" [] [content]
+
+and render_doc_authors ~cfg (env : env) (doc : Sem.doc) = 
+  match doc.authors with 
+  | [] -> Printer.nil 
+  | authors ->
+    let authors = 
+      let comma = Printer.text ", " in
+      authors |> Printer.iter ~sep:comma @@ fun author ->
+      (* If the author string is an address to a biographical page, then link to it *)
+      match env#get_doc author with 
+      | Some bio -> 
+        let url = env#route bio.addr in
+        Html.tag "a" 
+          ["href", url; "class", "local"; "rel", "author"] 
+          [render ~cfg env bio.title]
+      | None -> 
+        Printer.text author
+    in
+    Html.tag "address" ["class", "author"] 
+      [authors]
+
+and render_doc ~cfg (env : env) (doc : Sem.doc) : printer =
+  let module TP = RenderMathMode.Printer in
   let details_attrs =
     match cfg.part with 
     | Mainmatter -> ["open", ""]
@@ -123,7 +151,8 @@ and render_doc ~cfg (env : env) (doc : Sem.doc) : printer =
     [Html.tag "details" details_attrs
        [Html.tag "summary" []
           [Html.tag "header" []
-             [Html.tag "h1" [] [heading_content]]];
+             [render_doc_title ~cfg env doc;
+              render_doc_authors ~cfg env doc]];
         Html.tag "div" ["class", "post-content"]
           [render ~cfg env doc.body]]]
 
@@ -136,7 +165,7 @@ let render_links_section (env : env) (heading : string) (docs : Sem.doc list): p
       docs |> Printer.iter @@
       render_doc ~cfg:{part = Backmatter} env
     in
-    Html.tag "section" [] 
+    Html.tag "section" ["class", "block"] 
       [Html.tag "h4" [] [Printer.text heading];
        inner]
 
@@ -198,7 +227,7 @@ let render_doc_page (env : env) (scope : addr) (doc : Sem.doc) : printer =
            "href", "https://fonts.googleapis.com/css2?family=Inria+Sans:ital,wght@0,300;0,400;0,700;1,300;1,400;1,700&amp;display=swap"]
           [];
         KaTeX.prelude];
-     Html.tag "body" [] 
-       [Html.tag "article" []
-          [render_doc ~cfg:{part = Mainmatter} env doc;
-           render_backmatter env scope]]]
+     Html.tag "body" [] [
+       Html.tag "article" ["class", "container"]
+         [render_doc ~cfg:{part = Mainmatter} env doc;
+          render_backmatter env scope]]]

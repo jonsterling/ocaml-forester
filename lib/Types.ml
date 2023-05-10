@@ -64,6 +64,7 @@ struct
   type doc = 
     {title : t;
      taxon : string option;
+     authors : addr list;
      addr : addr;
      body : t}
 
