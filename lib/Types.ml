@@ -62,14 +62,6 @@ struct
 
   and t = node list
 
-  type doc = 
-    {title : t;
-     taxon : string option;
-     authors : addr list;
-     date: Date.t option;
-     addr : addr;
-     body : t}
-
   let rec node_map_text (f : string -> string) : node -> node =
     function 
     | Text str -> Text (f str)
@@ -80,6 +72,43 @@ struct
 
   and map_text (f : string -> string) : t -> t =
     List.map @@ node_map_text f
+
+
+  type doc = 
+    {title : t;
+     taxon : string option;
+     authors : addr list;
+     date: Date.t option;
+     addr : addr;
+     body : t}
+
+
+  module Doc =
+  struct
+    type t = doc
+
+    let compare_for_sorting = 
+      let compare_addrs doc0 doc1 = 
+        String.compare doc0.addr doc1.addr
+      in
+      let compare_titles doc0 doc1 = 
+        match doc0.title, doc1.title with
+        | Text txt0 :: _, Text txt1 :: _ -> 
+          let c = String.compare txt0 txt1 in 
+          if c = 0 then compare_addrs doc0 doc1 else c
+        | Text _ :: _, _ -> -1
+        | _ -> compare_addrs doc0 doc1
+      in
+      let compare_dates doc0 doc1 = 
+        match doc0.date, doc1.date with 
+        | Some date0, Some date1 ->
+          let c = Date.compare date0 date1 in 
+          if c = 0 then compare_titles doc0 doc1 else - c
+        | Some date0, None -> -1
+        | _ -> compare_titles doc0 doc1
+      in 
+      compare_dates
+  end
 
 end
 

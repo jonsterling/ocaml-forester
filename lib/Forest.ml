@@ -55,13 +55,7 @@ class forest ~size =
             | Some doc -> [doc]
             | None -> []
           in
-          let peek_title doc = 
-            match Sem.(doc.title) with 
-            | Sem.Text txt :: _ -> txt
-            | _ -> doc.addr
-          in
-          let compare_doc u v = String.compare (peek_title u) (peek_title v) in
-          List.sort compare_doc unsorted
+          List.sort Sem.Doc.compare_for_sorting unsorted
 
         method get_backlinks scope =
           self#get_sorted_trees @@ Gph.succ link_graph scope
