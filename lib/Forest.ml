@@ -36,10 +36,10 @@ class forest ~size =
     val macro_table : (addr, (Symbol.t, clo) Hashtbl.t) Hashtbl.t = 
       Hashtbl.create size
 
-    method private render_env : RenderHtml.env =
+    method private render_env : RenderEnv.t =
       object(self)
         method route addr =
-          addr ^ ".html"
+          addr ^ ".xml"
 
         method get_doc  = 
           Tbl.find_opt trees
@@ -246,7 +246,7 @@ class forest ~size =
           let ch = open_out @@ "output/" ^ env#route addr in
           Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
           let out = Xmlm.make_output @@ `Channel ch in
-          RenderHtml.render_doc_page env addr doc out
+          RenderXml.render_doc_page env addr doc out
         end
       end;
 

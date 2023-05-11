@@ -5,6 +5,7 @@ type printer = Xmlm.output -> unit
 type env = RenderEnv.t
 
 type part = 
+  | Top 
   | Frontmatter
   | Mainmatter 
   | Backmatter
