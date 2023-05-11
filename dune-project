@@ -7,7 +7,7 @@
 (generate_opam_files true)
 
 (source
- (sourcehut jonsterling/ocaml-forester))
+ (github jonsterling/ocaml-forester))
 
 (authors "Jonathan Sterling")
 
