@@ -58,7 +58,13 @@ let rec render_node ~cfg (env : env) : Sem.node -> printer =
        RenderMathMode.render bdy;
        TP.text r]
   | Sem.Link {title; addr} ->
-    render_internal_link ~cfg env ~title ~addr
+    begin
+      match env#get_doc addr with 
+      | Some _ ->
+        render_internal_link ~cfg env ~title ~addr
+      | None -> 
+        render_external_link ~cfg env ~title ~url:addr
+    end
   | Sem.Tag (name, attrs, xs) ->
     Xml.tag name attrs
       [xs |> Printer.iter ~sep:Printer.space (render ~cfg env)]
@@ -103,6 +109,12 @@ and render_internal_link ~cfg env ~title ~addr =
   Xml.tag "a" 
     ["href", url; "class", "local"] 
     [render ~cfg env title]
+
+and render_external_link ~cfg env ~title ~url = 
+  Xml.tag "a" 
+    ["href", url; "class", "external"] 
+    [render ~cfg env title]
+
 
 and render ~cfg (env : env) : Sem.t -> printer =
   Printer.iter (render_node ~cfg env)
