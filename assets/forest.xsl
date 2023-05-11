@@ -4,7 +4,6 @@
   <xsl:output method="html" encoding="utf-8" indent="yes" doctype-public=""
     doctype-system="" />
 
-
   <!-- The following ensures that node not matched by a template will simply be 
    copied into the output. -->
   <xsl:template match="node()|@*">
@@ -30,11 +29,13 @@
           src="https://cdn.jsdelivr.net/npm/katex@0.16.6/dist/contrib/auto-render.min.js"
           integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05"
           crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
+        <script type="module" src="ninja.js"></script>
         <title>
           <xsl:value-of select="/tree/frontmatter/title" />
         </title>
       </head>
       <body>
+        <ninja-keys placeholder="Start typing a note title or ID"></ninja-keys>
         <xsl:if test="not(/tree[@root = 'true'])">
           <header class="header">
             <nav class="nav">

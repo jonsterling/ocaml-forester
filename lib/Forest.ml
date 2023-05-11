@@ -297,6 +297,15 @@ class forest ~size ~root =
         end
       end;
 
+      begin 
+        let ch = open_out @@ "output/forest.json" in 
+        Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
+        let fmt = Format.formatter_of_out_channel ch in
+        let docs = List.of_seq @@ Tbl.to_seq_values trees in
+        let env = (self#render_env :> RenderEnv.t) in
+        RenderJson.render_docs env docs fmt
+      end;
+
       begin
         Shell.within_dir "build" @@ fun _ ->
         self#build_svgs
