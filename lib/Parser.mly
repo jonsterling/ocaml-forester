@@ -39,9 +39,12 @@
       let macro = name, (xs, body) in 
       {fm with macros = macro :: fm.macros}
       
+    let meta (key, bdy) fm = 
+      {fm with metas = (key, bdy) :: fm.metas}
+      
     let fold frontlets = 
       let open Expr in
-      let init = {title = None; taxon = None; date = None; imports = []; macros = []; authors = []; tags = []} in
+      let init = {title = None; taxon = None; date = None; imports = []; macros = []; authors = []; tags = []; metas = []} in
       List.fold_right Fun.id frontlets init
   end
   
@@ -52,7 +55,7 @@
 
 %token <string> TEXT FUN
 %token TRANSCLUDE TRANSCLUDE_STAR TRANSCLUDE_AT
-%token TITLE IMPORT DEF LET TEX TAXON AUTHOR TAG DATE BLOCK
+%token TITLE IMPORT DEF LET TEX TAXON AUTHOR TAG DATE BLOCK META
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token EOF
 
@@ -95,6 +98,7 @@ let frontlet :=
 | DATE; ~ = txt_arg; <Frontlet.date>
 | DEF; ~ = fun_spec; <Frontlet.def>
 | TAG; ~ = txt_arg; <Frontlet.tag>
+| META; ~ = txt_arg; ~ = arg; <Frontlet.meta>
 
 let frontmatter == ~ = list(frontlet); <Frontlet.fold>
 let main :=  ~ = frontmatter; ~ = expr; EOF; <> 

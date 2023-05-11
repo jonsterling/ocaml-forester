@@ -35,6 +35,8 @@ rule token =
   | "#{" { return lexbuf @@ Parser.HASH_LBRACE }
   | "\\\\" { return lexbuf @@ Parser.FUN {|\|} }
   | "\\," { return lexbuf @@ Parser.FUN {|,|} }
+  | "\\'" { return lexbuf @@ Parser.FUN {|'|} }
+  | "\\`" { return lexbuf @@ Parser.FUN {|`|} }
   | "\\_" { return lexbuf @@ Parser.FUN {|_|} }
   | "\\;" { return lexbuf @@ Parser.FUN {|;|} }
   | "\\#" { return lexbuf @@ Parser.FUN {|#|} }
@@ -51,6 +53,7 @@ rule token =
   | "\\tag" { return lexbuf @@ Parser.TAG }
   | "\\date" { return lexbuf @@ Parser.DATE }
   | "\\import" { return lexbuf @@ Parser.IMPORT }
+  | "\\meta" { return lexbuf @@ Parser.META }
   | "\\def" { return lexbuf @@ Parser.DEF }
   | "\\let" { return lexbuf @@ Parser.LET }
   | "\\tex" { return lexbuf @@ Parser.TEX }

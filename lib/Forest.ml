@@ -15,8 +15,12 @@ let expand_tree globals addr (doc : Expr.doc) =
     match fm.title with
     | None -> [Sem.Text addr]
     | Some title -> Expander.expand globals Env.empty title
+  in 
+  let metas = 
+    fm.metas |> List.map @@ fun (key, body) ->
+    key, Expander.expand globals Env.empty body
   in
-  Sem.{title; body; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date}
+  Sem.{title; body; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date; metas}
 
 class forest ~size ~root =
   object(self)

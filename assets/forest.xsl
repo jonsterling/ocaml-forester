@@ -85,7 +85,6 @@
     </address>
   </xsl:template>
 
-
   <xsl:template match="mainmatter">
     <div class="tree-content">
       <xsl:apply-templates />
@@ -123,6 +122,25 @@
     </header>
   </xsl:template>
 
+  <xsl:template match="meta[@name='doi']">
+    <a class="doi">
+      <xsl:attribute name="href">
+        <xsl:text>https://www.doi.org/</xsl:text>
+        <xsl:value-of select="." />
+      </xsl:attribute>
+      <xsl:value-of select="." />
+    </a>
+  </xsl:template>
+
+  <xsl:template match="meta[@name='external']">
+    <a class="external">
+      <xsl:attribute name="href">
+        <xsl:value-of select="." />
+      </xsl:attribute>
+      <xsl:value-of select="." />
+    </a>
+  </xsl:template>
+
   <xsl:template name="ReferenceFrontmatter">
     <xsl:for-each select="authors/author">
       <xsl:apply-templates />
@@ -135,6 +153,14 @@
       <xsl:apply-templates select="title" />
     </b>
     <xsl:text>. </xsl:text>
+    <xsl:if test="date">
+      <xsl:apply-templates select="date" />
+      <xsl:text>. </xsl:text>
+    </xsl:if>
+    <xsl:if test="meta[@name='doi']">
+      <xsl:apply-templates select="meta[@name='doi']" />
+      <xsl:text>. </xsl:text>
+    </xsl:if>
     <xsl:call-template name="FrontmatterSlugLink" />
   </xsl:template>
 

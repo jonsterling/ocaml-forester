@@ -178,7 +178,11 @@ and render_frontmatter (env : env) (doc : Sem.doc) =
     Xml.tag "title" [] [
       render ~cfg:{part = Frontmatter} env @@ 
       Sem.map_text StringUtil.title_case doc.title
-    ]
+    ];
+    begin
+      doc.metas |> Printer.iter @@ fun (key, body) -> 
+      Xml.tag "meta" ["name", key] [render ~cfg:{part = Frontmatter} env body]
+    end
   ]
 
 and render_mainmatter (env : env) (doc : Sem.doc) = 

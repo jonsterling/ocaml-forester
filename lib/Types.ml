@@ -36,6 +36,7 @@ struct
      authors : addr list;
      tags : addr list;
      date: Date.t option;
+     metas : (string * t) list;
      macros : (string * macro) list}
   [@@deriving show]
 
@@ -85,6 +86,7 @@ struct
      authors : addr list;
      date: Date.t option;
      addr : addr;
+     metas : (string * t) list;
      body : t}
   [@@deriving show]
 
