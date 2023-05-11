@@ -18,7 +18,7 @@ let expand_tree globals addr (doc : Expr.doc) =
   in
   Sem.{title; body; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date}
 
-class forest ~size =
+class forest ~size ~root =
   object(self)
     val mutable frozen = false
 
@@ -38,8 +38,13 @@ class forest ~size =
 
     method private render_env : RenderEnv.t =
       object(self)
+        method is_root addr =
+          root = Some addr
+
         method route addr =
-          addr ^ ".xml"
+          match self#is_root addr with 
+          | true -> "index.xml"
+          | false -> addr ^ ".xml"
 
         method get_doc  = 
           Tbl.find_opt trees

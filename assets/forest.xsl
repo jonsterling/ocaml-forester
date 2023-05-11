@@ -31,15 +31,17 @@
           crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
       </head>
       <body>
-        <header class="header">
-          <nav class="nav">
-            <div class="logo">
-              <a href="index.xml" title="Home">
-                <xsl:text>Home</xsl:text>
-              </a>
-            </div>
-          </nav>
-        </header>
+        <xsl:if test="not(/tree[@root = 'true'])">
+          <header class="header">
+            <nav class="nav">
+              <div class="logo">
+                <a href="jms-0001.xml" title="Home">
+                  <xsl:text>« Home</xsl:text>
+                </a>
+              </div>
+            </nav>
+          </header>
+        </xsl:if>
         <article class="container">
           <xsl:apply-templates select="tree" />
         </article>

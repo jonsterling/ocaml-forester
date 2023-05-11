@@ -220,7 +220,8 @@ and mode_to_string =
 
 and render_doc ~cfg ?(mode = Full) (env : env) (doc : Sem.doc) : printer =
   Xml.tag "tree" 
-    ["mode", mode_to_string mode]
+    ["mode", mode_to_string mode;
+     "root", if env#is_root doc.addr then "true" else "false"]
     [render_frontmatter env doc;
      render_mainmatter env doc;
      match cfg.part with 

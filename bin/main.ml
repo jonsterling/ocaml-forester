@@ -35,14 +35,25 @@ let process_dir forest dir =
 let () =
   Format.print_newline ();
 
-  let forest = new Forest.forest ~size:100 in
+
+  let input_dirs_ref = ref [] in
+  let root_ref = ref "" in
 
   let usage_msg = "forester <dir> ..." in
-  let input_dirs = ref [] in
-  let anon_fun dir = input_dirs := dir :: !input_dirs  in
-  let () = Arg.parse [] anon_fun usage_msg in
+  let args = [("--root", Arg.Set_string root_ref, "Set root tree")] in
+  let anon_fun dir = input_dirs_ref := dir :: !input_dirs_ref  in
+  let () = Arg.parse args anon_fun usage_msg in
+
+  let root = 
+    match !root_ref with 
+    | "" -> None 
+    | addr -> Some addr 
+  in 
+
+  let forest = new Forest.forest ~size:100 ~root in
+
   begin 
-    !input_dirs |> List.iter @@ 
+    !input_dirs_ref |> List.iter @@ 
     process_dir forest
   end;
   forest#render_trees
