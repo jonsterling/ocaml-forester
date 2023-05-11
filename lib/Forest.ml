@@ -253,30 +253,12 @@ class forest ~size ~root =
       Queue.push (addr, doc) expansion_queue
 
     method private build_svgs : unit = 
-      let n = Hashtbl.length svg_queue in
-      let tasks = Array.make n `Uninitialized in
-
       begin
-        let i = ref 0 in
         svg_queue |> Hashtbl.iter @@ fun name source -> 
-        tasks.(!i) <- `Task (name, source);
-        i := !i + 1
+        BuildSvg.build_svg ~name ~source 
       end;
 
       Hashtbl.clear svg_queue;
-
-      let worker i = 
-        match tasks.(i) with 
-        | `Task (name, source) -> BuildSvg.build_svg ~name ~source 
-        | `Uninitialized -> failwith "Unexpected uninitialized task in SVG queue"
-      in 
-
-      let pool = T.setup_pool ~num_domains:10 () in
-      begin
-        T.run pool @@ fun _ ->
-        T.parallel_for pool ~start:0 ~finish:(n-1) ~body:worker
-      end;
-      T.teardown_pool pool
 
     method render_trees : unit =
       let open Sem in

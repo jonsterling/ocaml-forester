@@ -62,23 +62,12 @@ struct
 
   let run cmd args =
     let cmd' = String.concat " " @@ cmd :: args in
-    let ic, oc, ec as proc = 
-      Format.eprintf "Running %s@." cmd';
-      Unix.open_process_full cmd' (Unix.environment ())
-    in
 
-    let out_buf = Buffer.create 32 in 
-    let err_buf = Buffer.create 32 in
-
-    read_to_EOF out_buf ic;
-    read_to_EOF err_buf ec;
-
-    let s = Unix.close_process_full proc in
-    match status_code s with 
+    match Sys.command cmd' with 
     | 0 -> () 
     | code -> 
       failwith @@ 
-      Format.sprintf "ERROR RUNNING [%s]: %s" cmd' (Buffer.contents err_buf);
+      Format.sprintf "ERROR RUNNING [%s]" cmd'
 end
 
 let copy_file ~source ~dest =
