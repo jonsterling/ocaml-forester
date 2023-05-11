@@ -63,7 +63,7 @@ struct
   let run cmd args =
     let cmd' = String.concat " " @@ cmd :: args in
     let ic, oc, ec as proc = 
-      (* Format.eprintf "Running %s@." cmd'; *)
+      Format.eprintf "Running %s@." cmd';
       Unix.open_process_full cmd' (Unix.environment ())
     in
 
