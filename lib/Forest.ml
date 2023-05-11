@@ -31,12 +31,13 @@ class forest ~size ~root =
     val tag_graph : Gph.t = Gph.create ()
     val import_graph : Gph.t = Gph.create ()
     val author_pages : addr Tbl.t = Tbl.create 10
-    val contributors : addr Tbl.t = Tbl.create 100
+    val contributors : addr Tbl.t = Tbl.create size
+    val bibliography : addr Tbl.t = Tbl.create size
 
     val macro_table : (addr, (Symbol.t, clo) Hashtbl.t) Hashtbl.t = 
       Hashtbl.create size
 
-    method private render_env : RenderEnv.t =
+    method private render_env =
       object(self)
         method is_root addr =
           root = Some addr
@@ -53,21 +54,42 @@ class forest ~size ~root =
           if not @@ Hashtbl.mem svg_queue name then
             Hashtbl.add svg_queue name source
 
-        (* TODO: sort by dates once we have them *)
-        method private get_sorted_trees addrs : Sem.doc list = 
-          let unsorted =           
-            addrs |> List.concat_map @@ fun addr ->
-            match Tbl.find_opt trees addr with 
-            | Some doc -> [doc]
-            | None -> []
+        method get_sorted_trees addrs : Sem.doc list = 
+          let module E =
+          struct
+            type t = string
+            let peek_name c =
+              match Tbl.find_opt trees c with
+              | Some doc -> 
+                begin 
+                  match doc.title with 
+                  | Sem.Text txt :: _ -> txt
+                  | _ -> c
+                end
+              | None -> c
+
+            let compare c0 c1 =
+              String.compare (peek_name c0) (peek_name c1)
+          end 
           in
-          List.sort Sem.Doc.compare_for_sorting unsorted
+          let module S = Set.Make (E) in
+          S.elements (S.of_list addrs) |> List.concat_map @@ fun addr -> 
+          match Tbl.find_opt trees addr with 
+          | Some doc -> [doc]
+          | None -> []
 
         method get_backlinks scope =
           self#get_sorted_trees @@ Gph.succ link_graph scope
 
-        method get_links scope = 
+        method get_all_links scope = 
           self#get_sorted_trees @@ Gph.pred link_graph scope
+
+        method get_links scope = 
+          self#get_all_links scope |> List.filter @@ fun (doc : Sem.doc) ->
+          not (doc.taxon = Some "reference")
+
+        method get_references scope = 
+          self#get_sorted_trees @@ Tbl.find_all bibliography scope
 
         method get_parents scope =
           self#get_sorted_trees @@ Gph.succ transclusion_graph scope
@@ -145,13 +167,29 @@ class forest ~size ~root =
       in
       Gph.iter_pred task import_graph addr
 
-    method private expand_transitive_contributors : unit = 
+    method private expand_transitive_contributors_and_bibliography : unit =
+      begin
+        trees |> Tbl.iter @@ fun addr _ -> 
+        let task ref = 
+          match Tbl.find_opt trees ref with 
+          | None -> () 
+          | Some doc -> 
+            if doc.taxon = Some "reference" then 
+              Tbl.add bibliography addr ref
+        in 
+        Gph.iter_pred task link_graph addr
+      end;
       transclusion_graph |> Topo.iter @@ fun addr ->
       let task addr' = 
         let doc = Tbl.find trees addr in
         begin
           doc.authors @ Tbl.find_all contributors addr |> List.iter @@ fun contributor ->
           Tbl.add contributors addr' contributor
+        end;
+        begin
+          let env = self#render_env in
+          Tbl.find_all bibliography addr |> List.iter @@ fun ref ->
+          Tbl.add bibliography addr' ref
         end
       in 
       Gph.iter_succ task transclusion_graph addr
@@ -197,7 +235,7 @@ class forest ~size ~root =
         self#analyze_nodes addr body;
         self#analyze_nodes addr title
       end;
-      self#expand_transitive_contributors;
+      self#expand_transitive_contributors_and_bibliography;
 
 
     method plant_tree addr (doc : Expr.doc) : unit =
@@ -251,7 +289,7 @@ class forest ~size ~root =
           let ch = open_out @@ "output/" ^ env#route addr in
           Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
           let out = Xmlm.make_output @@ `Channel ch in
-          RenderXml.render_doc_page env addr doc out
+          RenderXml.render_doc_page (env :> RenderEnv.t) addr doc out
         end
       end;
 

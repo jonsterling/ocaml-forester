@@ -35,7 +35,6 @@ let process_dir forest dir =
 let () =
   Format.print_newline ();
 
-
   let input_dirs_ref = ref [] in
   let root_ref = ref "" in
 

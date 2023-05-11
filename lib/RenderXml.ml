@@ -178,12 +178,7 @@ and render_frontmatter (env : env) (doc : Sem.doc) =
     Xml.tag "title" [] [
       render ~cfg:{part = Frontmatter} env @@ 
       Sem.map_text StringUtil.title_case doc.title
-    ];
-    begin 
-      match doc.taxon with 
-      | None -> Printer.nil 
-      | Some taxon -> Xml.tag "taxon" [] [Printer.text @@ StringUtil.title_case taxon]
-    end
+    ]
   ]
 
 and render_mainmatter (env : env) (doc : Sem.doc) = 
@@ -209,7 +204,11 @@ and render_backmatter (env : env) (doc : Sem.doc) =
     Xml.tag "backlinks" [] [
       env#get_backlinks doc.addr |> Printer.iter @@ 
       render_doc ~cfg env
-    ]
+    ];
+    Xml.tag "references" [] [
+      env#get_references doc.addr |> Printer.iter @@ 
+      render_doc ~cfg env
+    ];
   ]
 
 and mode_to_string = 
@@ -219,9 +218,15 @@ and mode_to_string =
   | Collapsed -> "collapsed"
 
 and render_doc ~cfg ?(mode = Full) (env : env) (doc : Sem.doc) : printer =
-  Xml.tag "tree" 
+  let attrs = 
     ["mode", mode_to_string mode;
-     "root", if env#is_root doc.addr then "true" else "false"]
+     "root", if env#is_root doc.addr then "true" else "false"
+    ] @ 
+    match doc.taxon with 
+    | Some taxon -> ["taxon", StringUtil.title_case taxon]
+    | None -> []
+  in
+  Xml.tag "tree" attrs
     [render_frontmatter env doc;
      render_mainmatter env doc;
      match cfg.part with 

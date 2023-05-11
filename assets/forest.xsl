@@ -1,7 +1,9 @@
 <?xml version="1.0"?>
 
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
-  <xsl:output method="html" encoding="utf-8" indent="yes" />
+  <xsl:output method="html" encoding="utf-8" indent="yes" doctype-public=""
+    doctype-system="" />
+
 
   <!-- The following ensures that node not matched by a template will simply be 
    copied into the output. -->
@@ -12,7 +14,6 @@
   </xsl:template>
 
   <xsl:template match="/">
-    <xsl:text disable-output-escaping='yes'>&lt;!DOCTYPE html&gt;</xsl:text>
     <html>
       <head>
         <meta name="viewport" content="width=device-width" />
@@ -29,13 +30,16 @@
           src="https://cdn.jsdelivr.net/npm/katex@0.16.6/dist/contrib/auto-render.min.js"
           integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05"
           crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
+        <title>
+          <xsl:value-of select="/tree/frontmatter/title" />
+        </title>
       </head>
       <body>
         <xsl:if test="not(/tree[@root = 'true'])">
           <header class="header">
             <nav class="nav">
               <div class="logo">
-                <a href="jms-0001.xml" title="Home">
+                <a href="index.xml" title="Home">
                   <xsl:text>« Home</xsl:text>
                 </a>
               </div>
@@ -88,36 +92,26 @@
     </div>
   </xsl:template>
 
-  <xsl:template match="frontmatter">
+  <xsl:template name="FrontmatterSlugLink">
+    <a class="slug">
+      <xsl:attribute name="href">
+        <xsl:value-of select="route" />
+      </xsl:attribute>
+      <xsl:text>[</xsl:text>
+      <xsl:value-of select="addr" />
+      <xsl:text>]</xsl:text>
+    </a>
+  </xsl:template>
+
+  <xsl:template name="ResultFrontmatter">
     <header>
       <h1>
-        <xsl:choose>
-          <xsl:when test="taxon">
-            <xsl:attribute name="class">
-              <xsl:text>leaf</xsl:text>
-            </xsl:attribute>
-            <xsl:apply-templates select="taxon" />
-            <xsl:text> (</xsl:text>
-            <xsl:apply-templates select="title" />
-            <xsl:text>)</xsl:text>
-          </xsl:when>
-          <xsl:otherwise>
-            <xsl:attribute name="class">
-              <xsl:text>tree</xsl:text>
-            </xsl:attribute>
-            <xsl:apply-templates select="title" />
-          </xsl:otherwise>
-        </xsl:choose>
-
-        <xsl:text> </xsl:text>
-        <a class="slug">
-          <xsl:attribute name="href">
-            <xsl:value-of select="route" />
-          </xsl:attribute>
-          <xsl:text>[</xsl:text>
-          <xsl:value-of select="addr" />
-          <xsl:text>]</xsl:text>
-        </a>
+        <xsl:attribute name="class">leaf</xsl:attribute>
+        <xsl:value-of select="../@taxon" />
+        <xsl:text> (</xsl:text>
+        <xsl:apply-templates select="title" />
+        <xsl:text>) </xsl:text>
+        <xsl:call-template name="FrontmatterSlugLink" />
       </h1>
       <div class="metadata">
         <xsl:apply-templates select="date" />
@@ -127,6 +121,59 @@
         <xsl:apply-templates select="authors" />
       </div>
     </header>
+  </xsl:template>
+
+  <xsl:template name="ReferenceFrontmatter">
+    <xsl:for-each select="authors/author">
+      <xsl:apply-templates />
+      <xsl:if test="position()!=last()">
+        <xsl:text>, </xsl:text>
+      </xsl:if>
+    </xsl:for-each>
+    <xsl:text>. </xsl:text>
+    <b>
+      <xsl:apply-templates select="title" />
+    </b>
+    <xsl:text>. </xsl:text>
+    <xsl:call-template name="FrontmatterSlugLink" />
+  </xsl:template>
+
+  <xsl:template match="tree[@taxon]/frontmatter">
+    <xsl:choose>
+      <xsl:when test="../@taxon='Reference'">
+        <xsl:call-template name="ReferenceFrontmatter" />
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:call-template name="ResultFrontmatter" />
+      </xsl:otherwise>
+    </xsl:choose>
+  </xsl:template>
+
+  <xsl:template match="tree[not(@taxon)]/frontmatter">
+    <header>
+      <h1>
+        <xsl:attribute name="class">tree</xsl:attribute>
+        <xsl:apply-templates select="title" />
+        <xsl:text> </xsl:text>
+        <xsl:call-template name="FrontmatterSlugLink" />
+      </h1>
+      <div class="metadata">
+        <xsl:apply-templates select="date" />
+        <xsl:if test="date and authors">
+          <xsl:text> · </xsl:text>
+        </xsl:if>
+        <xsl:apply-templates select="authors" />
+      </div>
+    </header>
+  </xsl:template>
+
+  <xsl:template match="backmatter/references">
+    <xsl:if test="tree">
+      <section class="block">
+        <h2>References</h2>
+        <xsl:apply-templates select="tree" />
+      </section>
+    </xsl:if>
   </xsl:template>
 
   <xsl:template match="backmatter/context">
@@ -168,11 +215,11 @@
 
   <xsl:template match="/tree/backmatter">
     <footer>
-      <xsl:apply-templates select="context|backlinks|related|contributions" />
+      <xsl:apply-templates select="context|backlinks|related|contributions|references" />
     </footer>
   </xsl:template>
 
-  <xsl:template name="RenderTree">
+  <xsl:template name="Tree">
     <section class="block">
       <details>
         <xsl:if test="@mode = 'full'">
@@ -186,7 +233,7 @@
     </section>
   </xsl:template>
 
-  <xsl:template name="RenderTreeSpliced">
+  <xsl:template name="TreeSpliced">
     <section class="block">
       <xsl:apply-templates select="mainmatter" />
     </section>
@@ -195,13 +242,15 @@
   <xsl:template match="/tree|mainmatter/tree">
     <xsl:choose>
       <xsl:when test="@mode = 'spliced'">
-        <xsl:call-template name="RenderTreeSpliced" />
+        <xsl:call-template name="TreeSpliced" />
       </xsl:when>
       <xsl:otherwise>
-        <xsl:call-template name="RenderTree" />
+        <xsl:call-template name="Tree" />
       </xsl:otherwise>
     </xsl:choose>
-    <xsl:apply-templates select="backmatter" />
+    <xsl:if test="not(@root = 'true')">
+      <xsl:apply-templates select="backmatter" />
+    </xsl:if>
   </xsl:template>
 
   <xsl:template match="backmatter/*/tree">
