@@ -44,10 +44,15 @@
       let init = {title = None; taxon = None; date = None; imports = []; macros = []; authors = []; tags = []} in
       List.fold_right Fun.id frontlets init
   end
+  
+  let full_transclude x = Expr.Transclude (Full, x)
+  let splice_transclude x = Expr.Transclude (Spliced, x)
+  let collapse_transclude x = Expr.Transclude (Collapsed, x)
 %}
 
 %token <string> TEXT FUN
-%token TITLE IMPORT DEF LET TEX TRANSCLUDE TAXON AUTHOR TAG DATE BLOCK
+%token TRANSCLUDE TRANSCLUDE_STAR TRANSCLUDE_AT
+%token TITLE IMPORT DEF LET TEX TAXON AUTHOR TAG DATE BLOCK
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token EOF
 
@@ -68,7 +73,9 @@ let node :=
 | ~ = parens(expr); <Expr.parens> 
 | ~ = delimited(HASH_LBRACE, expr, RBRACE); <Expr.inline_math>
 | ~ = delimited(HASH_HASH_LBRACE, expr, RBRACE); <Expr.display_math>
-| TRANSCLUDE; ~ = txt_arg; <Expr.Transclude>
+| TRANSCLUDE; ~ = txt_arg; <full_transclude>
+| TRANSCLUDE_STAR; ~ = txt_arg; <collapse_transclude>
+| TRANSCLUDE_AT; ~ = txt_arg; <splice_transclude>
 | LET; (~,~,~) = fun_spec; <Expr.Let>
 | TEX; ~ = arg; <Expr.EmbedTeX>
 | BLOCK; x = arg; y = arg; <Expr.Block>

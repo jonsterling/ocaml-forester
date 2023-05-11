@@ -62,13 +62,13 @@ let rec render_node ~cfg (env : env) : Sem.node -> printer =
   | Sem.Tag (name, attrs, xs) ->
     Xml.tag name attrs
       [xs |> Printer.iter ~sep:Printer.space (render ~cfg env)]
-  | Sem.Transclude addr ->
+  | Sem.Transclude (mode, addr) ->
     begin
-      match env#get_doc addr, cfg.part with 
+      match env#get_doc addr, mode with 
       | None, _ -> 
         failwith @@ Format.sprintf "Failed to transclude non-existent tree with address '%s'" addr
-      | Some doc, _ -> 
-        render_doc ~cfg env doc
+      | Some doc, mode -> 
+        render_doc ~mode ~cfg env doc
     end
   | Sem.EmbedTeX bdy ->
     let code = 
@@ -212,8 +212,15 @@ and render_backmatter (env : env) (doc : Sem.doc) =
     ]
   ]
 
-and render_doc ~cfg (env : env) (doc : Sem.doc) : printer =
-  Xml.tag "tree" [] 
+and mode_to_string = 
+  function 
+  | Full -> "full" 
+  | Spliced -> "spliced"
+  | Collapsed -> "collapsed"
+
+and render_doc ~cfg ?(mode = Full) (env : env) (doc : Sem.doc) : printer =
+  Xml.tag "tree" 
+    ["mode", mode_to_string mode]
     [render_frontmatter env doc;
      render_mainmatter env doc;
      match cfg.part with 

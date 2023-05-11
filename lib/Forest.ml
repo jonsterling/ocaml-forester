@@ -154,7 +154,7 @@ class forest ~size =
     method private analyze_node scope : Sem.node -> unit =
       function
       | Sem.Text _ -> ()
-      | Sem.Transclude addr ->
+      | Sem.Transclude (_, addr) ->
         Gph.add_edge transclusion_graph addr scope
       | Sem.Link {title; addr} ->
         self#analyze_nodes scope title;

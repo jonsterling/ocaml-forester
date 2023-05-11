@@ -7,6 +7,9 @@ type delim = Braces | Squares | Parens
 type math_mode = Inline | Display
 [@@deriving show]
 
+type transclusion_mode = Full | Collapsed | Spliced
+[@@deriving show]
+
 module Expr = 
 struct 
   type node = 
@@ -14,7 +17,7 @@ struct
     | Group of delim * t
     | Math of math_mode * t
     | Tag of string
-    | Transclude of string
+    | Transclude of transclusion_mode * string
     | EmbedTeX of t
     | Let of string * string list * t
     | Block of t * t
@@ -53,7 +56,7 @@ struct
 
   type node = 
     | Text of string 
-    | Transclude of addr 
+    | Transclude of transclusion_mode * addr 
     | Link of {addr : addr; title : t}
     | Tag of string * attr list * t list
     | Math of math_mode * t

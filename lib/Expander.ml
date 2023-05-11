@@ -33,8 +33,8 @@ let rec expand (globals : globals) env : Expr.t -> Sem.t =
     Sem.Math (mode, expand globals env e) :: expand globals env rest
   | Expr.Tag name :: rest -> 
     expand_tag globals env name rest
-  | Expr.Transclude name :: rest -> 
-    Sem.Transclude name :: expand globals env rest
+  | Expr.Transclude (mode, name) :: rest -> 
+    Sem.Transclude (mode, name) :: expand globals env rest
   | Expr.EmbedTeX e :: rest -> 
     Sem.EmbedTeX (expand globals env e) :: expand globals env rest
   | Expr.Let (name, xs, bdy) :: rest -> 

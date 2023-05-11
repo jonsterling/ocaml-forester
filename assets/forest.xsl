@@ -3,6 +3,8 @@
 <xsl:stylesheet version="1.0" xmlns:xsl="http://www.w3.org/1999/XSL/Transform">
   <xsl:output method="html" encoding="utf-8" indent="yes" />
 
+  <!-- The following ensures that node not matched by a template will simply be 
+   copied into the output. -->
   <xsl:template match="node()|@*">
     <xsl:copy>
       <xsl:apply-templates select="node()|@*" />
@@ -29,6 +31,15 @@
           crossorigin="anonymous" onload="renderMathInElement(document.body);"></script>
       </head>
       <body>
+        <header class="header">
+          <nav class="nav">
+            <div class="logo">
+              <a href="index.xml" title="Home">
+                <xsl:text>Home</xsl:text>
+              </a>
+            </div>
+          </nav>
+        </header>
         <article class="container">
           <xsl:apply-templates select="tree" />
         </article>
@@ -80,12 +91,18 @@
       <h1>
         <xsl:choose>
           <xsl:when test="taxon">
+            <xsl:attribute name="class">
+              <xsl:text>leaf</xsl:text>
+            </xsl:attribute>
             <xsl:apply-templates select="taxon" />
             <xsl:text> (</xsl:text>
             <xsl:apply-templates select="title" />
             <xsl:text>)</xsl:text>
           </xsl:when>
           <xsl:otherwise>
+            <xsl:attribute name="class">
+              <xsl:text>tree</xsl:text>
+            </xsl:attribute>
             <xsl:apply-templates select="title" />
           </xsl:otherwise>
         </xsl:choose>
@@ -153,15 +170,35 @@
     </footer>
   </xsl:template>
 
-  <xsl:template match="/tree|mainmatter/tree">
+  <xsl:template name="RenderTree">
     <section class="block">
-      <details open="open">
+      <details>
+        <xsl:if test="@mode = 'full'">
+          <xsl:attribute name="open">open</xsl:attribute>
+        </xsl:if>
         <summary>
           <xsl:apply-templates select="frontmatter" />
         </summary>
         <xsl:apply-templates select="mainmatter" />
       </details>
     </section>
+  </xsl:template>
+
+  <xsl:template name="RenderTreeSpliced">
+    <section class="block">
+      <xsl:apply-templates select="mainmatter" />
+    </section>
+  </xsl:template>
+
+  <xsl:template match="/tree|mainmatter/tree">
+    <xsl:choose>
+      <xsl:when test="@mode = 'spliced'">
+        <xsl:call-template name="RenderTreeSpliced" />
+      </xsl:when>
+      <xsl:otherwise>
+        <xsl:call-template name="RenderTree" />
+      </xsl:otherwise>
+    </xsl:choose>
     <xsl:apply-templates select="backmatter" />
   </xsl:template>
 
