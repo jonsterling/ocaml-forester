@@ -184,6 +184,13 @@ and render_authors env (doc : Sem.doc) =
 and render_frontmatter (env : env) (doc : Sem.doc) = 
   Xml.tag "frontmatter" [] [
     Xml.tag "addr" [] [Printer.text doc.addr];
+    begin
+      match env#get_absolute_path doc.addr with 
+      | Some abspath ->
+        Xml.tag "abspath" [] [Printer.text abspath]
+      | None -> 
+        Printer.nil
+    end;
     Xml.tag "route" [] [Printer.text @@ env#route doc.addr];
     render_date doc;
     render_authors env doc;

@@ -31,6 +31,7 @@ class forest ~size ~root =
 
     val trees : Sem.doc Tbl.t = Tbl.create size
     val transclusion_graph : Gph.t = Gph.create ()
+    val abspaths : string Tbl.t = Tbl.create size
     val link_graph : Gph.t = Gph.create ()
     val tag_graph : Gph.t = Gph.create ()
     val import_graph : Gph.t = Gph.create ()
@@ -50,6 +51,9 @@ class forest ~size ~root =
           match self#is_root addr with 
           | true -> "index.xml"
           | false -> addr ^ ".xml"
+
+        method get_absolute_path addr =
+          Tbl.find_opt abspaths addr
 
         method get_doc  = 
           Tbl.find_opt trees
@@ -239,12 +243,12 @@ class forest ~size ~root =
         self#analyze_nodes addr body;
         self#analyze_nodes addr title
       end;
-      self#expand_transitive_contributors_and_bibliography;
+      self#expand_transitive_contributors_and_bibliography
 
-
-    method plant_tree addr (doc : Expr.doc) : unit =
+    method plant_tree ~(abspath : string option) addr (doc : Expr.doc) : unit =
       assert (not frozen);
       let frontmatter, body = doc in
+      abspath |> Option.iter @@ Tbl.add abspaths addr;
       Gph.add_vertex transclusion_graph addr;
       Gph.add_vertex link_graph addr;
       Gph.add_vertex import_graph addr;

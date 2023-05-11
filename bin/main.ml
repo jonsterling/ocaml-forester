@@ -21,25 +21,29 @@ let parse_file filename =
   Fun.protect ~finally:(fun _ -> close_in ch) @@ fun _ -> 
   parse_channel filename ch 
 
-let process_file forest filename =
+let process_file ~dev forest filename =
   if Filename.extension filename = ".tree" then 
     let addr = Filename.chop_extension @@ Filename.basename filename in
-    (* Format.printf "Processing %s\n" addr; *)
-    forest#plant_tree addr @@ 
+    let abspath = if dev then Some (Unix.realpath filename) else None in
+    forest#plant_tree ~abspath addr @@ 
     parse_file filename
 
-let process_dir forest dir =
+let process_dir ~dev forest dir =
   Sys.readdir dir |> Array.iter @@ fun filename ->
-  process_file forest @@ dir ^ "/" ^ filename
+  process_file ~dev forest @@ dir ^ "/" ^ filename
 
 let () =
   Format.print_newline ();
 
   let input_dirs_ref = ref [] in
   let root_ref = ref "" in
+  let dev_ref = ref false in
 
   let usage_msg = "forester <dir> ..." in
-  let args = [("--root", Arg.Set_string root_ref, "Set root tree")] in
+  let args = 
+    ["--root", Arg.Set_string root_ref, "Set root tree";
+     "--dev", Arg.Set dev_ref, "Development mode"] 
+  in
   let anon_fun dir = input_dirs_ref := dir :: !input_dirs_ref  in
   let () = Arg.parse args anon_fun usage_msg in
 
@@ -53,6 +57,6 @@ let () =
 
   begin 
     !input_dirs_ref |> List.iter @@ 
-    process_dir forest
+    process_dir ~dev:!dev_ref forest
   end;
   forest#render_trees
