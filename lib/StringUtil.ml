@@ -1,6 +1,16 @@
+let index_of_first_ascii_char word = 
+  let rx = Str.regexp "\\([A-za-z]\\)" in
+  try Option.some @@ Str.search_forward rx word 0 with _ -> None
+
 let title_case_word ix word = 
   if ix == 0 || String.length word > 3 then 
-    String.capitalize_ascii word
+    begin 
+      match index_of_first_ascii_char word with 
+      | None -> word 
+      | Some i -> 
+        word |> String.mapi @@ fun j c ->
+        if i = j then Char.uppercase_ascii c else c
+    end
   else
     word
 
