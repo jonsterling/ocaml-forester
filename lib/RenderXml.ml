@@ -86,17 +86,6 @@ let rec render_node ~cfg (env : env) : Sem.node -> printer =
     let path = Format.sprintf "resources/%s.svg" hash in
     Xml.tag "center" [] 
       [Xml.tag "img" ["src", path] []]
-  | Sem.Group (delim, bdy) ->
-    let l, r = 
-      match delim with 
-      | Braces -> "{","}"
-      | Squares -> "[","]"
-      | Parens -> "(", ")"
-    in 
-    Printer.seq
-      [Printer.text l;
-       render ~cfg env bdy;
-       Printer.text r]
   | Sem.Block (title, body) ->
     Xml.tag "block" ["open", "open"] @@ 
     [Xml.tag "headline" [] [render ~cfg env title];

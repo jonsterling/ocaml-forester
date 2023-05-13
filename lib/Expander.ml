@@ -25,7 +25,7 @@ let rec expand (fm : Code.frontmatter) (env : Term.t Env.t) : Code.t -> Term.t =
   | Math (m, xs) :: rest ->
     Math (m, expand fm env xs) :: expand fm env rest 
   | Ident str :: rest as all -> 
-    expand_ident env str @ expand fm env rest 
+    expand_ident env str @ expand fm env rest
 
 and expand_ident env str = 
   match Env.find_opt str env with 

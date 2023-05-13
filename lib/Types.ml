@@ -115,7 +115,6 @@ struct
     | Tag of string * attr list * t list
     | Math of math_mode * t
     | EmbedTeX of {packages : string list; source : t}
-    | Group of delim * t
     | Block of t * t
   [@@deriving show]
 
@@ -132,7 +131,6 @@ struct
     | Text str -> Text (f str)
     | Link {dest; title} -> Link {title = map_text f title; dest}
     | Tag (tag, attrs, xs) -> Tag (tag, attrs, List.map (map_text f) xs)
-    | Group (delim, x) -> Group (delim, map_text f x)
     | node -> node
 
   and map_text (f : string -> string) : t -> t =

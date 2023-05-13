@@ -113,6 +113,7 @@ class forest ~size ~root =
           let by_addr = Compare.under (fun x -> Sem.(x.addr)) String.compare in
           let compare = Compare.cascade by_taxon @@ Compare.cascade by_date @@ Compare.cascade by_title by_addr in
           List.sort compare @@ List.concat_map (Tbl.find_all trees) addrs
+
         method get_backlinks scope =
           self#get_sorted_trees @@ Gph.succ link_graph scope
 
@@ -188,8 +189,6 @@ class forest ~size ~root =
         self#analyze_nodes scope x
       | Sem.EmbedTeX {source; _} -> 
         self#analyze_nodes scope source
-      | Sem.Group (_, x) ->
-        self#analyze_nodes scope x
       | Sem.Block (title, body) -> 
         self#analyze_nodes scope title;
         self#analyze_nodes scope body

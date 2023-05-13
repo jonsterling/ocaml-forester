@@ -23,8 +23,6 @@ let rec render_node : Sem.node -> Printer.t =
     render xs
   | Sem.Tag (name, attrs, args) -> 
     render_tag name attrs args
-  | Sem.Group (delim, xs) ->
-    render_arg delim xs
   | node -> 
     Format.eprintf "missing case: %a@." Sem.pp_node node;
     failwith "RenderMathMode.render_node"
@@ -37,7 +35,7 @@ and render_tag name attrs args =
      render_args args]
 
 and render xs =
-  Printer.iter ~sep:Printer.space render_node xs
+  Printer.iter render_node xs
 
 and render_attrs (attrs : Sem.attr list) : Printer.t = 
   match List.length attrs with 

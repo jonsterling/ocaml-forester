@@ -48,17 +48,6 @@ and render_node : Sem.node -> Printer.t =
   | Sem.Tag (_,_,body) -> Printer.iter ~sep:Printer.space render body
   | Sem.Link {title; _} -> render title
   | Sem.Transclude _ | Sem.EmbedTeX _ | Sem.Math _ | Sem.Block _ -> Printer.nil
-  | Sem.Group (delim, body) ->
-    let l, r = 
-      match delim with 
-      | Braces -> "{", "}"
-      | Squares -> "[", "]"
-      | Parens -> "(", ")"
-    in
-    Printer.seq 
-      [Printer.text l;
-       render body;
-       Printer.text r]
 
 
 let render_doc (env : RenderEnv.t) (doc : Sem.doc) : Printer.t = 

@@ -7,14 +7,10 @@ let extend_env =
 let rec eval env : Term.t -> Sem.t = 
   function
   | [] -> []
-  | Text txt :: rest -> 
-    Sem.Text txt :: eval env rest
   | Link {title; dest} :: rest -> 
     let title = eval env title in
     let link = Sem.Link {dest; title} in 
     link :: eval env rest
-  | Group (delim, e) :: rest -> 
-    Sem.Group (delim, eval env e) :: eval env rest
   | Math (mmode, e) :: rest -> 
     Sem.Math (mmode, eval env e) :: eval env rest
   | Tag name :: rest -> 
@@ -35,6 +31,24 @@ let rec eval env : Term.t -> Sem.t =
       | None -> failwith @@ Format.sprintf "Could not find variable named %s" x
       | Some v -> v @ eval env rest
     end
+  | rest -> 
+    eval_textual env [] rest
+
+and eval_textual env prefix : Term.t -> Sem.t =
+  function 
+  | Group (d, xs) :: rest -> 
+    let l, r = 
+      match d with 
+      | Braces -> "{", "}"
+      | Squares -> "[", "]"
+      | Parens -> "(", ")"
+    in
+    eval_textual env (l :: prefix) @@ xs @ Text r :: rest 
+  | Text x :: rest -> 
+    eval_textual env (x :: prefix) @@ rest
+  | rest ->
+    let txt = String.concat "" @@ List.rev prefix in
+    Text txt :: eval env rest
 
 and eval_no_op env msg =
   function 
