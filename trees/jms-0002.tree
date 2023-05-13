@@ -3,6 +3,7 @@
 \author{jonsterling}
 \author{Another Person}
 
+\texpackage{preamble}
 \import{jms-0001}
 
 \def\helloworld{good\world}

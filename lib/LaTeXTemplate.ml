@@ -1,5 +1,5 @@
 let write ch ~packages ~source =
-  Printf.fprintf ch "\\documentclass[crop,dvisvgm]{standalone}n";
+  Printf.fprintf ch "\\documentclass[crop,dvisvgm]{standalone}\n";
   begin
     packages |> List.iter @@ fun pkg -> 
     Printf.fprintf ch "\\usepackage{%s}\n" pkg
