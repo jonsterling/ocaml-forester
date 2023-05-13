@@ -97,55 +97,24 @@ let rec render_node ~cfg (env : env) : Sem.node -> printer =
       [Printer.text l;
        render ~cfg env bdy;
        Printer.text r]
-  | Sem.Block (title, body) -> 
-    Xml.tag "section" ["class", "block"]
-      [Xml.tag "details" ["open", ""]
-         [Xml.tag "summary" [] [render ~cfg env title];
-          render ~cfg env body]]
-
+  | Sem.Block (title, body) ->
+    Xml.tag "block" ["open", "open"] @@ 
+    [Xml.tag "headline" [] [render ~cfg env title];
+     render ~cfg env body]
 
 and render_internal_link ~cfg env ~title ~addr = 
   let url = env#route addr in
-  Xml.tag "a" 
-    ["href", url; "class", "local"] 
+  Xml.tag "link" 
+    ["href", url; "type", "local"] 
     [render ~cfg env title]
 
 and render_external_link ~cfg env ~title ~url = 
-  Xml.tag "a" 
-    ["href", url; "class", "external"] 
+  Xml.tag "link" 
+    ["href", url; "type", "external"] 
     [render ~cfg env title]
-
 
 and render ~cfg (env : env) : Sem.t -> printer =
   Printer.iter (render_node ~cfg env)
-
-and render_doc_title ~cfg (env : env) (doc : Sem.doc) = 
-  let content =
-    match doc.taxon with 
-    | Some taxon ->
-      Printer.seq ~sep:Printer.space
-        [Printer.text @@ StringUtil.title_case taxon;
-         match doc.title with 
-         | [] -> Printer.nil 
-         | _ ->
-           Printer.seq 
-             [Printer.text "(";
-              render ~cfg env doc.title;
-              Printer.text ")"]]
-    | None ->
-      match doc.title with 
-      | [] -> 
-        Printer.text "Untitled tree"
-      | _ -> 
-        render ~cfg env @@
-        Sem.map_text StringUtil.title_case doc.title
-  in
-  let url = env#route doc.addr in
-  let link =
-    Xml.tag "a" ["class", "slug"; "href", url] 
-      [Printer.text @@ Format.sprintf "[%s]" doc.addr]
-  in
-  Xml.tag "h1" [] [content; link]
 
 and render_author (env : env) (author : string) = 
   let cfg = {part = Frontmatter} in
@@ -153,8 +122,8 @@ and render_author (env : env) (author : string) =
   match env#get_doc author with 
   | Some bio -> 
     let url = env#route bio.addr in
-    Xml.tag "a" 
-      ["href", url; "class", "local"; "rel", "author"] 
+    Xml.tag "link" 
+      ["href", url; "type", "local"] 
       [render ~cfg env bio.title]
   | None -> 
     Printer.text author

@@ -8,9 +8,54 @@
    copied into the output. -->
   <xsl:template match="node()|@*">
     <xsl:copy>
+      <span style="background-color:red">
+        <xsl:text>[</xsl:text>
+        <xsl:value-of select="name(.)" />
+        <xsl:text>]</xsl:text>
+      </span>
+      <span style="background-color:red">
+        <xsl:apply-templates select="node()|@*" />
+      </span>
+    </xsl:copy>
+  </xsl:template>
+
+  <xsl:template match="date">
+    <xsl:apply-templates />
+  </xsl:template>
+
+  <xsl:template
+    match="p | img | code | pre | a | em | b | strong | ol | ul | li | center | blockquote">
+    <xsl:copy>
       <xsl:apply-templates select="node()|@*" />
     </xsl:copy>
   </xsl:template>
+
+  <xsl:template match="headline">
+    <summary>
+      <xsl:apply-templates />
+    </summary>
+  </xsl:template>
+
+  <xsl:template match="block">
+    <section class="block">
+      <details open="open">
+        <xsl:apply-templates />
+      </details>
+    </section>
+  </xsl:template>
+
+  <xsl:template match="link">
+    <a>
+      <xsl:attribute name="class">
+        <xsl:value-of select="@type" />
+      </xsl:attribute>
+      <xsl:attribute name="href">
+        <xsl:value-of select="@href" />
+      </xsl:attribute>
+      <xsl:apply-templates />
+    </a>
+  </xsl:template>
+
 
   <xsl:template match="/">
     <html>
