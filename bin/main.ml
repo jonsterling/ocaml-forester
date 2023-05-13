@@ -33,8 +33,6 @@ let process_dir ~dev forest dir =
   process_file ~dev forest @@ dir ^ "/" ^ filename
 
 let () =
-  Format.print_newline ();
-
   let input_dirs_ref = ref [] in
   let root_ref = ref "" in
   let dev_ref = ref false in
