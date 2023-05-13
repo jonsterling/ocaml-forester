@@ -101,11 +101,11 @@ class forest ~size ~root =
           | None -> None
 
         method get_sorted_trees addrs : Sem.doc list = 
-          let by_taxon = 
-            Compare.under (fun x -> Sem.(x.taxon)) @@ Compare.option @@ fun x y ->
+          let by_taxon = Compare.under (fun x -> Sem.(x.taxon)) @@ fun x y ->
             match x, y with
-            | "reference", "reference" -> 0
-            | "reference", _ -> -1 
+            | Some "reference", Some "reference" -> 0
+            | Some "reference", _ -> -1 
+            | None, None -> 0
             | _ -> 1
           in 
           let by_date = Compare.under (fun x -> Sem.(x.date)) @@ Compare.option Date.compare in
@@ -113,7 +113,6 @@ class forest ~size ~root =
           let by_addr = Compare.under (fun x -> Sem.(x.addr)) String.compare in
           let compare = Compare.cascade by_taxon @@ Compare.cascade by_date @@ Compare.cascade by_title by_addr in
           List.sort compare @@ List.concat_map (Tbl.find_all trees) addrs
-
         method get_backlinks scope =
           self#get_sorted_trees @@ Gph.succ link_graph scope
 
