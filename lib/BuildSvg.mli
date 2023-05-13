@@ -1,1 +1,1 @@
-val build_svg : name:string -> source:string -> unit
+val build_svg : name:string -> packages:string list -> source:string -> unit

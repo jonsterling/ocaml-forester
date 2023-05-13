@@ -76,13 +76,13 @@ let rec render_node ~cfg (env : env) : Sem.node -> printer =
       | Some doc, mode -> 
         render_doc ~mode ~cfg env doc
     end
-  | Sem.EmbedTeX bdy ->
+  | Sem.EmbedTeX {packages; source} ->
     let code = 
       RenderMathMode.Printer.contents @@ 
-      RenderMathMode.render bdy 
+      RenderMathMode.render source
     in
     let hash = TeXHash.hash code in
-    env#enqueue_svg ~name:hash ~source:code;
+    env#enqueue_svg ~name:hash ~packages ~source:code;
     let path = Format.sprintf "resources/%s.svg" hash in
     Xml.tag "center" [] 
       [Xml.tag "img" ["src", path] []]

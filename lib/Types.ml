@@ -53,7 +53,8 @@ struct
      tags : addr list;
      date: Date.t option;
      metas : (string * t) list;
-     decls : decl list}
+     decls : decl list;
+     tex_packages : string list}
   [@@deriving show]
 
   type doc = frontmatter * t
@@ -74,7 +75,7 @@ struct
     | Tag of string
     | Link of {dest : string; title : t}
     | Transclude of transclusion_mode * string
-    | EmbedTeX of t
+    | EmbedTeX of {packages : string list; source : t}
     | Block of t * t
     | Lam of string list * t
     | Var of string
@@ -113,7 +114,7 @@ struct
     | Link of {dest : string; title : t}
     | Tag of string * attr list * t list
     | Math of math_mode * t
-    | EmbedTeX of t
+    | EmbedTeX of {packages : string list; source : t}
     | Group of delim * t
     | Block of t * t
   [@@deriving show]

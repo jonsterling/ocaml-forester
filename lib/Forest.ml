@@ -14,7 +14,7 @@ class forest ~size ~root =
     val mutable frozen = false
 
     val unexpanded_trees : Code.doc Tbl.t = Tbl.create size
-    val svg_queue : (string, string) Hashtbl.t = Hashtbl.create 100
+    val svg_queue : (string, string list * string) Hashtbl.t = Hashtbl.create 100
 
     val trees : Sem.doc Tbl.t = Tbl.create size
     val transclusion_graph : Gph.t = Gph.create ()
@@ -44,9 +44,9 @@ class forest ~size ~root =
         method get_doc  = 
           Tbl.find_opt trees
 
-        method enqueue_svg ~name ~source = 
+        method enqueue_svg ~name ~packages ~source = 
           if not @@ Hashtbl.mem svg_queue name then
-            Hashtbl.add svg_queue name source
+            Hashtbl.add svg_queue name (packages, source)
 
         method get_sorted_trees addrs : Sem.doc list = 
           let module E =
@@ -162,8 +162,8 @@ class forest ~size ~root =
         xs |> List.iter @@ self#analyze_nodes scope
       | Sem.Math (_, x) ->
         self#analyze_nodes scope x
-      | Sem.EmbedTeX x -> 
-        self#analyze_nodes scope x
+      | Sem.EmbedTeX {source; _} -> 
+        self#analyze_nodes scope source
       | Sem.Group (_, x) ->
         self#analyze_nodes scope x
       | Sem.Block (title, body) -> 
@@ -185,7 +185,7 @@ class forest ~size ~root =
           let import = Tbl.find export_table dep in
           Resolver.Scope.include_subtree ([], import)
         | Code.Def (path, ((xs,body) as macro)) ->
-          let macro = Expander.expand_macro Env.empty macro in
+          let macro = Expander.expand_macro fm Env.empty macro in
           Resolver.Scope.include_singleton (path, (macro, ()));
           Resolver.Scope.export_visible (Y.Language.only path)
       end;
@@ -193,7 +193,7 @@ class forest ~size ~root =
       let exports = Resolver.Scope.get_export () in
       Tbl.add export_table addr exports;
 
-      let tree = Expander.expand Env.empty tree in
+      let tree = Expander.expand fm Env.empty tree in
 
       let body =
         try 
@@ -209,11 +209,11 @@ class forest ~size ~root =
         | None -> [Sem.Text addr]
         | Some title -> 
           Eval.eval Env.empty @@ 
-          Expander.expand Env.empty title
+          Expander.expand fm Env.empty title
       in 
       let metas = 
         fm.metas |> List.map @@ fun (key, body) ->
-        key, Eval.eval Env.empty @@ Expander.expand Env.empty body
+        key, Eval.eval Env.empty @@ Expander.expand fm Env.empty body
       in
       Sem.{title; body; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date; metas}
 
@@ -264,8 +264,8 @@ class forest ~size ~root =
 
       begin
         let i = ref 0 in
-        svg_queue |> Hashtbl.iter @@ fun name source -> 
-        tasks.(!i) <- `Task (name, source);
+        svg_queue |> Hashtbl.iter @@ fun name (packages, source) -> 
+        tasks.(!i) <- `Task (name, packages, source);
         i := !i + 1
       end;
 
@@ -273,7 +273,7 @@ class forest ~size ~root =
 
       let worker i = 
         match tasks.(i) with 
-        | `Task (name, source) -> BuildSvg.build_svg ~name ~source 
+        | `Task (name, packages, source) -> BuildSvg.build_svg ~name ~source ~packages
         | `Uninitialized -> failwith "Unexpected uninitialized task in SVG queue"
       in 
 

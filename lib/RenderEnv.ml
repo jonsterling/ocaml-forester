@@ -12,5 +12,5 @@ class type t =
     method get_parents : addr -> Sem.doc list
     method get_pages_authored : addr -> Sem.doc list
     method get_contributors : addr -> addr list
-    method enqueue_svg : name:string -> source:string -> unit
+    method enqueue_svg : name:string -> packages:string list -> source:string -> unit
   end

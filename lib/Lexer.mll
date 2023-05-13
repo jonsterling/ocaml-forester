@@ -59,6 +59,7 @@ rule token =
   | "\\let" { return lexbuf @@ Parser.LET }
   | "\\tex" { return lexbuf @@ Parser.TEX }
   | "\\block" { return lexbuf @@ Parser.BLOCK }
+  | "\\texpackage" { return lexbuf @@ Parser.TEX_PACKAGE }
   | "\\transclude*" { return lexbuf @@ Parser.TRANSCLUDE_STAR }
   | "\\transclude@" { return lexbuf @@ Parser.TRANSCLUDE_AT }
   | "\\transclude" { return lexbuf @@ Parser.TRANSCLUDE }

@@ -21,8 +21,8 @@ let rec eval env : Term.t -> Sem.t =
     eval_tag env name rest
   | Transclude (tmode, name) :: rest -> 
     Sem.Transclude (tmode, name) :: eval env rest
-  | EmbedTeX e :: rest -> 
-    Sem.EmbedTeX (eval env e) :: eval env rest
+  | EmbedTeX {packages; source} :: rest -> 
+    Sem.EmbedTeX {packages; source = eval env source} :: eval env rest
   | Block (title, body) :: rest -> 
     Sem.Block (eval env title, eval env body)
     :: eval env rest

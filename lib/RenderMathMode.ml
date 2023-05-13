@@ -25,8 +25,6 @@ let rec render_node : Sem.node -> Printer.t =
     render_tag name attrs args
   | Sem.Group (delim, xs) ->
     render_arg delim xs
-  | Sem.EmbedTeX x -> 
-    render x
   | node -> 
     Format.eprintf "missing case: %a@." Sem.pp_node node;
     failwith "RenderMathMode.render_node"

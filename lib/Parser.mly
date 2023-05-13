@@ -44,9 +44,12 @@
     let meta (key, bdy) fm = 
       {fm with metas = (key, bdy) :: fm.metas}
       
+    let tex_package pkg fm = 
+      {fm with tex_packages = pkg :: fm.tex_packages}
+
     let fold frontlets = 
       let open Code in
-      let init = {title = None; taxon = None; date = None; decls = []; authors = []; tags = []; metas = []} in
+      let init = {title = None; taxon = None; date = None; decls = []; authors = []; tags = []; metas = []; tex_packages = []} in
       List.fold_right Fun.id frontlets init
   end
   
@@ -57,7 +60,7 @@
 
 %token <string> TEXT IDENT
 %token TRANSCLUDE TRANSCLUDE_STAR TRANSCLUDE_AT
-%token TITLE IMPORT EXPORT DEF LET TEX TAXON AUTHOR TAG DATE BLOCK META
+%token TITLE IMPORT EXPORT DEF LET TEX TAXON AUTHOR TEX_PACKAGE TAG DATE BLOCK META
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token EOF
 
@@ -102,6 +105,7 @@ let frontlet :=
 | DEF; ~ = fun_spec; <Frontlet.def>
 | TAG; ~ = txt_arg; <Frontlet.tag>
 | META; ~ = txt_arg; ~ = arg; <Frontlet.meta>
+| TEX_PACKAGE; ~ = txt_arg; <Frontlet.tex_package>
 
 let frontmatter == ~ = list(frontlet); <Frontlet.fold>
 let main :=  ~ = frontmatter; ~ = expr; EOF; <> 
