@@ -1,6 +1,6 @@
 open Types 
 
-module Y = Yuujinchou
+open struct module Y = Yuujinchou end
 
 module P =
 struct

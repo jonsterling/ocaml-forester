@@ -9,6 +9,46 @@ module Gph = Graph.Imperative.Digraph.Concrete (Addr)
 module Topo = Graph.Topological.Make (Gph)
 module Clo = Graph.Traverse
 
+class expander ~size =
+  object
+    val export_table : Term.t Y.Trie.Untagged.t Tbl.t = Tbl.create size
+
+    method expand_tree addr (doc : Code.doc) = 
+      let fm, tree = doc in
+      Resolver.Scope.run @@ fun () ->
+      begin
+        fm.decls |> List.iter @@ function
+        | Code.Import dep -> 
+          let import = Tbl.find export_table dep in
+          Resolver.Scope.import_subtree ([], import)
+        | Export dep -> 
+          let import = Tbl.find export_table dep in
+          Resolver.Scope.include_subtree ([], import)
+        | Code.Def (path, ((xs,body) as macro)) ->
+          let macro = Expander.expand_macro fm Env.empty macro in
+          Resolver.Scope.include_singleton (path, (macro, ()));
+          Resolver.Scope.export_visible (Y.Language.only path)
+      end;
+
+      let exports = Resolver.Scope.get_export () in
+      Tbl.add export_table addr exports;
+
+      let body = Eval.eval Env.empty @@ Expander.expand fm Env.empty tree in
+
+      let title =
+        match fm.title with
+        | None -> [Sem.Text addr]
+        | Some title -> 
+          Eval.eval Env.empty @@ 
+          Expander.expand fm Env.empty title
+      in 
+      let metas = 
+        fm.metas |> List.map @@ fun (key, body) ->
+        key, Eval.eval Env.empty @@ Expander.expand fm Env.empty body
+      in
+      Sem.{title; body; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date; metas}
+  end
+
 class forest ~size ~root =
   object(self)
     val mutable frozen = false
@@ -16,17 +56,19 @@ class forest ~size ~root =
     val unexpanded_trees : Code.doc Tbl.t = Tbl.create size
     val svg_queue : (string, string list * string) Hashtbl.t = Hashtbl.create 100
 
+    val expander = new expander ~size
+
     val trees : Sem.doc Tbl.t = Tbl.create size
-    val transclusion_graph : Gph.t = Gph.create ()
     val abspaths : string Tbl.t = Tbl.create size
+    val import_graph : Gph.t = Gph.create ()
+
+    val transclusion_graph : Gph.t = Gph.create ()
     val link_graph : Gph.t = Gph.create ()
     val tag_graph : Gph.t = Gph.create ()
-    val import_graph : Gph.t = Gph.create ()
     val author_pages : addr Tbl.t = Tbl.create 10
     val contributors : addr Tbl.t = Tbl.create size
     val bibliography : addr Tbl.t = Tbl.create size
 
-    val export_table : Term.t Y.Trie.Untagged.t Tbl.t = Tbl.create size
 
     method private render_env =
       object(self)
@@ -48,29 +90,22 @@ class forest ~size ~root =
           if not @@ Hashtbl.mem svg_queue name then
             Hashtbl.add svg_queue name (packages, source)
 
-        method get_sorted_trees addrs : Sem.doc list = 
-          let module E =
-          struct
-            type t = string
-            let peek_name c =
-              match Tbl.find_opt trees c with
-              | Some doc -> 
-                begin 
-                  match doc.title with 
-                  | Sem.Text txt :: _ -> txt
-                  | _ -> c
-                end
-              | None -> c
+        method private doc_peek_title (doc : Sem.doc) = 
+          match doc.title with 
+          | Sem.Text txt :: _ -> Some txt
+          | _ -> None
 
-            let compare c0 c1 =
-              String.compare (peek_name c0) (peek_name c1)
-          end 
-          in
-          let module S = Set.Make (E) in
-          S.elements (S.of_list addrs) |> List.concat_map @@ fun addr -> 
-          match Tbl.find_opt trees addr with 
-          | Some doc -> [doc]
-          | None -> []
+        method private addr_peek_title scope = 
+          match Tbl.find_opt trees scope with
+          | Some doc -> self#doc_peek_title doc
+          | None -> None
+
+        method get_sorted_trees addrs : Sem.doc list = 
+          let by_date = Compare.under (fun x -> Sem.(x.date)) @@ Compare.option Date.compare in
+          let by_title = Compare.under self#doc_peek_title @@ Compare.option String.compare in
+          let by_addr = Compare.under (fun x -> Sem.(x.addr)) String.compare in
+          let compare = Compare.cascade by_date @@ Compare.cascade by_title by_addr in
+          List.sort compare @@ List.concat_map (Tbl.find_all trees) addrs
 
         method get_backlinks scope =
           self#get_sorted_trees @@ Gph.succ link_graph scope
@@ -91,25 +126,9 @@ class forest ~size ~root =
         method get_pages_authored scope = 
           self#get_sorted_trees @@ Tbl.find_all author_pages scope
 
-        method get_contributors scope = 
-          let module C =
-          struct
-            type t = string
-            let peek_name c =
-              match Tbl.find_opt trees c with
-              | Some doc -> 
-                begin 
-                  match doc.title with 
-                  | Sem.Text txt :: _ -> txt
-                  | _ -> c
-                end
-              | None -> c
 
-            let compare c0 c1 =
-              String.compare (peek_name c0) (peek_name c1)
-          end 
-          in
-          let module S = Set.Make (C) in
+        method get_contributors scope = 
+          let module S = Set.Make (String) in 
           let doc = Tbl.find trees scope in
           let authors = S.of_list doc.authors in
           let contributors = S.of_list @@ Tbl.find_all contributors scope in
@@ -117,12 +136,11 @@ class forest ~size ~root =
             contributors |> S.filter @@ fun contr ->
             not @@ S.mem contr authors
           in
-          S.elements proper_contributors
-
+          let by_title = Compare.under self#addr_peek_title @@ Compare.option String.compare in
+          let compare = Compare.cascade by_title String.compare in
+          List.sort compare @@ S.elements proper_contributors
       end
 
-    (* method private global_resolver (addr : addr) : Eval.globals =
-       Hashtbl.find_opt @@ self#get_macros addr *)
     method private expand_transitive_contributors_and_bibliography : unit =
       begin
         trees |> Tbl.iter @@ fun addr _ -> 
@@ -173,54 +191,10 @@ class forest ~size ~root =
     method private analyze_nodes scope : Sem.t -> unit = 
       List.iter @@ self#analyze_node scope
 
-    method private expand_tree addr (doc : Code.doc) = 
-      let fm, tree = doc in
-      Resolver.Scope.run @@ fun () ->
-      begin
-        fm.decls |> List.iter @@ function
-        | Code.Import dep -> 
-          let import = Tbl.find export_table dep in
-          Resolver.Scope.import_subtree ([], import)
-        | Export dep -> 
-          let import = Tbl.find export_table dep in
-          Resolver.Scope.include_subtree ([], import)
-        | Code.Def (path, ((xs,body) as macro)) ->
-          let macro = Expander.expand_macro fm Env.empty macro in
-          Resolver.Scope.include_singleton (path, (macro, ()));
-          Resolver.Scope.export_visible (Y.Language.only path)
-      end;
-
-      let exports = Resolver.Scope.get_export () in
-      Tbl.add export_table addr exports;
-
-      let tree = Expander.expand fm Env.empty tree in
-
-      let body =
-        try 
-          Eval.eval Env.empty tree 
-        with
-        | exn -> 
-          Format.eprintf "Failed to eval %s: %a@." addr Term.pp tree;
-          raise exn
-      in
-
-      let title =
-        match fm.title with
-        | None -> [Sem.Text addr]
-        | Some title -> 
-          Eval.eval Env.empty @@ 
-          Expander.expand fm Env.empty title
-      in 
-      let metas = 
-        fm.metas |> List.map @@ fun (key, body) ->
-        key, Eval.eval Env.empty @@ Expander.expand fm Env.empty body
-      in
-      Sem.{title; body; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date; metas}
-
     method private expand_trees : unit =
       import_graph |> Topo.iter @@ fun addr ->
       let edoc = Tbl.find unexpanded_trees addr in
-      let doc = self#expand_tree addr edoc in
+      let doc = expander#expand_tree addr edoc in
       Tbl.add trees addr doc
 
     method private analyze_trees : unit =
