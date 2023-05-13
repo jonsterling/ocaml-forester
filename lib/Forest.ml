@@ -183,9 +183,7 @@ class forest ~size ~root =
           Resolver.Scope.import_subtree ([], import)
         | Export dep -> 
           let import = Tbl.find export_table dep in
-          Resolver.Scope.import_subtree ([dep], import);
-          Resolver.Scope.import_subtree ([], import);
-          Resolver.Scope.export_visible (Y.Language.in_ [dep] @@ Y.Language.any)
+          Resolver.Scope.include_subtree ([], import)
         | Code.Def (path, ((xs,body) as macro)) ->
           let macro = Expander.expand_macro Env.empty macro in
           Resolver.Scope.include_singleton (path, (macro, ()));
