@@ -7,7 +7,7 @@
  (name forester)
  (preprocess
   (pps ppx_deriving.show))
- (libraries ocamlgraph xmlm unix domainslib str))
+ (libraries ocamlgraph xmlm unix domainslib str yuujinchou))
 
 (env
  (dev

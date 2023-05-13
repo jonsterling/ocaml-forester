@@ -1,88 +1,42 @@
 open Types
+open Resolver
 
-type globals = Symbol.t -> clo option
+module Set = Set.Make (String)
 
-type resolution = 
-  | Defined of clo
-  | Undefined
-
-let resolve globals env name = 
-  match Env.find_opt name env with 
-  | Some clo -> Defined clo
-  | None ->
-    match globals name with 
-    | Some clo -> Defined clo 
-    | None -> Undefined
-
-let extend_env = 
-  List.fold_right2 @@ fun x v ->
-  Env.add (User x) (Val v)
-
-let rec expand (globals : globals) env : Expr.t -> Sem.t = 
-  function
+let rec expand (env : Term.t Env.t) : Code.t -> Term.t =
+  function 
   | [] -> []
-  | Expr.Text txt :: rest -> 
-    Sem.Text txt :: expand globals env rest
-  | Expr.Group (Squares, title) :: Expr.Group (Parens, [Expr.Text addr]) :: rest -> 
-    let title = expand globals env title in
-    let link = Sem.Link {addr; title} in 
-    link :: expand globals env rest
-  | Expr.Group (delim, e) :: rest -> 
-    Sem.Group (delim, expand globals env e) :: expand globals env rest
-  | Expr.Math (mode, e) :: rest -> 
-    Sem.Math (mode, expand globals env e) :: expand globals env rest
-  | Expr.Tag name :: rest -> 
-    expand_tag globals env name rest
-  | Expr.Transclude (mode, name) :: rest -> 
-    Sem.Transclude (mode, name) :: expand globals env rest
-  | Expr.EmbedTeX e :: rest -> 
-    Sem.EmbedTeX (expand globals env e) :: expand globals env rest
-  | Expr.Let (name, xs, bdy) :: rest -> 
-    let env' = Env.add (User name) (Clo (env, xs, bdy)) env in
-    expand globals env' rest
-  | Expr.Block (title, body) :: rest -> 
-    Sem.Block (expand globals env title, expand globals env body)
-    :: expand globals env rest
+  | Text x :: rest -> 
+    Text x :: expand env rest
+  | Group (Squares, title) :: Group (Parens, [Text dest]) :: rest ->
+    let title = expand env title in 
+    Link {dest; title} :: expand env rest
+  | Group (d, xs) :: rest -> 
+    Group (d, expand env xs) :: expand env rest
+  | Transclude (m, addr) :: rest ->
+    Transclude (m, addr) :: expand env rest
+  | EmbedTeX xs :: rest -> 
+    EmbedTeX (expand env xs) :: expand env rest
+  | Let (a, bs, xs) :: rest as all -> 
+    let env' = Env.add a (expand_macro env (bs, xs)) env in 
+    expand env' rest
+  | Block (xs, ys) :: rest -> 
+    Block (expand env xs, expand env ys) :: expand env rest 
+  | Math (m, xs) :: rest ->
+    Math (m, expand env xs) :: expand env rest 
+  | Ident str :: rest as all -> 
+    expand_ident env str @ expand env rest 
 
+and expand_ident env str = 
+  match Env.find_opt str env with 
+  | Some x -> x
+  | None -> 
+    match Scope.resolve [str] with 
+    | None -> 
+      [Tag str]
+    | Some (x, ()) -> x
 
-and expand_no_op globals env msg =
-  function 
-  | Expr.Group (Braces, _) :: rest -> 
-    expand globals env rest 
-  | _ -> failwith msg
-
-and expand_def_macro_binder globals env xs = 
-  function 
-  | Expr.Group (Squares, [Expr.Text x]) :: rest -> 
-    expand_def_macro_binder globals env (xs @ [x]) rest
-  | Expr.Group (Braces, bdy) :: rest -> 
-    expand globals env rest
-  | _ -> 
-    failwith "expand_def_macro"
-
-and expand_tag globals env name rest =
-  match resolve globals env (User name) with 
-  | Undefined -> expand_undefined_tag globals env name rest
-  | Defined (Val v) -> v @ expand globals env rest
-  | Defined (Clo (env', xs, body)) -> 
-    let rest', extender = pop_args globals env (xs, rest) in
-    expand globals (extender env') body @ expand globals env rest'
-
-and pop_args globals env : string list * Expr.t ->  Expr.t * (env -> env) =
-  function 
-  | [], rest -> rest, Fun.id
-  | x :: xs, Expr.Group (Braces, u) :: rest -> 
-    let rest', extender = pop_args globals env (xs, rest) in
-    let u' = expand globals env u in
-    rest', fun env -> Env.add (User x) (Val u') (extender env)
-  | _ -> 
-    failwith "pop_args"
-
-(* Just take only one argument, I guess *)
-and expand_undefined_tag globals env name = 
-  function 
-  | Expr.Group (Braces, u) :: rest ->
-    let u' = expand globals env u in
-    Sem.Tag (name, [], [u']) :: expand globals env rest 
-  | rest ->
-    Sem.Tag (name, [], []) :: expand globals env rest
+and expand_macro (env : Term.t Env.t) : Code.macro -> Term.t = 
+  fun (xs, body) -> 
+  let env' = List.fold_left (fun env x -> Env.add x [Term.Var x] env) env xs in
+  [Term.Lam (xs, expand env' body)]

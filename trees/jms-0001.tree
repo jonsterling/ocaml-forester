@@ -2,6 +2,11 @@
 \date{2023-05-10}
 \author{jonsterling}
 
-\p{Testing testing testing.}
+\def\hello{Hello}
+\def\world{World}
+\def\helloworld{\hello\world}
+
+\p{Testing testing testing. \helloworld}
 
 \transclude{jms-0002}
+\transclude{jms-0003}

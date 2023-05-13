@@ -3,7 +3,20 @@
 \author{jonsterling}
 \author{Another Person}
 
-This text is in the subree. [A link](jms-0001).
+\import{jms-0001}
+
+\def\helloworld{good\world}
+
+\def\world{ASDFASDF}
+
+\def\takesarg[x]{\b{\x}}
+
+\let\D[x]{#{W(\x)}}
+
+This text is in the subree. [A link](jms-0001). \helloworld asdf a
+\takesarg{JON}.
+
+\D{aaa}
 
 \tex{
   \DiagramSquare{

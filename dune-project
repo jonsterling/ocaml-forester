@@ -3,6 +3,7 @@
 (using menhir 2.0)
 
 (name forester)
+
 (version 2.0)
 
 (generate_opam_files true)
@@ -19,4 +20,12 @@
 (package
  (name forester)
  (synopsis "A tool for tending mathematical forests")
- (depends menhir ocamlgraph ocaml dune xmlm ppx_deriving domainslib))
+ (depends
+  menhir
+  ocamlgraph
+  ocaml
+  dune
+  xmlm
+  ppx_deriving
+  domainslib
+  yuujinchou))

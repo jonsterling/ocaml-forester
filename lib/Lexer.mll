@@ -1,7 +1,7 @@
 {
   exception SyntaxError of string
   let drop_sigil c str = 1 |> List.nth @@ String.split_on_char c str
-  let macro str = Parser.FUN (drop_sigil '\\' str)
+  let ident str = Parser.IDENT (drop_sigil '\\' str)
   let illegal str = raise @@ SyntaxError ("Lexer - Illegal character: [" ^ str ^ "].")
   
   let text str = Parser.TEXT str
@@ -22,7 +22,7 @@
 let digit = ['0'-'9']
 let alpha = ['a'-'z' 'A'-'Z']
 let int = '-'? digit+  
-let macro = '\\' (alpha) (alpha|digit|'-')*
+let ident = '\\' (alpha) (alpha|digit|'-')*
 let addr = (alpha) (alpha|digit|'_'|'-')* 
 let whitespace = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
@@ -33,26 +33,27 @@ rule token =
   | "%" { comment lexbuf }
   | "##{" { return lexbuf @@ Parser.HASH_HASH_LBRACE }
   | "#{" { return lexbuf @@ Parser.HASH_LBRACE }
-  | "\\\\" { return lexbuf @@ Parser.FUN {|\|} }
-  | "\\," { return lexbuf @@ Parser.FUN {|,|} }
-  | "\\'" { return lexbuf @@ Parser.FUN {|'|} }
-  | "\\`" { return lexbuf @@ Parser.FUN {|`|} }
-  | "\\_" { return lexbuf @@ Parser.FUN {|_|} }
-  | "\\;" { return lexbuf @@ Parser.FUN {|;|} }
-  | "\\#" { return lexbuf @@ Parser.FUN {|#|} }
-  | "\\{" { return lexbuf @@ Parser.FUN {|{|} }
-  | "\\}" { return lexbuf @@ Parser.FUN {|}|} }
-  | "\\[" { return lexbuf @@ Parser.FUN {|[|} }
-  | "\\]" { return lexbuf @@ Parser.FUN {|]|} }
+  | "\\\\" { return lexbuf @@ Parser.IDENT {|\|} }
+  | "\\," { return lexbuf @@ Parser.IDENT {|,|} }
+  | "\\'" { return lexbuf @@ Parser.IDENT {|'|} }
+  | "\\`" { return lexbuf @@ Parser.IDENT {|`|} }
+  | "\\_" { return lexbuf @@ Parser.IDENT {|_|} }
+  | "\\;" { return lexbuf @@ Parser.IDENT {|;|} }
+  | "\\#" { return lexbuf @@ Parser.IDENT {|#|} }
+  | "\\{" { return lexbuf @@ Parser.IDENT {|{|} }
+  | "\\}" { return lexbuf @@ Parser.IDENT {|}|} }
+  | "\\[" { return lexbuf @@ Parser.IDENT {|[|} }
+  | "\\]" { return lexbuf @@ Parser.IDENT {|]|} }
   | "\\startverb" { verbatim := true; token lexbuf }
   | "\\stopverb" { verbatim := false; token lexbuf }
-  | "\\ " { return lexbuf @@ Parser.FUN {| |} }
+  | "\\ " { return lexbuf @@ Parser.IDENT {| |} }
   | "\\title" { return lexbuf @@ Parser.TITLE }
   | "\\taxon" { return lexbuf @@ Parser.TAXON }
   | "\\author" { return lexbuf @@ Parser.AUTHOR }
   | "\\tag" { return lexbuf @@ Parser.TAG }
   | "\\date" { return lexbuf @@ Parser.DATE }
   | "\\import" { return lexbuf @@ Parser.IMPORT }
+  | "\\export" { return lexbuf @@ Parser.EXPORT }
   | "\\meta" { return lexbuf @@ Parser.META }
   | "\\def" { return lexbuf @@ Parser.DEF }
   | "\\let" { return lexbuf @@ Parser.LET }
@@ -62,7 +63,7 @@ rule token =
   | "\\transclude@" { return lexbuf @@ Parser.TRANSCLUDE_AT }
   | "\\transclude" { return lexbuf @@ Parser.TRANSCLUDE }
   | "#" { return lexbuf @@ Parser.TEXT "#" }
-  | macro { return lexbuf @@ macro (Lexing.lexeme lexbuf) }
+  | ident { return lexbuf @@ ident (Lexing.lexeme lexbuf) }
   | '{' { return lexbuf @@ Parser.LBRACE }
   | '}' { return lexbuf @@ Parser.RBRACE }
   | '[' { return lexbuf @@ Parser.LSQUARE }

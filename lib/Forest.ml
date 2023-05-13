@@ -1,6 +1,7 @@
 open Types
 
 module T = Domainslib.Task
+module Y = Yuujinchou
 
 module Addr = String
 module Tbl = Hashtbl.Make (Addr)
@@ -8,25 +9,11 @@ module Gph = Graph.Imperative.Digraph.Concrete (Addr)
 module Topo = Graph.Topological.Make (Gph)
 module Clo = Graph.Traverse
 
-let expand_tree globals addr (doc : Expr.doc) = 
-  let fm, tree = doc in
-  let body = Expander.expand globals Env.empty tree in
-  let title =
-    match fm.title with
-    | None -> [Sem.Text addr]
-    | Some title -> Expander.expand globals Env.empty title
-  in 
-  let metas = 
-    fm.metas |> List.map @@ fun (key, body) ->
-    key, Expander.expand globals Env.empty body
-  in
-  Sem.{title; body; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date; metas}
-
 class forest ~size ~root =
   object(self)
     val mutable frozen = false
 
-    val expansion_queue : (addr * Expr.doc) Queue.t = Queue.create ()
+    val unexpanded_trees : Code.doc Tbl.t = Tbl.create size
     val svg_queue : (string, string) Hashtbl.t = Hashtbl.create 100
 
     val trees : Sem.doc Tbl.t = Tbl.create size
@@ -39,8 +26,7 @@ class forest ~size ~root =
     val contributors : addr Tbl.t = Tbl.create size
     val bibliography : addr Tbl.t = Tbl.create size
 
-    val macro_table : (addr, (Symbol.t, clo) Hashtbl.t) Hashtbl.t = 
-      Hashtbl.create size
+    val export_table : Term.t Y.Trie.Untagged.t Tbl.t = Tbl.create size
 
     method private render_env =
       object(self)
@@ -135,46 +121,8 @@ class forest ~size ~root =
 
       end
 
-    method private get_macros (addr : addr) : (Symbol.t, clo) Hashtbl.t =
-      match Hashtbl.find_opt macro_table addr with
-      | None ->
-        let macros = Hashtbl.create 10 in
-        Hashtbl.add macro_table addr macros;
-        macros
-      | Some macros -> macros
-
-    method private global_resolver (addr : addr) : Expander.globals =
-      Hashtbl.find_opt @@ self#get_macros addr
-
-    method private analyze_frontmatter scope (fm : Expr.frontmatter) = 
-      let macros = self#get_macros scope in 
-      begin 
-        fm.tags |> List.iter @@ fun addr -> 
-        Gph.add_edge tag_graph addr scope
-      end;
-      begin
-        fm.imports |> List.iter @@ fun dep -> 
-        Gph.add_edge import_graph dep scope
-      end;
-      begin 
-        fm.macros |> List.iter @@ fun (name, (xs, body)) -> 
-        let clo = Clo (Env.empty, xs, body) in 
-        Hashtbl.add macros (User name) clo
-      end;
-      begin 
-        fm.authors |> List.iter @@ fun author ->
-        Tbl.add author_pages author scope
-      end
-
-    method private expand_transitive_imports : unit =
-      import_graph |> Topo.iter @@ fun addr ->
-      let macros = self#get_macros addr in
-      let task addr' =
-        self#get_macros addr' |>
-        Hashtbl.iter @@ Hashtbl.add macros
-      in
-      Gph.iter_pred task import_graph addr
-
+    (* method private global_resolver (addr : addr) : Eval.globals =
+       Hashtbl.find_opt @@ self#get_macros addr *)
     method private expand_transitive_contributors_and_bibliography : unit =
       begin
         trees |> Tbl.iter @@ fun addr _ -> 
@@ -207,9 +155,9 @@ class forest ~size ~root =
       | Sem.Text _ -> ()
       | Sem.Transclude (_, addr) ->
         Gph.add_edge transclusion_graph addr scope
-      | Sem.Link {title; addr} ->
+      | Sem.Link {title; dest} ->
         self#analyze_nodes scope title;
-        Gph.add_edge link_graph addr scope
+        Gph.add_edge link_graph dest scope
       | Sem.Tag (_, _, xs) ->
         xs |> List.iter @@ self#analyze_nodes scope
       | Sem.Math (_, x) ->
@@ -225,16 +173,57 @@ class forest ~size ~root =
     method private analyze_nodes scope : Sem.t -> unit = 
       List.iter @@ self#analyze_node scope
 
-    method private expand_trees : unit =
-      self#expand_transitive_imports;
-      let rec loop () =
-        Queue.take_opt expansion_queue |> Option.iter @@ fun (addr, doc) ->
-        let globals = self#global_resolver addr in
-        let doc = expand_tree globals addr doc in
-        Tbl.add trees addr doc;
-        loop () 
+    method private expand_tree addr (doc : Code.doc) = 
+      let fm, tree = doc in
+      Resolver.Scope.run @@ fun () ->
+      begin
+        fm.decls |> List.iter @@ function
+        | Code.Import dep -> 
+          let import = Tbl.find export_table dep in
+          Resolver.Scope.import_subtree ([], import)
+        | Export dep -> 
+          let import = Tbl.find export_table dep in
+          Resolver.Scope.import_subtree ([dep], import);
+          Resolver.Scope.import_subtree ([], import);
+          Resolver.Scope.export_visible (Y.Language.in_ [dep] @@ Y.Language.any)
+        | Code.Def (path, ((xs,body) as macro)) ->
+          let macro = Expander.expand_macro Env.empty macro in
+          Resolver.Scope.include_singleton (path, (macro, ()));
+          Resolver.Scope.export_visible (Y.Language.only path)
+      end;
+
+      let exports = Resolver.Scope.get_export () in
+      Tbl.add export_table addr exports;
+
+      let tree = Expander.expand Env.empty tree in
+
+      let body =
+        try 
+          Eval.eval Env.empty tree 
+        with
+        | exn -> 
+          Format.eprintf "Failed to eval %s: %a@." addr Term.pp tree;
+          raise exn
+      in
+
+      let title =
+        match fm.title with
+        | None -> [Sem.Text addr]
+        | Some title -> 
+          Eval.eval Env.empty @@ 
+          Expander.expand Env.empty title
       in 
-      loop ()
+      let metas = 
+        fm.metas |> List.map @@ fun (key, body) ->
+        key, Eval.eval Env.empty @@ Expander.expand Env.empty body
+      in
+      Sem.{title; body; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date; metas}
+
+    method private expand_trees : unit =
+      import_graph |> Topo.iter @@ fun addr ->
+      let edoc = Tbl.find unexpanded_trees addr in
+      let doc = self#expand_tree addr edoc in
+      Tbl.add trees addr doc
 
     method private analyze_trees : unit =
       self#expand_trees;
@@ -245,16 +234,31 @@ class forest ~size ~root =
       end;
       self#expand_transitive_contributors_and_bibliography
 
-    method plant_tree ~(abspath : string option) addr (doc : Expr.doc) : unit =
+    method plant_tree ~(abspath : string option) scope (doc : Code.doc) : unit =
       assert (not frozen);
       let frontmatter, body = doc in
-      abspath |> Option.iter @@ Tbl.add abspaths addr;
-      Gph.add_vertex transclusion_graph addr;
-      Gph.add_vertex link_graph addr;
-      Gph.add_vertex import_graph addr;
-      Gph.add_vertex tag_graph addr;
-      self#analyze_frontmatter addr frontmatter;
-      Queue.push (addr, doc) expansion_queue
+      abspath |> Option.iter @@ Tbl.add abspaths scope;
+      Gph.add_vertex transclusion_graph scope;
+      Gph.add_vertex link_graph scope;
+      Gph.add_vertex import_graph scope;
+      Gph.add_vertex tag_graph scope;
+      begin 
+        begin 
+          frontmatter.tags |> List.iter @@ fun addr -> 
+          Gph.add_edge tag_graph addr scope
+        end;
+        begin 
+          frontmatter.authors |> List.iter @@ fun author ->
+          Tbl.add author_pages author scope
+        end;
+        begin 
+          frontmatter.decls |> List.iter @@ function 
+          | Code.Import dep | Code.Export dep -> 
+            Gph.add_edge import_graph dep scope
+          | _ -> ()
+        end
+      end;
+      Tbl.add unexpanded_trees scope doc
 
     method private build_svgs : unit = 
       let n = Hashtbl.length svg_queue in

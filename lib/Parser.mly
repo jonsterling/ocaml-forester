@@ -3,7 +3,7 @@
   
   module Frontlet = 
   struct
-    open Expr
+    open Code
     
     let title title =
       function
@@ -27,7 +27,10 @@
         failwith "Cannot set title twice"
     
     let import addr fm = 
-      {fm with imports = addr :: fm.imports}
+      {fm with decls = Import addr :: fm.decls}
+
+    let export addr fm = 
+      {fm with decls = Export addr :: fm.decls}
 
     let author addr fm = 
       {fm with authors = addr :: fm.authors}
@@ -36,32 +39,31 @@
       {fm with tags = addr :: fm.tags}
       
     let def (name, xs, body) fm = 
-      let macro = name, (xs, body) in 
-      {fm with macros = macro :: fm.macros}
+      {fm with decls = Def ([name], (xs, body)) :: fm.decls}
       
     let meta (key, bdy) fm = 
       {fm with metas = (key, bdy) :: fm.metas}
       
     let fold frontlets = 
-      let open Expr in
-      let init = {title = None; taxon = None; date = None; imports = []; macros = []; authors = []; tags = []; metas = []} in
+      let open Code in
+      let init = {title = None; taxon = None; date = None; decls = []; authors = []; tags = []; metas = []} in
       List.fold_right Fun.id frontlets init
   end
   
-  let full_transclude x = Expr.Transclude (Full, x)
-  let splice_transclude x = Expr.Transclude (Spliced, x)
-  let collapse_transclude x = Expr.Transclude (Collapsed, x)
+  let full_transclude x = Code.Transclude (Full, x)
+  let splice_transclude x = Code.Transclude (Spliced, x)
+  let collapse_transclude x = Code.Transclude (Collapsed, x)
 %}
 
-%token <string> TEXT FUN
+%token <string> TEXT IDENT
 %token TRANSCLUDE TRANSCLUDE_STAR TRANSCLUDE_AT
-%token TITLE IMPORT DEF LET TEX TAXON AUTHOR TAG DATE BLOCK META
+%token TITLE IMPORT EXPORT DEF LET TEX TAXON AUTHOR TAG DATE BLOCK META
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token EOF
 
-%type <Expr.frontmatter -> Expr.frontmatter> frontlet
-%type <Expr.t> expr
-%start <Expr.doc> main
+%type <Code.frontmatter -> Code.frontmatter> frontlet
+%type <Code.t> expr
+%start <Code.doc> main
 
 %%
 
@@ -71,29 +73,30 @@ let parens(p) == delimited(LPAREN, p, RPAREN)
 let binder == list(squares(TEXT))
 
 let node :=
-| ~ = braces(expr); <Expr.braces>
-| ~ = squares(expr); <Expr.squares>
-| ~ = parens(expr); <Expr.parens> 
-| ~ = delimited(HASH_LBRACE, expr, RBRACE); <Expr.inline_math>
-| ~ = delimited(HASH_HASH_LBRACE, expr, RBRACE); <Expr.display_math>
+| ~ = braces(expr); <Code.braces>
+| ~ = squares(expr); <Code.squares>
+| ~ = parens(expr); <Code.parens> 
+| ~ = delimited(HASH_LBRACE, expr, RBRACE); <Code.inline_math>
+| ~ = delimited(HASH_HASH_LBRACE, expr, RBRACE); <Code.display_math>
 | TRANSCLUDE; ~ = txt_arg; <full_transclude>
 | TRANSCLUDE_STAR; ~ = txt_arg; <collapse_transclude>
 | TRANSCLUDE_AT; ~ = txt_arg; <splice_transclude>
-| LET; (~,~,~) = fun_spec; <Expr.Let>
-| TEX; ~ = arg; <Expr.EmbedTeX>
-| BLOCK; x = arg; y = arg; <Expr.Block>
-| ~ = FUN; <Expr.Tag>
-| ~ = TEXT; <Expr.Text>
+| LET; (~,~,~) = fun_spec; <Code.Let>
+| TEX; ~ = arg; <Code.EmbedTeX>
+| BLOCK; x = arg; y = arg; <Code.Block>
+| ~ = IDENT; <Code.Ident>
+| ~ = TEXT; <Code.Text>
 
 let expr == list(node)
 let arg == braces(expr)
 let txt_arg == braces(TEXT)
-let fun_spec == ~ = FUN; ~ = binder; ~ = arg; <>
+let fun_spec == ~ = IDENT; ~ = binder; ~ = arg; <>
 
 let frontlet := 
 | TITLE; ~ = arg; <Frontlet.title>
 | TAXON; ~ = txt_arg; <Frontlet.taxon>
 | IMPORT; ~ = txt_arg; <Frontlet.import>
+| EXPORT; ~ = txt_arg; <Frontlet.export>
 | AUTHOR; ~ = txt_arg; <Frontlet.author>
 | DATE; ~ = txt_arg; <Frontlet.date>
 | DEF; ~ = fun_spec; <Frontlet.def>

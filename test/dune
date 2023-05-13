@@ -1,2 +1,3 @@
 (test
- (name forester))
+ (name forester)
+ (libraries ocamlgraph))

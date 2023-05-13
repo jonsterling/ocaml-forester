@@ -57,13 +57,13 @@ let rec render_node ~cfg (env : env) : Sem.node -> printer =
       [TP.text l;
        RenderMathMode.render bdy;
        TP.text r]
-  | Sem.Link {title; addr} ->
+  | Sem.Link {title; dest} ->
     begin
-      match env#get_doc addr with 
+      match env#get_doc dest with 
       | Some _ ->
-        render_internal_link ~cfg env ~title ~addr
+        render_internal_link ~cfg env ~title ~addr:dest
       | None -> 
-        render_external_link ~cfg env ~title ~url:addr
+        render_external_link ~cfg env ~title ~url:dest
     end
   | Sem.Tag (name, attrs, xs) ->
     Xml.tag name attrs
