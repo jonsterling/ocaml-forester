@@ -312,11 +312,6 @@ class forest ~size ~root =
         RenderJson.render_docs env docs fmt
       end;
 
-      begin
-        Shell.within_dir "build" @@ fun _ ->
-        self#build_svgs
-      end;
-
       begin 
         Sys.readdir "assets" |> Array.iter @@ fun basename ->
         let fp = Format.sprintf "assets/%s" basename in
@@ -325,7 +320,15 @@ class forest ~size ~root =
           Format.sprintf "Expected flat directory structure in 'assets' but found '%s'" 
             basename
         else
-          Shell.copy_file_to_dir ~source:fp ~dest_dir:"output"
+          begin
+            Shell.copy_file_to_dir ~source:fp ~dest_dir:"build";
+            Shell.copy_file_to_dir ~source:fp ~dest_dir:"output"
+          end
+      end;
+
+      begin
+        Shell.within_dir "build" @@ fun _ ->
+        self#build_svgs
       end;
 
       begin
