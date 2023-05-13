@@ -9,6 +9,8 @@ module Gph = Graph.Imperative.Digraph.Concrete (Addr)
 module Topo = Graph.Topological.Make (Gph)
 module Clo = Graph.Traverse
 
+module Set = Set.Make (String)
+
 class expander ~size =
   object
     val export_table : Term.t Y.Trie.Untagged.t Tbl.t = Tbl.create size
@@ -112,40 +114,40 @@ class forest ~size ~root =
           let by_title = Compare.under self#doc_peek_title @@ Compare.option String.compare in
           let by_addr = Compare.under (fun x -> Sem.(x.addr)) String.compare in
           let compare = Compare.cascade by_taxon @@ Compare.cascade by_date @@ Compare.cascade by_title by_addr in
-          List.sort compare @@ List.concat_map (Tbl.find_all trees) addrs
+          List.sort compare @@ List.concat_map (Tbl.find_all trees) @@ Set.elements addrs
 
         method get_backlinks scope =
-          self#get_sorted_trees @@ Gph.succ link_graph scope
+          self#get_sorted_trees @@ Set.of_list @@ Gph.succ link_graph scope
 
         method get_all_links scope = 
-          self#get_sorted_trees @@ Gph.pred link_graph scope
+          self#get_sorted_trees @@ Set.of_list @@ Gph.pred link_graph scope
 
         method get_links scope = 
           self#get_all_links scope |> List.filter @@ fun (doc : Sem.doc) ->
           not (doc.taxon = Some "reference")
 
         method get_references scope = 
-          self#get_sorted_trees @@ Tbl.find_all bibliography scope
+          self#get_sorted_trees @@ 
+          Set.of_list @@ Tbl.find_all bibliography scope
 
         method get_parents scope =
-          self#get_sorted_trees @@ Gph.succ transclusion_graph scope
+          self#get_sorted_trees @@ Set.of_list @@ Gph.succ transclusion_graph scope
 
         method get_pages_authored scope = 
-          self#get_sorted_trees @@ Tbl.find_all author_pages scope
+          self#get_sorted_trees @@ Set.of_list @@ Tbl.find_all author_pages scope
 
 
         method get_contributors scope = 
-          let module S = Set.Make (String) in 
           let doc = Tbl.find trees scope in
-          let authors = S.of_list doc.authors in
-          let contributors = S.of_list @@ Tbl.find_all contributors scope in
+          let authors = Set.of_list doc.authors in
+          let contributors = Set.of_list @@ Tbl.find_all contributors scope in
           let proper_contributors = 
-            contributors |> S.filter @@ fun contr ->
-            not @@ S.mem contr authors
+            contributors |> Set.filter @@ fun contr ->
+            not @@ Set.mem contr authors
           in
           let by_title = Compare.under self#addr_peek_title @@ Compare.option String.compare in
           let compare = Compare.cascade by_title String.compare in
-          List.sort compare @@ S.elements proper_contributors
+          List.sort compare @@ Set.elements proper_contributors
       end
 
     method private expand_transitive_contributors_and_bibliography : unit =
