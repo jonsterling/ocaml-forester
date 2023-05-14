@@ -1,10 +1,10 @@
 open Prelude.Shell
 open Render
 
-let tex_fp name = 
+let tex_fp name =
   Format.sprintf "%s.tex" name
 
-let dvi_fp name = 
+let dvi_fp name =
   Format.sprintf "%s.dvi" name
 
 let write_tex_file ~name ~packages ~source =
@@ -19,10 +19,10 @@ let render_dvi_file ~name ~source =
 
 let render_svg_file ~name ~source =
   let dvi_fp = dvi_fp name in
-  Proc.run "dvisvgm" 
-    ["--exact"; 
-     "--clipjoin"; 
-     "--font-format=woff"; 
+  Proc.run "dvisvgm"
+    ["--exact";
+     "--clipjoin";
+     "--font-format=woff";
      "--bbox=papersize";
      "--zoom=1.5";
      dvi_fp;
@@ -31,7 +31,7 @@ let render_svg_file ~name ~source =
 
 let build_svg ~name ~packages ~source =
   let svg_fp = Format.sprintf "%s.svg" name in
-  if not @@ Sys.file_exists svg_fp then 
+  if not @@ Sys.file_exists svg_fp then
     begin
       write_tex_file ~name ~packages ~source;
       render_dvi_file ~name ~source;

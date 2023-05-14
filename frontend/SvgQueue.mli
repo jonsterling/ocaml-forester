@@ -1,4 +1,4 @@
-module type S = 
+module type S =
 sig
   val enqueue : name:string -> packages:string list -> source:string -> unit
   val process : unit -> unit

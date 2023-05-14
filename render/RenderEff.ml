@@ -51,7 +51,7 @@ struct
        fun (type a) (eff : a Effect.t) ->
          let resume x =
            Option.some @@ fun (k : (a, _) Effect.Deep.continuation) ->
-           Algaeff.Fun.Deep.finally k @@ fun () -> x () 
+           Algaeff.Fun.Deep.finally k @@ fun () -> x ()
          in
          match eff with
          | Route addr ->
@@ -70,12 +70,12 @@ struct
            resume @@ fun () -> H.parents addr
          | Contributors addr ->
            resume @@ fun () -> H.contributors addr
-         | Contributions addr -> 
+         | Contributions addr ->
            resume @@ fun () -> H.contributions addr
          | EnqueueSvg {name; packages; source} ->
            resume @@ fun () -> H.enqueue_svg ~name ~packages ~source
          | GetDoc addr ->
            resume @@ fun () -> H.get_doc addr
-         | _ -> 
+         | _ ->
            None}
 end

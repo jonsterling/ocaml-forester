@@ -19,15 +19,15 @@ sig
   val render_trees : unit -> unit
 end
 
-module type I = 
+module type I =
 sig
-  val size : int 
+  val size : int
   val root : addr option
 end
 
-module Make (I : I) : S = 
-struct 
-  module SvgQueue = SvgQueue.Make (I) 
+module Make (I : I) : S =
+struct
+  module SvgQueue = SvgQueue.Make (I)
 
   let frozen = ref false
   let unexpanded_trees : Code.doc Tbl.t = Tbl.create I.size
@@ -35,88 +35,88 @@ struct
   let abspaths : string Tbl.t = Tbl.create I.size
   let import_graph : Gph.t = Gph.create ()
 
-  let  transclusion_graph : Gph.t = Gph.create ()
+  let transclusion_graph : Gph.t = Gph.create ()
   let link_graph : Gph.t = Gph.create ()
   let tag_graph : Gph.t = Gph.create ()
   let author_pages : addr Tbl.t = Tbl.create 10
   let contributors : addr Tbl.t = Tbl.create I.size
   let bibliography : addr Tbl.t = Tbl.create I.size
 
-  let run_renderer (docs : Sem.doc M.t) (body : unit -> 'a) : 'a = 
+  let run_renderer (docs : Sem.doc M.t) (body : unit -> 'a) : 'a =
     let module S = Set.Make (String) in
-    let module H : RenderEff.Handler = 
-    struct 
+    let module H : RenderEff.Handler =
+    struct
       let is_root addr =
         I.root = Some addr
 
       let route addr =
-        match is_root addr with 
+        match is_root addr with
         | true -> "index.xml"
         | false -> addr ^ ".xml"
 
       let abs_path addr =
         Tbl.find_opt abspaths addr
 
-      let get_doc addr = 
+      let get_doc addr =
         M.find_opt addr docs
 
-      let enqueue_svg ~name ~packages ~source = 
+      let enqueue_svg ~name ~packages ~source =
         SvgQueue.enqueue ~name ~packages ~source
 
-      let doc_peek_title (doc : Sem.doc) = 
-        match doc.title with 
+      let doc_peek_title (doc : Sem.doc) =
+        match doc.title with
         | Some (Sem.Text txt :: _) -> Some txt
         | _ -> None
 
-      let addr_peek_title scope = 
+      let addr_peek_title scope =
         match M.find_opt scope docs with
         | Some doc -> doc_peek_title doc
         | None -> None
 
-      let get_sorted_trees addrs : Sem.doc list = 
+      let get_sorted_trees addrs : Sem.doc list =
         let by_taxon = Compare.under (fun x -> Sem.(x.taxon)) @@ fun x y ->
           match x, y with
           | Some "reference", Some "reference" -> 0
-          | Some "reference", _ -> -1 
+          | Some "reference", _ -> -1
           | None, None -> 0
           | _ -> 1
-        in 
+        in
         let by_date = Compare.under (fun x -> Sem.(x.date)) @@ Compare.option Date.compare in
         let by_title = Compare.under doc_peek_title @@ Compare.option String.compare in
         let by_addr = Compare.under (fun x -> Sem.(x.addr)) String.compare in
         let compare = Compare.cascade by_taxon @@ Compare.cascade by_date @@ Compare.cascade by_title by_addr in
-        let find addr = 
-          match M.find_opt addr docs with 
-          | None -> [] 
+        let find addr =
+          match M.find_opt addr docs with
+          | None -> []
           | Some doc -> [doc]
         in
         List.sort compare @@ List.concat_map find @@ S.elements addrs
 
-      let get_all_links scope = 
+      let get_all_links scope =
         get_sorted_trees @@ S.of_list @@ Gph.pred link_graph scope
 
       let backlinks scope =
         get_sorted_trees @@ S.of_list @@ Gph.succ link_graph scope
 
-      let related scope = 
+      let related scope =
         get_all_links scope |> List.filter @@ fun (doc : Sem.doc) ->
         not (doc.taxon = Some "reference")
 
-      let bibliography scope = 
-        get_sorted_trees @@ 
+      let bibliography scope =
+        get_sorted_trees @@
         S.of_list @@ Tbl.find_all bibliography scope
 
       let parents scope =
         get_sorted_trees @@ S.of_list @@ Gph.succ transclusion_graph scope
 
-      let contributions scope = 
+      let contributions scope =
         get_sorted_trees @@ S.of_list @@ Tbl.find_all author_pages scope
 
-      let contributors scope = 
+      let contributors scope =
         let doc = M.find scope docs in
         let authors = S.of_list doc.authors in
         let contributors = S.of_list @@ Tbl.find_all contributors scope in
-        let proper_contributors = 
+        let proper_contributors =
           contributors |> S.filter @@ fun contr ->
           not @@ S.mem contr authors
         in
@@ -130,18 +130,18 @@ struct
 
   let expand_transitive_contributors_and_bibliography (trees : Sem.doc M.t) : unit =
     begin
-      trees |> M.iter @@ fun addr _ -> 
-      let task ref = 
-        match M.find_opt ref trees with 
-        | None -> () 
-        | Some (doc : Sem.doc) -> 
-          if doc.taxon = Some "reference" then 
+      trees |> M.iter @@ fun addr _ ->
+      let task ref =
+        match M.find_opt ref trees with
+        | None -> ()
+        | Some (doc : Sem.doc) ->
+          if doc.taxon = Some "reference" then
             Tbl.add bibliography addr ref
-      in 
+      in
       Gph.iter_pred task link_graph addr
     end;
     transclusion_graph |> Topo.iter @@ fun addr ->
-    let task addr' = 
+    let task addr' =
       let doc = M.find addr trees in
       begin
         doc.authors @ Tbl.find_all contributors addr |> List.iter @@ fun contributor ->
@@ -151,11 +151,11 @@ struct
         Tbl.find_all bibliography addr |> List.iter @@ fun ref ->
         Tbl.add bibliography addr' ref
       end
-    in 
+    in
     Gph.iter_succ task transclusion_graph addr
 
   let rec analyze_nodes scope : Sem.t -> unit =
-    List.iter @@ 
+    List.iter @@
     function
     | Sem.Text _ -> ()
     | Sem.Transclude (_, addr) ->
@@ -167,9 +167,9 @@ struct
       xs |> List.iter @@ analyze_nodes scope
     | Sem.Math (_, x) ->
       analyze_nodes scope x
-    | Sem.EmbedTeX {source; _} -> 
+    | Sem.EmbedTeX {source; _} ->
       analyze_nodes scope source
-    | Sem.Block (title, body) -> 
+    | Sem.Block (title, body) ->
       analyze_nodes scope title;
       analyze_nodes scope body
 
@@ -181,18 +181,18 @@ struct
     Gph.add_vertex link_graph scope;
     Gph.add_vertex import_graph scope;
     Gph.add_vertex tag_graph scope;
-    begin 
-      begin 
-        frontmatter.tags |> List.iter @@ fun addr -> 
+    begin
+      begin
+        frontmatter.tags |> List.iter @@ fun addr ->
         Gph.add_edge tag_graph addr scope
       end;
-      begin 
+      begin
         frontmatter.authors |> List.iter @@ fun author ->
         Tbl.add author_pages author scope
       end;
-      begin 
-        frontmatter.decls |> List.iter @@ function 
-        | Code.Import (_, dep) -> 
+      begin
+        frontmatter.decls |> List.iter @@ function
+        | Code.Import (_, dep) ->
           Gph.add_edge import_graph dep scope
         | _ -> ()
       end
@@ -204,9 +204,9 @@ struct
     let open Sem in
     frozen := true;
 
-    let docs = 
-      begin 
-        let task addr (units, trees) = 
+    let docs =
+      begin
+        let task addr (units, trees) =
           let doc = Tbl.find unexpanded_trees addr in
           let units, doc = Expand.expand_doc units addr doc in
           let doc = Eval.eval_doc doc in
@@ -220,7 +220,7 @@ struct
       docs |> M.iter @@ fun scope Sem.{body; title; metas; _} ->
       analyze_nodes scope body;
       title |> Option.iter @@ analyze_nodes scope;
-      metas |> List.iter @@ fun (_, meta) -> 
+      metas |> List.iter @@ fun (_, meta) ->
       analyze_nodes scope meta
     end;
 
@@ -229,7 +229,7 @@ struct
     Shell.ensure_dir "build";
     Shell.ensure_dir_path ["output"; "resources"];
 
-    run_renderer docs @@ fun () -> 
+    run_renderer docs @@ fun () ->
     let module E = RenderEff.Perform in
     begin
       docs |> M.iter @@ fun addr doc ->
@@ -241,20 +241,20 @@ struct
       end
     end;
 
-    begin 
-      let ch = open_out @@ "output/forest.json" in 
+    begin
+      let ch = open_out @@ "output/forest.json" in
       Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
       let fmt = Format.formatter_of_out_channel ch in
       let docs = List.of_seq @@ Seq.map snd @@ M.to_seq docs in
       RenderJson.render_docs docs fmt
     end;
 
-    begin 
+    begin
       Sys.readdir "assets" |> Array.iter @@ fun basename ->
       let fp = Format.sprintf "assets/%s" basename in
-      if Sys.is_directory fp then 
-        failwith @@ 
-        Format.sprintf "Expected flat directory structure in 'assets' but found '%s'" 
+      if Sys.is_directory fp then
+        failwith @@
+        Format.sprintf "Expected flat directory structure in 'assets' but found '%s'"
           basename
       else
         begin
@@ -270,7 +270,7 @@ struct
 
     begin
       Sys.readdir "build" |> Array.iter @@ fun basename ->
-      if Filename.extension basename = ".svg" then 
+      if Filename.extension basename = ".svg" then
         let fp = Format.sprintf "build/%s" basename in
         Shell.copy_file_to_dir ~source:fp ~dest_dir:"output/resources/"
     end;

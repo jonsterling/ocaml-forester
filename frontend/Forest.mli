@@ -6,9 +6,9 @@ sig
   val render_trees : unit -> unit
 end
 
-module type I = 
+module type I =
 sig
-  val size : int 
+  val size : int
   val root : addr option
 end
 

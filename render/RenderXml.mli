@@ -2,10 +2,10 @@ open Core
 
 type printer = Xmlm.output -> unit
 
-type part = 
-  | Top 
+type part =
+  | Top
   | Frontmatter
-  | Mainmatter 
+  | Mainmatter
   | Backmatter
 
 type cfg = {part : part}

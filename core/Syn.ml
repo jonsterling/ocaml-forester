@@ -1,8 +1,8 @@
 open Base
 open Prelude
 
-type node = 
-  | Text of string 
+type node =
+  | Text of string
   | Group of delim * t
   | Math of math_mode * t
   | Tag of string
@@ -17,7 +17,7 @@ type node =
 and t = node list
 [@@deriving show]
 
-type frontmatter = 
+type frontmatter =
   {title : t option;
    addr : addr;
    taxon : string option;

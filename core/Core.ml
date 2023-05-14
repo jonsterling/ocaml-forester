@@ -1,7 +1,7 @@
 include Base
 
 module Syn = Syn
-module Sem = Sem 
+module Sem = Sem
 module Code = Code
 
 module Resolver = Resolver

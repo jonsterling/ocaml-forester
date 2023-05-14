@@ -3,31 +3,31 @@
   let drop_sigil c str = 1 |> List.nth @@ String.split_on_char c str
   let ident str = Parser.IDENT (drop_sigil '\\' str)
   let illegal str = raise @@ SyntaxError ("Lexer - Illegal character: [" ^ str ^ "].")
-  
+
   let text str = Parser.TEXT str
   let dbg str = Format.printf "%s\n" str; flush stdout
-  
+
   let verbatim = ref false
-  
-  let return_thunk lexbuf thunk = 
-    match !verbatim with 
+
+  let return_thunk lexbuf thunk =
+    match !verbatim with
     | true -> text (Lexing.lexeme lexbuf)
     | false -> thunk ()
 
   let return lexbuf tok =
     return_thunk lexbuf @@ fun _ -> tok
-    
+
 }
 
 let digit = ['0'-'9']
 let alpha = ['a'-'z' 'A'-'Z']
-let int = '-'? digit+  
+let int = '-'? digit+
 let ident = '\\' (alpha) (alpha|digit|'-')*
-let addr = (alpha) (alpha|digit|'_'|'-')* 
+let addr = (alpha) (alpha|digit|'_'|'-')*
 let whitespace = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
 let text = [^ '%' '#' '\\' '{' '}' '[' ']' '(' ')' '`' '\n']+ newline?
- 
+
 rule token =
   parse
   | "%" { comment lexbuf }
@@ -77,7 +77,7 @@ rule token =
   | eof { Parser.EOF }
   | _ { illegal @@ Lexing.lexeme lexbuf }
 
-and comment = 
-  parse 
+and comment =
+  parse
   | newline { Lexing.new_line lexbuf; token lexbuf }
   | _ { comment lexbuf }

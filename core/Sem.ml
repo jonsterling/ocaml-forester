@@ -1,12 +1,12 @@
-open Base 
+open Base
 open Prelude
 
 type attr = string * string
 [@@deriving show]
 
-type node = 
-  | Text of string 
-  | Transclude of transclusion_mode * addr 
+type node =
+  | Text of string
+  | Transclude of transclusion_mode * addr
   | Link of {dest : string; title : t}
   | Tag of string * attr list * t list
   | Math of math_mode * t
@@ -23,7 +23,7 @@ and clo = Clo of env * string list * Syn.t
 [@@deriving show]
 
 let rec node_map_text (f : string -> string) : node -> node =
-  function 
+  function
   | Text str -> Text (f str)
   | Link {dest; title} -> Link {title = map_text f title; dest}
   | Tag (tag, attrs, xs) -> Tag (tag, attrs, List.map (map_text f) xs)
@@ -34,7 +34,7 @@ and map_text (f : string -> string) : t -> t =
 
 let empty : env = Env.empty
 
-type doc = 
+type doc =
   {title : t option;
    taxon : string option;
    authors : addr list;

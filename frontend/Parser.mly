@@ -1,59 +1,59 @@
 %{
   open Prelude
   open Core
-  
-  module Frontlet = 
+
+  module Frontlet =
   struct
     open Code
-    
+
     let title title =
       function
       | ({title = None; _} as fm) ->
         {fm with title = Some title}
-      | _ -> 
+      | _ ->
         failwith "Cannot set title twice"
-        
+
     let taxon taxon =
       function
       | ({taxon = None; _} as fm) ->
         {fm with taxon = Some taxon}
-      | _ -> 
+      | _ ->
         failwith "Cannot set taxon twice"
 
     let date str =
       function
       | ({date = None; _} as fm) ->
         {fm with date = Some (Date.parse str)}
-      | _ -> 
+      | _ ->
         failwith "Cannot set title twice"
-    
-    let import addr fm = 
+
+    let import addr fm =
       {fm with decls = Import (Private, addr) :: fm.decls}
 
-    let export addr fm = 
+    let export addr fm =
       {fm with decls = Import (Public, addr) :: fm.decls}
 
-    let author addr fm = 
+    let author addr fm =
       {fm with authors = addr :: fm.authors}
-      
-    let tag addr fm = 
+
+    let tag addr fm =
       {fm with tags = addr :: fm.tags}
-      
-    let def (name, xs, body) fm = 
+
+    let def (name, xs, body) fm =
       {fm with decls = Def ([name], (xs, body)) :: fm.decls}
-      
-    let meta (key, bdy) fm = 
+
+    let meta (key, bdy) fm =
       {fm with metas = (key, bdy) :: fm.metas}
-      
-    let tex_package pkg fm = 
+
+    let tex_package pkg fm =
       {fm with tex_packages = pkg :: fm.tex_packages}
 
-    let fold frontlets = 
+    let fold frontlets =
       let open Code in
       let init = {title = None; taxon = None; date = None; decls = []; authors = []; tags = []; metas = []; tex_packages = []} in
       List.fold_right Fun.id frontlets init
   end
-  
+
   let full_transclude x = Code.Transclude (Full, x)
   let splice_transclude x = Code.Transclude (Spliced, x)
   let collapse_transclude x = Code.Transclude (Collapsed, x)
@@ -79,7 +79,7 @@ let binder == list(squares(TEXT))
 let node :=
 | ~ = braces(expr); <Code.braces>
 | ~ = squares(expr); <Code.squares>
-| ~ = parens(expr); <Code.parens> 
+| ~ = parens(expr); <Code.parens>
 | ~ = delimited(HASH_LBRACE, expr, RBRACE); <Code.inline_math>
 | ~ = delimited(HASH_HASH_LBRACE, expr, RBRACE); <Code.display_math>
 | TRANSCLUDE; ~ = txt_arg; <full_transclude>
@@ -96,7 +96,7 @@ let arg == braces(expr)
 let txt_arg == braces(TEXT)
 let fun_spec == ~ = IDENT; ~ = binder; ~ = arg; <>
 
-let frontlet := 
+let frontlet :=
 | TITLE; ~ = arg; <Frontlet.title>
 | TAXON; ~ = txt_arg; <Frontlet.taxon>
 | IMPORT; ~ = txt_arg; <Frontlet.import>
@@ -109,4 +109,4 @@ let frontlet :=
 | TEX_PACKAGE; ~ = txt_arg; <Frontlet.tex_package>
 
 let frontmatter == ~ = list(frontlet); <Frontlet.fold>
-let main :=  ~ = frontmatter; ~ = expr; EOF; <> 
+let main :=  ~ = frontmatter; ~ = expr; EOF; <>

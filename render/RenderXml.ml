@@ -178,7 +178,7 @@ and render_backmatter (doc : Sem.doc) =
   let cfg = {part = Backmatter} in
   Xml.tag "backmatter" [] [
     Xml.tag "contributions" [] [
-      E.contributions doc.addr |> Printer.iter @@ 
+      E.contributions doc.addr |> Printer.iter @@
       render_doc ~cfg
     ];
     Xml.tag "context" [] [

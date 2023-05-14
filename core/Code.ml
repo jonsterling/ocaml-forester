@@ -1,8 +1,8 @@
 open Prelude
 open Base
 
-type node = 
-  | Text of string 
+type node =
+  | Text of string
   | Group of delim * t
   | Math of math_mode * t
   | Ident of string
@@ -18,12 +18,12 @@ and t = node list
 type binder = string list * t
 [@@deriving show]
 
-type decl = 
+type decl =
   | Import of visibility * addr
   | Def of Trie.path * binder
 [@@deriving show]
 
-type frontmatter = 
+type frontmatter =
   {title : t option;
    taxon : string option;
    authors : addr list;
