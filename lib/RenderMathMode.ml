@@ -35,7 +35,7 @@ and render_tag name attrs args =
      render_args args]
 
 and render xs =
-  Printer.iter render_node xs
+  Printer.iter ~sep:Printer.space render_node xs
 
 and render_attrs (attrs : Sem.attr list) : Printer.t = 
   match List.length attrs with 
