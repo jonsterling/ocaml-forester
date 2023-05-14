@@ -83,7 +83,7 @@ let rec render_node ~cfg : Sem.node -> printer =
       RenderMathMode.Printer.contents @@
       RenderMathMode.render source
     in
-    let hash = TeXHash.hash code in
+    let hash = Digest.to_hex @@ Digest.string code in
     E.enqueue_svg ~name:hash ~packages ~source:code;
     let path = Format.sprintf "resources/%s.svg" hash in
     Xml.tag "center" []
