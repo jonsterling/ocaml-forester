@@ -212,7 +212,7 @@ class forest ~size ~root =
         end;
         begin 
           frontmatter.decls |> List.iter @@ function 
-          | Code.Import dep | Code.Export dep -> 
+          | Code.Import (_, dep) -> 
             Gph.add_edge import_graph dep scope
           | _ -> ()
         end

@@ -19,8 +19,7 @@ type binder = string list * t
 [@@deriving show]
 
 type decl = 
-  | Import of addr
-  | Export of addr
+  | Import of visibility * addr
   | Def of Trie.path * binder
 [@@deriving show]
 

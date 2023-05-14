@@ -9,3 +9,6 @@ type math_mode = Inline | Display
 
 type transclusion_mode = Full | Collapsed | Spliced
 [@@deriving show]
+
+type visibility = Private | Public
+[@@deriving show]

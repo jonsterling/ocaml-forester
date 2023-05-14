@@ -50,12 +50,13 @@ let expand_doc units addr (doc : Code.doc) =
   Resolver.Scope.run @@ fun () ->
   begin
     fm.decls |> List.iter @@ function
-    | Code.Import dep -> 
+    | Code.Import (vis, dep) -> 
       let import = UnitMap.find dep units in
-      Resolver.Scope.import_subtree ([], import)
-    | Export dep -> 
-      let import = UnitMap.find dep units in
-      Resolver.Scope.include_subtree ([], import)
+      begin 
+        match vis with 
+        | Public -> Resolver.Scope.include_subtree ([], import)
+        | Private -> Resolver.Scope.import_subtree ([], import)
+      end
     | Code.Def (path, binder) ->
       let lam = expand_lambda fm Env.empty binder in
       Resolver.Scope.include_singleton (path, (lam, ()))

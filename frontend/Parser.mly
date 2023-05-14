@@ -28,10 +28,10 @@
         failwith "Cannot set title twice"
     
     let import addr fm = 
-      {fm with decls = Import addr :: fm.decls}
+      {fm with decls = Import (Private, addr) :: fm.decls}
 
     let export addr fm = 
-      {fm with decls = Export addr :: fm.decls}
+      {fm with decls = Import (Public, addr) :: fm.decls}
 
     let author addr fm = 
       {fm with authors = addr :: fm.authors}
