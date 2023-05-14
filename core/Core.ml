@@ -1,6 +1,6 @@
 include Base
 
-module Term = Term
+module Syn = Syn
 module Sem = Sem 
 module Code = Code
 

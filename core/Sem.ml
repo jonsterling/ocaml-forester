@@ -19,7 +19,7 @@ and t = node list
 and env = t Env.t
 [@@deriving show]
 
-and clo = Clo of env * string list * Term.t
+and clo = Clo of env * string list * Syn.t
 [@@deriving show]
 
 let rec node_map_text (f : string -> string) : node -> node =

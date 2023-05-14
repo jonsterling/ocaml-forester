@@ -17,9 +17,6 @@ type node =
 and t = node list
 [@@deriving show]
 
-type macro = string list * t
-[@@deriving show]
-
 type frontmatter = 
   {title : t option;
    addr : addr;

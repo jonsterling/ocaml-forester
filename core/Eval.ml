@@ -4,7 +4,7 @@ let extend_env =
   List.fold_right2 @@ fun x v ->
   Env.add x v
 
-let rec eval env : Term.t -> Sem.t = 
+let rec eval env : Syn.t -> Sem.t = 
   function
   | [] -> []
   | Link {title; dest} :: rest -> 
@@ -34,7 +34,7 @@ let rec eval env : Term.t -> Sem.t =
   | rest -> 
     eval_textual env [] rest
 
-and eval_textual env prefix : Term.t -> Sem.t =
+and eval_textual env prefix : Syn.t -> Sem.t =
   function 
   | Group (d, xs) :: rest -> 
     let l, r = 
@@ -52,14 +52,14 @@ and eval_textual env prefix : Term.t -> Sem.t =
 
 and eval_no_op env msg =
   function 
-  | Term.Group (Braces, _) :: rest -> 
+  | Syn.Group (Braces, _) :: rest -> 
     eval env rest 
   | _ -> failwith msg
 
-and pop_args env : string list * Term.t -> Term.t * Sem.env =
+and pop_args env : string list * Syn.t -> Syn.t * Sem.env =
   function 
   | [], rest -> rest, env
-  | x :: xs, Term.Group (Braces, u) :: rest -> 
+  | x :: xs, Syn.Group (Braces, u) :: rest -> 
     let rest', env = pop_args env (xs, rest) in
     let u' = eval env u in
     rest', Env.add x u' env
@@ -69,14 +69,14 @@ and pop_args env : string list * Term.t -> Term.t * Sem.env =
 (* Just take only one argument, I guess *)
 and eval_tag env name = 
   function 
-  | Term.Group (Braces, u) :: rest ->
+  | Syn.Group (Braces, u) :: rest ->
     let u' = eval env u in
     Sem.Tag (name, [], [u']) :: eval env rest 
   | rest ->
     Sem.Tag (name, [], []) :: eval env rest
 
 
-let eval_doc (doc : Term.doc) : Sem.doc = 
+let eval_doc (doc : Syn.doc) : Sem.doc = 
   let fm, tree = doc in
   let tree = eval Sem.empty tree in
   let title = fm.title |> Option.map @@ eval Sem.empty in

@@ -1,1 +1,1 @@
-val eval_doc : Term.doc -> Sem.doc
+val eval_doc : Syn.doc -> Sem.doc

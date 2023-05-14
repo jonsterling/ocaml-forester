@@ -4,9 +4,9 @@ open Resolver
 module Set = Set.Make (String)
 module UnitMap = Map.Make (String)
 
-type exports = Term.t Trie.Untagged.t
+type exports = Syn.t Trie.Untagged.t
 
-let rec expand (fm : Code.frontmatter) (env : Term.t Env.t) : Code.t -> Term.t =
+let rec expand (fm : Code.frontmatter) (env : Syn.t Env.t) : Code.t -> Syn.t =
   function 
   | [] -> []
   | Text x :: rest -> 
@@ -39,10 +39,10 @@ and expand_ident env str =
       [Tag str]
     | Some (x, ()) -> x
 
-and expand_lambda fm (env : Term.t Env.t) : Code.macro -> Term.t = 
+and expand_lambda fm (env : Syn.t Env.t) : Code.binder -> Syn.t = 
   fun (xs, body) -> 
-  let env' = List.fold_left (fun env x -> Env.add x [Term.Var x] env) env xs in
-  [Term.Lam (xs, expand fm env' body)]
+  let env' = List.fold_left (fun env x -> Env.add x [Syn.Var x] env) env xs in
+  [Syn.Lam (xs, expand fm env' body)]
 
 
 let expand_doc units addr (doc : Code.doc) =
@@ -56,9 +56,9 @@ let expand_doc units addr (doc : Code.doc) =
     | Export dep -> 
       let import = UnitMap.find dep units in
       Resolver.Scope.include_subtree ([], import)
-    | Code.Def (path, ((xs,body) as macro)) ->
-      let macro = expand_lambda fm Env.empty macro in
-      Resolver.Scope.include_singleton (path, (macro, ()))
+    | Code.Def (path, binder) ->
+      let lam = expand_lambda fm Env.empty binder in
+      Resolver.Scope.include_singleton (path, (lam, ()))
   end;
 
   let exports = Resolver.Scope.get_export () in
@@ -70,5 +70,5 @@ let expand_doc units addr (doc : Code.doc) =
     key, expand fm Env.empty body
   in
 
-  let fm = Term.{title; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date; tags = fm.tags; metas; tex_packages = fm.tex_packages} in
+  let fm = Syn.{title; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date; tags = fm.tags; metas; tex_packages = fm.tex_packages} in
   units, (fm, tree)

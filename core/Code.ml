@@ -15,13 +15,13 @@ type node =
 and t = node list
 [@@deriving show]
 
-type macro = string list * t
+type binder = string list * t
 [@@deriving show]
 
 type decl = 
   | Import of addr
   | Export of addr
-  | Def of Trie.path * macro
+  | Def of Trie.path * binder
 [@@deriving show]
 
 type frontmatter = 
