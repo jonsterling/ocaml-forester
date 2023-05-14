@@ -47,18 +47,17 @@ let rec render_node ~cfg : Sem.node -> printer =
   | Sem.Text txt ->
     Printer.text txt
   | Sem.Math (mode, bdy) ->
-    let l, r =
+    let attrs = 
       match mode with
-      | Inline -> "\\(", "\\)"
-      | Display -> "\\[", "\\]"
+      | Inline -> [] 
+      | Display -> ["display", "block"]
     in
     let module TP = RenderMathMode.Printer in
-    Printer.text @@
-    TP.contents @@
-    TP.seq
-      [TP.text l;
-       RenderMathMode.render bdy;
-       TP.text r]
+    Xml.tag "tex" attrs [
+      Printer.text @@
+      TP.contents @@
+      RenderMathMode.render bdy
+    ]
   | Sem.Link {title; dest} ->
     begin
       match E.get_doc dest with
