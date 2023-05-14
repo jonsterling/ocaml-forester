@@ -51,14 +51,49 @@ class expander ~size =
       Sem.{title; body; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date; metas}
   end
 
+class svg_builder ~size =
+  object
+    val svg_queue : (string, string list * string) Hashtbl.t = Hashtbl.create size
+
+    method enqueue ~name ~packages ~source =
+      if not @@ Hashtbl.mem svg_queue name then
+        Hashtbl.add svg_queue name (packages, source)
+
+    method build : unit = 
+      let n = Hashtbl.length svg_queue in
+      let tasks = Array.make n `Uninitialized in
+
+      begin
+        let i = ref 0 in
+        svg_queue |> Hashtbl.iter @@ fun name (packages, source) -> 
+        tasks.(!i) <- `Task (name, packages, source);
+        i := !i + 1
+      end;
+
+      Hashtbl.clear svg_queue;
+
+      let worker i = 
+        match tasks.(i) with 
+        | `Task (name, packages, source) -> BuildSvg.build_svg ~name ~source ~packages
+        | `Uninitialized -> failwith "Unexpected uninitialized task in SVG queue"
+      in 
+
+      let pool = T.setup_pool ~num_domains:10 () in
+      begin
+        T.run pool @@ fun _ ->
+        T.parallel_for pool ~start:0 ~finish:(n-1) ~body:worker
+      end;
+      T.teardown_pool pool
+  end
+
+
 class forest ~size ~root =
   object(self)
     val mutable frozen = false
 
-    val unexpanded_trees : Code.doc Tbl.t = Tbl.create size
-    val svg_queue : (string, string list * string) Hashtbl.t = Hashtbl.create 100
-
     val expander = new expander ~size
+    val svg_builder = new svg_builder ~size:100
+    val unexpanded_trees : Code.doc Tbl.t = Tbl.create size
 
     val trees : Sem.doc Tbl.t = Tbl.create size
     val abspaths : string Tbl.t = Tbl.create size
@@ -89,8 +124,7 @@ class forest ~size ~root =
           Tbl.find_opt trees
 
         method enqueue_svg ~name ~packages ~source = 
-          if not @@ Hashtbl.mem svg_queue name then
-            Hashtbl.add svg_queue name (packages, source)
+          svg_builder#enqueue ~name ~packages ~source
 
         method private doc_peek_title (doc : Sem.doc) = 
           match doc.title with 
@@ -136,7 +170,6 @@ class forest ~size ~root =
         method get_pages_authored scope = 
           self#get_sorted_trees @@ Set.of_list @@ Tbl.find_all author_pages scope
 
-
         method get_contributors scope = 
           let doc = Tbl.find trees scope in
           let authors = Set.of_list doc.authors in
@@ -177,7 +210,8 @@ class forest ~size ~root =
       in 
       Gph.iter_succ task transclusion_graph addr
 
-    method private analyze_node scope : Sem.node -> unit =
+    method private analyze_nodes scope : Sem.t -> unit =
+      List.iter @@ 
       function
       | Sem.Text _ -> ()
       | Sem.Transclude (_, addr) ->
@@ -195,9 +229,6 @@ class forest ~size ~root =
         self#analyze_nodes scope title;
         self#analyze_nodes scope body
 
-    method private analyze_nodes scope : Sem.t -> unit = 
-      List.iter @@ self#analyze_node scope
-
     method private expand_trees : unit =
       import_graph |> Topo.iter @@ fun addr ->
       let edoc = Tbl.find unexpanded_trees addr in
@@ -207,9 +238,11 @@ class forest ~size ~root =
     method private analyze_trees : unit =
       self#expand_trees;
       begin
-        trees |> Tbl.iter @@ fun addr Sem.{body; title; _} ->
-        self#analyze_nodes addr body;
-        self#analyze_nodes addr title
+        trees |> Tbl.iter @@ fun scope Sem.{body; title; metas; _} ->
+        self#analyze_nodes scope body;
+        self#analyze_nodes scope title;
+        metas |> List.iter @@ fun (_, meta) -> 
+        self#analyze_nodes scope meta
       end;
       self#expand_transitive_contributors_and_bibliography
 
@@ -239,31 +272,6 @@ class forest ~size ~root =
       end;
       Tbl.add unexpanded_trees scope doc
 
-    method private build_svgs : unit = 
-      let n = Hashtbl.length svg_queue in
-      let tasks = Array.make n `Uninitialized in
-
-      begin
-        let i = ref 0 in
-        svg_queue |> Hashtbl.iter @@ fun name (packages, source) -> 
-        tasks.(!i) <- `Task (name, packages, source);
-        i := !i + 1
-      end;
-
-      Hashtbl.clear svg_queue;
-
-      let worker i = 
-        match tasks.(i) with 
-        | `Task (name, packages, source) -> BuildSvg.build_svg ~name ~source ~packages
-        | `Uninitialized -> failwith "Unexpected uninitialized task in SVG queue"
-      in 
-
-      let pool = T.setup_pool ~num_domains:10 () in
-      begin
-        T.run pool @@ fun _ ->
-        T.parallel_for pool ~start:0 ~finish:(n-1) ~body:worker
-      end;
-      T.teardown_pool pool
 
     method render_trees : unit =
       let open Sem in
@@ -309,7 +317,7 @@ class forest ~size ~root =
 
       begin
         Shell.within_dir "build" @@ fun _ ->
-        self#build_svgs
+        svg_builder#build
       end;
 
       begin
