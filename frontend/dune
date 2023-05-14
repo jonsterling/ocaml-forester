@@ -4,7 +4,8 @@
  (modules Parser))
 
 (library
- (name forester)
+ (name Forester)
+ (public_name forester.frontend)
  (preprocess
   (pps ppx_deriving.show))
  (libraries
