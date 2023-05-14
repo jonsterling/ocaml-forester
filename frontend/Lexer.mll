@@ -50,6 +50,10 @@ rule token =
   | "\\title" { return lexbuf @@ Parser.TITLE }
   | "\\taxon" { return lexbuf @@ Parser.TAXON }
   | "\\author" { return lexbuf @@ Parser.AUTHOR }
+  | "\\scope" { return lexbuf @@ Parser.SCOPE }
+  | "\\put" { return lexbuf @@ Parser.PUT }
+  | "\\put?" { return lexbuf @@ Parser.DEFAULT }
+  | "\\get" { return lexbuf @@ Parser.GET }
   | "\\tag" { return lexbuf @@ Parser.TAG }
   | "\\date" { return lexbuf @@ Parser.DATE }
   | "\\import" { return lexbuf @@ Parser.IMPORT }

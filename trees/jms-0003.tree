@@ -1,5 +1,27 @@
 \title{another tree}
-
+\texpackage{tikz-cd}
 \import{jms-0002}
 
-\helloworld
+\def\DrawSquare{
+  \tex{
+    \put?{nw}{NW}
+    \put?{sw}{SW}
+    \put?{se}{SE}
+    \put?{ne}{NE}
+    \put?{west}{W}
+    \put?{east}{E}
+    \put?{north}{N}
+    \put?{south}{S}
+    \put?{options}{}
+
+    \begin{tikzcd}[\get{options}]
+      \get{nw}\arrow[r,"\get{north}"]\arrow[d,"\get{west}",swap] & \get{ne}\arrow[d,"\get{east}"]\\
+      \get{sw}\arrow[r,swap,"\get{south}"] & \get{se}
+    \end{tikzcd}
+  }
+}
+
+\scope{
+  \DrawSquare
+}
+

@@ -1,40 +1,54 @@
 open Base
 
-let extend_env =
-  List.fold_right2 @@ fun x v ->
-  Env.add x v
-
-let rec eval env : Syn.t -> Sem.t =
+let rec eval ~env ~flenv : Syn.t -> Sem.t =
   function
   | [] -> []
   | Link {title; dest} :: rest ->
-    let title = eval env title in
+    let title = eval ~env ~flenv title in
     let link = Sem.Link {dest; title} in
-    link :: eval env rest
+    link :: eval ~env ~flenv rest
   | Math (mmode, e) :: rest ->
-    Sem.Math (mmode, eval env e) :: eval env rest
+    Sem.Math (mmode, eval ~env ~flenv e) :: eval ~env ~flenv rest
   | Tag name :: rest ->
-    eval_tag env name rest
+    eval_tag ~env ~flenv name rest
   | Transclude (tmode, name) :: rest ->
-    Sem.Transclude (tmode, name) :: eval env rest
+    Sem.Transclude (tmode, name) :: eval ~env ~flenv rest
   | EmbedTeX {packages; source} :: rest ->
-    Sem.EmbedTeX {packages; source = eval env source} :: eval env rest
+    Sem.EmbedTeX {packages; source = eval ~env ~flenv source} :: eval ~env ~flenv rest
   | Block (title, body) :: rest ->
-    Sem.Block (eval env title, eval env body)
-    :: eval env rest
+    Sem.Block (eval ~env ~flenv title, eval ~env ~flenv body)
+    :: eval ~env ~flenv rest
   | Lam (xs, body) :: rest ->
-    let rest', env' = pop_args env (xs, rest) in
-    eval env' body @ eval env rest'
+    let rest', env' = pop_args ~env ~flenv (xs, rest) in
+    eval ~env:env' ~flenv body @ eval ~env ~flenv rest'
   | Var x :: rest ->
     begin
       match Env.find_opt x env with
       | None -> failwith @@ Format.sprintf "Could not find variable named %s" x
-      | Some v -> v @ eval env rest
+      | Some v -> v @ eval ~env ~flenv rest
     end
-  | rest ->
-    eval_textual env [] rest
+  | Put (k, v, body) :: rest ->
+    let body =
+      let flenv = Env.add k (eval ~env ~flenv v) flenv in
+      eval ~env ~flenv body
+    in
+    body @ eval ~env ~flenv rest
+  | Default (k, v, body) :: rest ->
+    let body =
+      let flenv = if Env.mem k flenv then flenv else Env.add k (eval ~env ~flenv v) flenv in
+      eval ~env ~flenv body
+    in
+    body @ eval ~env ~flenv rest  
+  | Get key :: rest -> 
+    begin
+      match Env.find_opt key flenv with 
+      | None -> failwith @@ Format.sprintf "Could not find fluid binding named %s" key
+      | Some v -> v @ eval ~env ~flenv rest
+    end
+  | (Group _ :: _ | Text _ :: _) as rest->
+    eval_textual ~env ~flenv [] rest
 
-and eval_textual env prefix : Syn.t -> Sem.t =
+and eval_textual ~env ~flenv prefix : Syn.t -> Sem.t =
   function
   | Group (d, xs) :: rest ->
     let l, r =
@@ -43,46 +57,48 @@ and eval_textual env prefix : Syn.t -> Sem.t =
       | Squares -> "[", "]"
       | Parens -> "(", ")"
     in
-    eval_textual env (l :: prefix) @@ xs @ Text r :: rest
+    eval_textual ~env ~flenv (l :: prefix) @@ xs @ Text r :: rest
   | Text x :: rest ->
-    eval_textual env (x :: prefix) @@ rest
+    eval_textual ~env ~flenv (x :: prefix) @@ rest
   | rest ->
     let txt = String.concat "" @@ List.rev prefix in
-    Text txt :: eval env rest
+    Text txt :: eval ~env ~flenv rest
 
-and eval_no_op env msg =
+and eval_no_op ~env ~flenv msg =
   function
   | Syn.Group (Braces, _) :: rest ->
-    eval env rest
+    eval ~env ~flenv rest
   | _ -> failwith msg
 
-and pop_args env : string list * Syn.t -> Syn.t * Sem.env =
+and pop_args ~env ~flenv : string list * Syn.t -> Syn.t * Sem.env =
   function
   | [], rest -> rest, env
   | x :: xs, Syn.Group (Braces, u) :: rest ->
-    let rest', env = pop_args env (xs, rest) in
-    let u' = eval env u in
+    let rest', env = pop_args ~env ~flenv (xs, rest) in
+    let u' = eval ~env ~flenv u in
     rest', Env.add x u' env
   | _ ->
     failwith "pop_args"
 
 (* Just take only one argument, I guess *)
-and eval_tag env name =
+and eval_tag ~env ~flenv name =
   function
   | Syn.Group (Braces, u) :: rest ->
-    let u' = eval env u in
-    Sem.Tag (name, [], [u']) :: eval env rest
+    let u' = eval ~env ~flenv u in
+    Sem.Tag (name, [], [u']) :: eval ~env ~flenv rest
   | rest ->
-    Sem.Tag (name, [], []) :: eval env rest
+    Sem.Tag (name, [], []) :: eval ~env ~flenv rest
 
 
 let eval_doc (doc : Syn.doc) : Sem.doc =
   let fm, tree = doc in
-  let tree = eval Sem.empty tree in
-  let title = fm.title |> Option.map @@ eval Sem.empty in
+  let env = Sem.empty in
+  let flenv = Sem.empty in
+  let tree = eval ~env ~flenv tree in
+  let title = fm.title |> Option.map @@ eval ~env ~flenv in
   let metas =
     fm.metas |> List.map @@ fun (k, v) ->
-    k, eval Sem.empty v
+    k, eval ~env ~flenv v
   in
   {title;
    body = tree;

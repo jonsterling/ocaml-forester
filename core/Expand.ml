@@ -29,6 +29,17 @@ let rec expand (fm : Code.frontmatter) (env : Syn.t Env.t) : Code.t -> Syn.t =
     Math (m, expand fm env xs) :: expand fm env rest
   | Ident str :: rest ->
     expand_ident env str @ expand fm env rest
+  | Scope body :: rest ->
+    let body = expand fm env body in 
+    body @ expand fm env rest
+  | Put (k, v) :: rest ->
+    let v = expand fm env v in
+    [Put (k, v, expand fm env rest)]
+  | Default (k, v) :: rest -> 
+    let v = expand fm env v in
+    [Default (k, v, expand fm env rest)]
+  | Get key :: rest -> 
+    Get key :: expand fm env rest
 
 and expand_ident env str =
   match Env.find_opt str env with

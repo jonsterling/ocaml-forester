@@ -60,7 +60,7 @@
 %}
 
 %token <string> TEXT IDENT
-%token TRANSCLUDE TRANSCLUDE_STAR TRANSCLUDE_AT
+%token TRANSCLUDE TRANSCLUDE_STAR TRANSCLUDE_AT SCOPE PUT GET DEFAULT
 %token TITLE IMPORT EXPORT DEF LET TEX TAXON AUTHOR TEX_PACKAGE TAG DATE BLOCK META
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token EOF
@@ -90,6 +90,10 @@ let node :=
 | BLOCK; x = arg; y = arg; <Code.Block>
 | ~ = IDENT; <Code.Ident>
 | ~ = TEXT; <Code.Text>
+| SCOPE; ~ = arg; <Code.Scope>
+| PUT; ~ = txt_arg; ~ = arg; <Code.Put>
+| DEFAULT; ~ = txt_arg; ~ = arg; <Code.Default>
+| GET; ~ = txt_arg; <Code.Get>
 
 let expr == list(node)
 let arg == braces(expr)

@@ -10,6 +10,10 @@ type node =
   | EmbedTeX of t
   | Let of string * string list * t
   | Block of t * t
+  | Scope of t
+  | Put of string * t 
+  | Default of string * t
+  | Get of string
 [@@deriving show]
 
 and t = node list
