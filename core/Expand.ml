@@ -58,8 +58,7 @@ let expand_doc units addr (doc : Code.doc) =
       Resolver.Scope.include_subtree ([], import)
     | Code.Def (path, ((xs,body) as macro)) ->
       let macro = expand_lambda fm Env.empty macro in
-      Resolver.Scope.include_singleton (path, (macro, ()));
-      Resolver.Scope.export_visible (Y.Language.only path)
+      Resolver.Scope.include_singleton (path, (macro, ()))
   end;
 
   let exports = Resolver.Scope.get_export () in
