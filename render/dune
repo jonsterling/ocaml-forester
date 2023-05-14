@@ -1,0 +1,11 @@
+(library
+ (name Render)
+ (preprocess
+  (pps ppx_deriving.show))
+ (libraries forester.prelude forester.core xmlm algaeff)
+ (public_name forester.render))
+
+(env
+ (dev
+  (flags
+   (:standard -w -66-32-33-27-26))))

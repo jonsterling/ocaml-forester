@@ -1,5 +1,6 @@
 open Prelude
 open Core
+open Render
 
 module T = Domainslib.Task
 module Y = Yuujinchou
@@ -66,37 +67,37 @@ class forest ~size ~root =
     val contributors : addr Tbl.t = Tbl.create size
     val bibliography : addr Tbl.t = Tbl.create size
 
-
-    method private render_env ~docs =
-      object(self)
-        method is_root addr =
+    method private run_renderer (docs : Sem.doc M.t) (body : unit -> 'a) : 'a = 
+      let module H : RenderEff.Handler = 
+      struct 
+        let is_root addr =
           root = Some addr
 
-        method route addr =
-          match self#is_root addr with 
+        let route addr =
+          match is_root addr with 
           | true -> "index.xml"
           | false -> addr ^ ".xml"
 
-        method get_absolute_path addr =
+        let abs_path addr =
           Tbl.find_opt abspaths addr
 
-        method get_doc addr = 
+        let get_doc addr = 
           M.find_opt addr docs
 
-        method enqueue_svg ~name ~packages ~source = 
+        let enqueue_svg ~name ~packages ~source = 
           svg_builder#enqueue ~name ~packages ~source
 
-        method private doc_peek_title (doc : Sem.doc) = 
+        let doc_peek_title (doc : Sem.doc) = 
           match doc.title with 
           | Some (Sem.Text txt :: _) -> Some txt
           | _ -> None
 
-        method private addr_peek_title scope = 
+        let addr_peek_title scope = 
           match M.find_opt scope docs with
-          | Some doc -> self#doc_peek_title doc
+          | Some doc -> doc_peek_title doc
           | None -> None
 
-        method private get_sorted_trees addrs : Sem.doc list = 
+        let get_sorted_trees addrs : Sem.doc list = 
           let by_taxon = Compare.under (fun x -> Sem.(x.taxon)) @@ fun x y ->
             match x, y with
             | Some "reference", Some "reference" -> 0
@@ -105,7 +106,7 @@ class forest ~size ~root =
             | _ -> 1
           in 
           let by_date = Compare.under (fun x -> Sem.(x.date)) @@ Compare.option Date.compare in
-          let by_title = Compare.under self#doc_peek_title @@ Compare.option String.compare in
+          let by_title = Compare.under doc_peek_title @@ Compare.option String.compare in
           let by_addr = Compare.under (fun x -> Sem.(x.addr)) String.compare in
           let compare = Compare.cascade by_taxon @@ Compare.cascade by_date @@ Compare.cascade by_title by_addr in
           let find addr = 
@@ -115,27 +116,27 @@ class forest ~size ~root =
           in
           List.sort compare @@ List.concat_map find @@ S.elements addrs
 
-        method get_backlinks scope =
-          self#get_sorted_trees @@ S.of_list @@ Gph.succ link_graph scope
+        let get_all_links scope = 
+          get_sorted_trees @@ S.of_list @@ Gph.pred link_graph scope
 
-        method get_all_links scope = 
-          self#get_sorted_trees @@ S.of_list @@ Gph.pred link_graph scope
+        let backlinks scope =
+          get_sorted_trees @@ S.of_list @@ Gph.succ link_graph scope
 
-        method get_links scope = 
-          self#get_all_links scope |> List.filter @@ fun (doc : Sem.doc) ->
+        let related scope = 
+          get_all_links scope |> List.filter @@ fun (doc : Sem.doc) ->
           not (doc.taxon = Some "reference")
 
-        method get_references scope = 
-          self#get_sorted_trees @@ 
+        let bibliography scope = 
+          get_sorted_trees @@ 
           S.of_list @@ Tbl.find_all bibliography scope
 
-        method get_parents scope =
-          self#get_sorted_trees @@ S.of_list @@ Gph.succ transclusion_graph scope
+        let parents scope =
+          get_sorted_trees @@ S.of_list @@ Gph.succ transclusion_graph scope
 
-        method get_pages_authored scope = 
-          self#get_sorted_trees @@ S.of_list @@ Tbl.find_all author_pages scope
+        let contributions scope = 
+          get_sorted_trees @@ S.of_list @@ Tbl.find_all author_pages scope
 
-        method get_contributors scope = 
+        let contributors scope = 
           let doc = M.find scope docs in
           let authors = S.of_list doc.authors in
           let contributors = S.of_list @@ Tbl.find_all contributors scope in
@@ -143,10 +144,13 @@ class forest ~size ~root =
             contributors |> S.filter @@ fun contr ->
             not @@ S.mem contr authors
           in
-          let by_title = Compare.under self#addr_peek_title @@ Compare.option String.compare in
+          let by_title = Compare.under addr_peek_title @@ Compare.option String.compare in
           let compare = Compare.cascade by_title String.compare in
           List.sort compare @@ S.elements proper_contributors
       end
+      in
+      let module Run = RenderEff.Run (H) in
+      Run.run body
 
     method private expand_transitive_contributors_and_bibliography (trees : Sem.doc M.t) : unit =
       begin
@@ -249,14 +253,15 @@ class forest ~size ~root =
       Shell.ensure_dir "build";
       Shell.ensure_dir_path ["output"; "resources"];
 
-      let render_env = (self#render_env ~docs :> RenderEnv.t) in
+      self#run_renderer docs @@ fun () -> 
+      let module E = RenderEff.Perform in
       begin
         docs |> M.iter @@ fun addr doc ->
         begin
-          let ch = open_out @@ "output/" ^ render_env#route addr in
+          let ch = open_out @@ "output/" ^ E.route addr in
           Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
           let out = Xmlm.make_output @@ `Channel ch in
-          RenderXml.render_doc_page (render_env :> RenderEnv.t) addr doc out
+          RenderXml.render_doc_page addr doc out
         end
       end;
 
@@ -265,8 +270,7 @@ class forest ~size ~root =
         Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
         let fmt = Format.formatter_of_out_channel ch in
         let docs = List.of_seq @@ Seq.map snd @@ M.to_seq docs in
-        let env = render_env in
-        RenderJson.render_docs env docs fmt
+        RenderJson.render_docs docs fmt
       end;
 
       begin 

@@ -1,4 +1,5 @@
 open Prelude.Shell
+open Render
 
 let tex_fp name = 
   Format.sprintf "%s.tex" name

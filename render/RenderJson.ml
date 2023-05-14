@@ -1,6 +1,8 @@
 open Prelude
 open Core
 
+module E = RenderEff.Perform
+
 module Printer =
 struct
   module P0 = 
@@ -51,7 +53,7 @@ and render_node : Sem.node -> Printer.t =
   | Sem.Transclude _ | Sem.EmbedTeX _ | Sem.Math _ | Sem.Block _ -> Printer.nil
 
 
-let render_doc (env : RenderEnv.t) (doc : Sem.doc) : Printer.t = 
+let render_doc (doc : Sem.doc) : Printer.t = 
   render_key doc.addr @@ braces @@
   Printer.iter ~sep:comma (fun (k, x) -> render_key k x) 
     ["title",
@@ -66,7 +68,9 @@ let render_doc (env : RenderEnv.t) (doc : Sem.doc) : Printer.t =
        | None -> Printer.text "null" 
        | Some taxon -> render_string_literal @@ Printer.text @@ StringUtil.title_case taxon
      end;
-     "route", render_string_literal @@ Printer.text @@ env#route doc.addr]
+     "route", 
+     render_string_literal @@ Printer.text @@ 
+     E.route doc.addr]
 
-let render_docs (env : RenderEnv.t) (docs : Sem.doc list) : Printer.t =
-  braces @@ Printer.iter ~sep:comma (render_doc env) docs
+let render_docs (docs : Sem.doc list) : Printer.t =
+  braces @@ Printer.iter ~sep:comma render_doc docs

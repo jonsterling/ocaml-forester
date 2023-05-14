@@ -28,4 +28,5 @@
   xmlm
   ppx_deriving
   domainslib
-  yuujinchou))
+  yuujinchou
+  algaeff))

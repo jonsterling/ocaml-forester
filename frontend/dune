@@ -11,6 +11,7 @@
  (libraries
   forester.prelude
   forester.core
+  forester.render
   ocamlgraph
   xmlm
   domainslib
