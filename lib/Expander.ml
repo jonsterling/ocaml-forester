@@ -17,14 +17,14 @@ let rec expand (fm : Code.frontmatter) (env : Term.t Env.t) : Code.t -> Term.t =
     Transclude (m, addr) :: expand fm env rest
   | EmbedTeX xs :: rest -> 
     EmbedTeX {packages = fm.tex_packages; source = expand fm env xs} :: expand fm env rest
-  | Let (a, bs, xs) :: rest as all -> 
+  | Let (a, bs, xs) :: rest -> 
     let env' = Env.add a (expand_macro fm env (bs, xs)) env in 
     expand fm env' rest
   | Block (xs, ys) :: rest -> 
     Block (expand fm env xs, expand fm env ys) :: expand fm env rest 
   | Math (m, xs) :: rest ->
     Math (m, expand fm env xs) :: expand fm env rest 
-  | Ident str :: rest as all -> 
+  | Ident str :: rest -> 
     expand_ident env str @ expand fm env rest
 
 and expand_ident env str = 

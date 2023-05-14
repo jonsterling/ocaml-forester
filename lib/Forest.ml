@@ -203,7 +203,6 @@ class forest ~size ~root =
           Tbl.add contributors addr' contributor
         end;
         begin
-          let env = self#render_env in
           Tbl.find_all bibliography addr |> List.iter @@ fun ref ->
           Tbl.add bibliography addr' ref
         end
