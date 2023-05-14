@@ -1,4 +1,4 @@
-open Types
+open Base 
 
 let extend_env = 
   List.fold_right2 @@ fun x v ->
@@ -74,3 +74,20 @@ and eval_tag env name =
     Sem.Tag (name, [], [u']) :: eval env rest 
   | rest ->
     Sem.Tag (name, [], []) :: eval env rest
+
+
+let eval_doc (doc : Term.doc) : Sem.doc = 
+  let fm, tree = doc in
+  let tree = eval Sem.empty tree in
+  let title = fm.title |> Option.map @@ eval Sem.empty in
+  let metas = 
+    fm.metas |> List.map @@ fun (k, v) ->
+    k, eval Sem.empty v
+  in
+  {title;
+   body = tree; 
+   addr = fm.addr; 
+   taxon = fm.taxon;
+   authors = fm.authors;
+   date = fm.date;
+   metas}

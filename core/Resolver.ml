@@ -1,7 +1,3 @@
-open Types 
-
-open struct module Y = Yuujinchou end
-
 module P =
 struct
   type data = Term.t
@@ -11,5 +7,5 @@ struct
   type context = unit (* for advanced printing and reporting; unused here *)
 end
 
-module Mod = Y.Modifier.Make (P)
-module Scope = Y.Scope.Make (P) (Mod)
+module Mod = Yuujinchou.Modifier.Make (P)
+module Scope = Yuujinchou.Scope.Make (P) (Mod)

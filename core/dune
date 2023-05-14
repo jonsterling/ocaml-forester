@@ -1,0 +1,11 @@
+(library
+ (name Core)
+ (preprocess
+  (pps ppx_deriving.show))
+ (libraries forester.prelude yuujinchou)
+ (public_name forester.core))
+
+(env
+ (dev
+  (flags
+   (:standard -w -66-32-33-27-26))))

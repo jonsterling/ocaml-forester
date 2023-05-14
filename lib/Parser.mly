@@ -1,6 +1,6 @@
 %{
   open Prelude
-  open Types
+  open Core
   
   module Frontlet = 
   struct

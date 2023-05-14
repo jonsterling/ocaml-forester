@@ -1,5 +1,5 @@
 open Prelude
-open Types
+open Core
 
 module T = Domainslib.Task
 module Y = Yuujinchou
@@ -10,47 +10,8 @@ module Gph = Graph.Imperative.Digraph.Concrete (Addr)
 module Topo = Graph.Topological.Make (Gph)
 module Clo = Graph.Traverse
 
-module Set = Set.Make (String)
-
-class expander ~size =
-  object
-    val export_table : Term.t Y.Trie.Untagged.t Tbl.t = Tbl.create size
-
-    method expand_tree addr (doc : Code.doc) = 
-      let fm, tree = doc in
-      Resolver.Scope.run @@ fun () ->
-      begin
-        fm.decls |> List.iter @@ function
-        | Code.Import dep -> 
-          let import = Tbl.find export_table dep in
-          Resolver.Scope.import_subtree ([], import)
-        | Export dep -> 
-          let import = Tbl.find export_table dep in
-          Resolver.Scope.include_subtree ([], import)
-        | Code.Def (path, ((xs,body) as macro)) ->
-          let macro = Expand.expand_lambda fm Env.empty macro in
-          Resolver.Scope.include_singleton (path, (macro, ()));
-          Resolver.Scope.export_visible (Y.Language.only path)
-      end;
-
-      let exports = Resolver.Scope.get_export () in
-      Tbl.add export_table addr exports;
-
-      let body = Eval.eval Env.empty @@ Expand.expand fm Env.empty tree in
-
-      let title =
-        match fm.title with
-        | None -> [Sem.Text addr]
-        | Some title -> 
-          Eval.eval Env.empty @@ 
-          Expand.expand fm Env.empty title
-      in 
-      let metas = 
-        fm.metas |> List.map @@ fun (key, body) ->
-        key, Eval.eval Env.empty @@ Expand.expand fm Env.empty body
-      in
-      Sem.{title; body; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date; metas}
-  end
+module M = Map.Make (String)
+module S = Set.Make (String)
 
 class svg_builder ~size =
   object
@@ -92,11 +53,9 @@ class forest ~size ~root =
   object(self)
     val mutable frozen = false
 
-    val expander = new expander ~size
     val svg_builder = new svg_builder ~size:100
     val unexpanded_trees : Code.doc Tbl.t = Tbl.create size
 
-    val trees : Sem.doc Tbl.t = Tbl.create size
     val abspaths : string Tbl.t = Tbl.create size
     val import_graph : Gph.t = Gph.create ()
 
@@ -108,7 +67,7 @@ class forest ~size ~root =
     val bibliography : addr Tbl.t = Tbl.create size
 
 
-    method private render_env =
+    method private render_env ~docs =
       object(self)
         method is_root addr =
           root = Some addr
@@ -121,23 +80,23 @@ class forest ~size ~root =
         method get_absolute_path addr =
           Tbl.find_opt abspaths addr
 
-        method get_doc  = 
-          Tbl.find_opt trees
+        method get_doc addr = 
+          M.find_opt addr docs
 
         method enqueue_svg ~name ~packages ~source = 
           svg_builder#enqueue ~name ~packages ~source
 
         method private doc_peek_title (doc : Sem.doc) = 
           match doc.title with 
-          | Sem.Text txt :: _ -> Some txt
+          | Some (Sem.Text txt :: _) -> Some txt
           | _ -> None
 
         method private addr_peek_title scope = 
-          match Tbl.find_opt trees scope with
+          match M.find_opt scope docs with
           | Some doc -> self#doc_peek_title doc
           | None -> None
 
-        method get_sorted_trees addrs : Sem.doc list = 
+        method private get_sorted_trees addrs : Sem.doc list = 
           let by_taxon = Compare.under (fun x -> Sem.(x.taxon)) @@ fun x y ->
             match x, y with
             | Some "reference", Some "reference" -> 0
@@ -149,13 +108,18 @@ class forest ~size ~root =
           let by_title = Compare.under self#doc_peek_title @@ Compare.option String.compare in
           let by_addr = Compare.under (fun x -> Sem.(x.addr)) String.compare in
           let compare = Compare.cascade by_taxon @@ Compare.cascade by_date @@ Compare.cascade by_title by_addr in
-          List.sort compare @@ List.concat_map (Tbl.find_all trees) @@ Set.elements addrs
+          let find addr = 
+            match M.find_opt addr docs with 
+            | None -> [] 
+            | Some doc -> [doc]
+          in
+          List.sort compare @@ List.concat_map find @@ S.elements addrs
 
         method get_backlinks scope =
-          self#get_sorted_trees @@ Set.of_list @@ Gph.succ link_graph scope
+          self#get_sorted_trees @@ S.of_list @@ Gph.succ link_graph scope
 
         method get_all_links scope = 
-          self#get_sorted_trees @@ Set.of_list @@ Gph.pred link_graph scope
+          self#get_sorted_trees @@ S.of_list @@ Gph.pred link_graph scope
 
         method get_links scope = 
           self#get_all_links scope |> List.filter @@ fun (doc : Sem.doc) ->
@@ -163,34 +127,34 @@ class forest ~size ~root =
 
         method get_references scope = 
           self#get_sorted_trees @@ 
-          Set.of_list @@ Tbl.find_all bibliography scope
+          S.of_list @@ Tbl.find_all bibliography scope
 
         method get_parents scope =
-          self#get_sorted_trees @@ Set.of_list @@ Gph.succ transclusion_graph scope
+          self#get_sorted_trees @@ S.of_list @@ Gph.succ transclusion_graph scope
 
         method get_pages_authored scope = 
-          self#get_sorted_trees @@ Set.of_list @@ Tbl.find_all author_pages scope
+          self#get_sorted_trees @@ S.of_list @@ Tbl.find_all author_pages scope
 
         method get_contributors scope = 
-          let doc = Tbl.find trees scope in
-          let authors = Set.of_list doc.authors in
-          let contributors = Set.of_list @@ Tbl.find_all contributors scope in
+          let doc = M.find scope docs in
+          let authors = S.of_list doc.authors in
+          let contributors = S.of_list @@ Tbl.find_all contributors scope in
           let proper_contributors = 
-            contributors |> Set.filter @@ fun contr ->
-            not @@ Set.mem contr authors
+            contributors |> S.filter @@ fun contr ->
+            not @@ S.mem contr authors
           in
           let by_title = Compare.under self#addr_peek_title @@ Compare.option String.compare in
           let compare = Compare.cascade by_title String.compare in
-          List.sort compare @@ Set.elements proper_contributors
+          List.sort compare @@ S.elements proper_contributors
       end
 
-    method private expand_transitive_contributors_and_bibliography : unit =
+    method private expand_transitive_contributors_and_bibliography (trees : Sem.doc M.t) : unit =
       begin
-        trees |> Tbl.iter @@ fun addr _ -> 
+        trees |> M.iter @@ fun addr _ -> 
         let task ref = 
-          match Tbl.find_opt trees ref with 
+          match M.find_opt ref trees with 
           | None -> () 
-          | Some doc -> 
+          | Some (doc : Sem.doc) -> 
             if doc.taxon = Some "reference" then 
               Tbl.add bibliography addr ref
         in 
@@ -198,7 +162,7 @@ class forest ~size ~root =
       end;
       transclusion_graph |> Topo.iter @@ fun addr ->
       let task addr' = 
-        let doc = Tbl.find trees addr in
+        let doc = M.find addr trees in
         begin
           doc.authors @ Tbl.find_all contributors addr |> List.iter @@ fun contributor ->
           Tbl.add contributors addr' contributor
@@ -228,23 +192,6 @@ class forest ~size ~root =
       | Sem.Block (title, body) -> 
         self#analyze_nodes scope title;
         self#analyze_nodes scope body
-
-    method private expand_trees : unit =
-      import_graph |> Topo.iter @@ fun addr ->
-      let edoc = Tbl.find unexpanded_trees addr in
-      let doc = expander#expand_tree addr edoc in
-      Tbl.add trees addr doc
-
-    method private analyze_trees : unit =
-      self#expand_trees;
-      begin
-        trees |> Tbl.iter @@ fun scope Sem.{body; title; metas; _} ->
-        self#analyze_nodes scope body;
-        self#analyze_nodes scope title;
-        metas |> List.iter @@ fun (_, meta) -> 
-        self#analyze_nodes scope meta
-      end;
-      self#expand_transitive_contributors_and_bibliography
 
     method plant_tree ~(abspath : string option) scope (doc : Code.doc) : unit =
       assert (not frozen);
@@ -276,19 +223,40 @@ class forest ~size ~root =
     method render_trees : unit =
       let open Sem in
       frozen <- true;
-      let env = self#render_env in
-      self#analyze_trees;
+
+      let docs = 
+        begin 
+          let task addr (units, trees) = 
+            let doc = Tbl.find unexpanded_trees addr in
+            let units, doc = Expand.expand_doc units addr doc in
+            let doc = Eval.eval_doc doc in
+            units, M.add addr doc trees
+          in
+          snd @@ Topo.fold task import_graph (Expand.UnitMap.empty, M.empty)
+        end
+      in
+
+      begin
+        docs |> M.iter @@ fun scope Sem.{body; title; metas; _} ->
+        self#analyze_nodes scope body;
+        title |> Option.iter @@ self#analyze_nodes scope;
+        metas |> List.iter @@ fun (_, meta) -> 
+        self#analyze_nodes scope meta
+      end;
+
+      self#expand_transitive_contributors_and_bibliography docs;
 
       Shell.ensure_dir "build";
       Shell.ensure_dir_path ["output"; "resources"];
 
+      let render_env = (self#render_env ~docs :> RenderEnv.t) in
       begin
-        trees |> Tbl.iter @@ fun addr doc ->
+        docs |> M.iter @@ fun addr doc ->
         begin
-          let ch = open_out @@ "output/" ^ env#route addr in
+          let ch = open_out @@ "output/" ^ render_env#route addr in
           Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
           let out = Xmlm.make_output @@ `Channel ch in
-          RenderXml.render_doc_page (env :> RenderEnv.t) addr doc out
+          RenderXml.render_doc_page (render_env :> RenderEnv.t) addr doc out
         end
       end;
 
@@ -296,8 +264,8 @@ class forest ~size ~root =
         let ch = open_out @@ "output/forest.json" in 
         Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
         let fmt = Format.formatter_of_out_channel ch in
-        let docs = List.of_seq @@ Tbl.to_seq_values trees in
-        let env = (self#render_env :> RenderEnv.t) in
+        let docs = List.of_seq @@ Seq.map snd @@ M.to_seq docs in
+        let env = render_env in
         RenderJson.render_docs env docs fmt
       end;
 

@@ -11,6 +11,7 @@ sig
 
   val nil : t
   val iter : ?sep:t -> ('a -> t) -> 'a list -> t
+  val option : ('a -> t) -> 'a option -> t
   val seq : ?sep:t -> t list -> t
 
   val trimmedText : string -> t
@@ -31,6 +32,11 @@ struct
     if not (i = 0 || i = n) then 
       sep fmt;
     printer x fmt
+
+  let option printer =
+    function
+    | None -> nil 
+    | Some x -> printer x
 
   let seq ?(sep = nil) ps : t = 
     iter ~sep Fun.id ps

@@ -1,7 +1,10 @@
-open Types
+module Y = Yuujinchou
 open Resolver
 
 module Set = Set.Make (String)
+module UnitMap = Map.Make (String)
+
+type exports = Term.t Trie.Untagged.t
 
 let rec expand (fm : Code.frontmatter) (env : Term.t Env.t) : Code.t -> Term.t =
   function 
@@ -40,3 +43,33 @@ and expand_lambda fm (env : Term.t Env.t) : Code.macro -> Term.t =
   fun (xs, body) -> 
   let env' = List.fold_left (fun env x -> Env.add x [Term.Var x] env) env xs in
   [Term.Lam (xs, expand fm env' body)]
+
+
+let expand_doc units addr (doc : Code.doc) =
+  let fm, tree = doc in
+  Resolver.Scope.run @@ fun () ->
+  begin
+    fm.decls |> List.iter @@ function
+    | Code.Import dep -> 
+      let import = UnitMap.find dep units in
+      Resolver.Scope.import_subtree ([], import)
+    | Export dep -> 
+      let import = UnitMap.find dep units in
+      Resolver.Scope.include_subtree ([], import)
+    | Code.Def (path, ((xs,body) as macro)) ->
+      let macro = expand_lambda fm Env.empty macro in
+      Resolver.Scope.include_singleton (path, (macro, ()));
+      Resolver.Scope.export_visible (Y.Language.only path)
+  end;
+
+  let exports = Resolver.Scope.get_export () in
+  let units = UnitMap.add addr exports units in
+  let tree = expand fm Env.empty tree in
+  let title = fm.title |> Option.map @@ expand fm Env.empty in
+  let metas = 
+    fm.metas |> List.map @@ fun (key, body) ->
+    key, expand fm Env.empty body
+  in
+
+  let fm = Term.{title; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date; tags = fm.tags; metas; tex_packages = fm.tex_packages} in
+  units, (fm, tree)

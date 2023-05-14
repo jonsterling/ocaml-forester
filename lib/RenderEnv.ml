@@ -1,4 +1,4 @@
-open Types
+open Core
 
 class type t = 
   object

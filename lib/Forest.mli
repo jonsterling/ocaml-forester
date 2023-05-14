@@ -1,4 +1,4 @@
-open Types
+open Core
 
 class forest : 
   size:int ->

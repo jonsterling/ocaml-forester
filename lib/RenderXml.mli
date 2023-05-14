@@ -1,4 +1,4 @@
-open Types
+open Core
 
 type printer = Xmlm.output -> unit
 

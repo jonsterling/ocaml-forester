@@ -1,7 +1,5 @@
 (library
  (name Prelude)
- (preprocess
-  (pps ppx_deriving.show))
  (libraries unix str)
  (public_name forester.prelude))
 

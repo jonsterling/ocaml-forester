@@ -1,5 +1,5 @@
 open Prelude
-open Types
+open Core
 
 type printer = Xmlm.output -> unit
 type env = RenderEnv.t
@@ -114,7 +114,9 @@ and render_author (env : env) (author : string) =
     let url = env#route bio.addr in
     Xml.tag "link" 
       ["href", url; "type", "local"] 
-      [render ~cfg env bio.title]
+      [match bio.title with 
+       | None -> Printer.text "Untitled"
+       | Some title -> render ~cfg env title]
   | None -> 
     Printer.text author
 
@@ -153,10 +155,13 @@ and render_frontmatter (env : env) (doc : Sem.doc) =
     Xml.tag "route" [] [Printer.text @@ env#route doc.addr];
     render_date doc;
     render_authors env doc;
-    Xml.tag "title" [] [
-      render ~cfg:{part = Frontmatter} env @@ 
-      Sem.map_text StringUtil.title_case doc.title
-    ];
+    begin 
+      doc.title |> Printer.option @@ fun title -> 
+      Xml.tag "title" [] [
+        render ~cfg:{part = Frontmatter} env @@ 
+        Sem.map_text StringUtil.title_case title
+      ]
+    end;
     begin
       doc.metas |> Printer.iter @@ fun (key, body) -> 
       Xml.tag "meta" ["name", key] [render ~cfg:{part = Frontmatter} env body]

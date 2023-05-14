@@ -1,6 +1,5 @@
 open Prelude
-
-open Types
+open Core
 
 module Printer =
 struct
@@ -54,8 +53,13 @@ and render_node : Sem.node -> Printer.t =
 
 let render_doc (env : RenderEnv.t) (doc : Sem.doc) : Printer.t = 
   render_key doc.addr @@ braces @@
-  Printer.iter ~sep:comma (fun (k, x) -> render_key k x)
-    ["title", render_string_literal @@ render doc.title;
+  Printer.iter ~sep:comma (fun (k, x) -> render_key k x) 
+    ["title",
+     begin
+       match doc.title with 
+       | None -> Printer.text "null"
+       | Some title -> render_string_literal @@ render title
+     end;
      "taxon", 
      begin 
        match doc.taxon with 
