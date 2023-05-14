@@ -1,3 +1,4 @@
+open Prelude
 open struct module Y = Yuujinchou end
 
 type addr = string

@@ -1,3 +1,4 @@
+open Prelude
 open Types
 
 type printer = Xmlm.output -> unit

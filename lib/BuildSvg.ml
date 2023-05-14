@@ -1,4 +1,4 @@
-open Shell
+open Prelude.Shell
 
 let tex_fp name = 
   Format.sprintf "%s.tex" name

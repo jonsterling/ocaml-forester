@@ -1,3 +1,4 @@
+open Prelude
 open Types
 
 module T = Domainslib.Task
@@ -27,7 +28,7 @@ class expander ~size =
           let import = Tbl.find export_table dep in
           Resolver.Scope.include_subtree ([], import)
         | Code.Def (path, ((xs,body) as macro)) ->
-          let macro = Expander.expand_macro fm Env.empty macro in
+          let macro = Expand.expand_lambda fm Env.empty macro in
           Resolver.Scope.include_singleton (path, (macro, ()));
           Resolver.Scope.export_visible (Y.Language.only path)
       end;
@@ -35,18 +36,18 @@ class expander ~size =
       let exports = Resolver.Scope.get_export () in
       Tbl.add export_table addr exports;
 
-      let body = Eval.eval Env.empty @@ Expander.expand fm Env.empty tree in
+      let body = Eval.eval Env.empty @@ Expand.expand fm Env.empty tree in
 
       let title =
         match fm.title with
         | None -> [Sem.Text addr]
         | Some title -> 
           Eval.eval Env.empty @@ 
-          Expander.expand fm Env.empty title
+          Expand.expand fm Env.empty title
       in 
       let metas = 
         fm.metas |> List.map @@ fun (key, body) ->
-        key, Eval.eval Env.empty @@ Expander.expand fm Env.empty body
+        key, Eval.eval Env.empty @@ Expand.expand fm Env.empty body
       in
       Sem.{title; body; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date; metas}
   end

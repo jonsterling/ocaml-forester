@@ -18,7 +18,7 @@ let rec expand (fm : Code.frontmatter) (env : Term.t Env.t) : Code.t -> Term.t =
   | EmbedTeX xs :: rest -> 
     EmbedTeX {packages = fm.tex_packages; source = expand fm env xs} :: expand fm env rest
   | Let (a, bs, xs) :: rest -> 
-    let env' = Env.add a (expand_macro fm env (bs, xs)) env in 
+    let env' = Env.add a (expand_lambda fm env (bs, xs)) env in 
     expand fm env' rest
   | Block (xs, ys) :: rest -> 
     Block (expand fm env xs, expand fm env ys) :: expand fm env rest 
@@ -36,7 +36,7 @@ and expand_ident env str =
       [Tag str]
     | Some (x, ()) -> x
 
-and expand_macro fm (env : Term.t Env.t) : Code.macro -> Term.t = 
+and expand_lambda fm (env : Term.t Env.t) : Code.macro -> Term.t = 
   fun (xs, body) -> 
   let env' = List.fold_left (fun env x -> Env.add x [Term.Var x] env) env xs in
   [Term.Lam (xs, expand fm env' body)]

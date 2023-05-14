@@ -1,3 +1,4 @@
+open Prelude
 open Types 
 
 module Printer : 
