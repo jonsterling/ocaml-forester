@@ -1,9 +1,15 @@
 open Core
 
-class forest : 
-  size:int ->
-  root:addr option -> 
-  object 
-    method plant_tree : abspath:string option -> addr -> Code.doc -> unit
-    method render_trees : unit
-  end
+module type S =
+sig
+  val plant_tree : abspath:string option -> addr -> Code.doc -> unit
+  val render_trees : unit -> unit
+end
+
+module type I = 
+sig
+  val size : int 
+  val root : addr option
+end
+
+module Make (_ : I) : S

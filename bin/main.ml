@@ -21,16 +21,18 @@ let parse_file filename =
   Fun.protect ~finally:(fun _ -> close_in ch) @@ fun _ -> 
   parse_channel filename ch 
 
-let process_file ~dev forest filename =
-  if Filename.extension filename = ".tree" then 
-    let addr = Filename.chop_extension @@ Filename.basename filename in
-    let abspath = if dev then Some (Unix.realpath filename) else None in
-    forest#plant_tree ~abspath addr @@ 
-    parse_file filename
+module Process (F : Forest.S) = 
+struct 
+  let process_file ~dev filename =
+    if Filename.extension filename = ".tree" then 
+      let addr = Filename.chop_extension @@ Filename.basename filename in
+      let abspath = if dev then Some (Unix.realpath filename) else None in
+      F.plant_tree ~abspath addr @@ parse_file filename
 
-let process_dir ~dev forest dir =
-  Sys.readdir dir |> Array.iter @@ fun filename ->
-  process_file ~dev forest @@ dir ^ "/" ^ filename
+  let process_dir ~dev dir =
+    Sys.readdir dir |> Array.iter @@ fun filename ->
+    process_file ~dev @@ dir ^ "/" ^ filename
+end
 
 let () =
   let input_dirs_ref = ref [] in
@@ -51,10 +53,19 @@ let () =
     | addr -> Some addr 
   in 
 
-  let forest = new Forest.forest ~size:100 ~root in
+  let module I = 
+  struct 
+    let size = 100 
+    let root = root
+  end
+  in
+
+  let module F = Forest.Make (I) in
+  let module P = Process (F) in
 
   begin 
     !input_dirs_ref |> List.iter @@ 
-    process_dir ~dev:!dev_ref forest
+    P.process_dir ~dev:!dev_ref
   end;
-  forest#render_trees
+
+  F.render_trees ()
