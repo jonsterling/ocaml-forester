@@ -1,4 +1,3 @@
-module Y = Yuujinchou
 open Resolver
 
 module Set = Set.Make (String)
