@@ -6,7 +6,7 @@ module UnitMap = Map.Make (String)
 
 type exports = Syn.t Trie.Untagged.t
 
-let rec expand (fm : Code.frontmatter) (env : Syn.t Env.t) : Code.t -> Syn.t =
+let rec expand (fm : Code.frontmatter) (env : Syn.t Trie.Untagged.t) : Code.t -> Syn.t =
   function
   | [] -> []
   | Text x :: rest ->
@@ -21,7 +21,7 @@ let rec expand (fm : Code.frontmatter) (env : Syn.t Env.t) : Code.t -> Syn.t =
   | EmbedTeX xs :: rest ->
     EmbedTeX {packages = fm.tex_packages; source = expand fm env xs} :: expand fm env rest
   | Let (a, bs, xs) :: rest ->
-    let env' = Env.add a (expand_lambda fm env (bs, xs)) env in
+    let env' = Trie.Untagged.update_singleton a (fun _ -> Some (expand_lambda fm env (bs, xs))) env in
     expand fm env' rest
   | Block (xs, ys) :: rest ->
     Block (expand fm env xs, expand fm env ys) :: expand fm env rest
@@ -41,18 +41,20 @@ let rec expand (fm : Code.frontmatter) (env : Syn.t Env.t) : Code.t -> Syn.t =
   | Get key :: rest -> 
     Get key :: expand fm env rest
 
-and expand_ident env str =
-  match Env.find_opt str env with
+and expand_ident env path =
+  match Trie.Untagged.find_singleton path env with
   | Some x -> x
   | None ->
-    match Scope.resolve [str] with
-    | None ->
-      [Tag str]
-    | Some (x, ()) -> x
+    match Scope.resolve path, path with
+    | None, [name] ->
+      [Tag name]
+    | Some (x, ()), _ -> x
+    | _ -> failwith "expand_ident"
 
-and expand_lambda fm (env : Syn.t Env.t) : Code.binder -> Syn.t =
+and expand_lambda fm (env : Syn.t Trie.Untagged.t) : Code.binder -> Syn.t =
   fun (xs, body) ->
-  let env' = List.fold_left (fun env x -> Env.add x [Syn.Var x] env) env xs in
+  let set env x = Trie.Untagged.update_singleton [x] (fun _ -> Some [Syn.Var x]) env in
+  let env' = List.fold_left set env xs in
   [Syn.Lam (xs, expand fm env' body)]
 
 
@@ -69,17 +71,17 @@ let expand_doc units addr (doc : Code.doc) =
         | Private -> Resolver.Scope.import_subtree ([], import)
       end
     | Code.Def (path, binder) ->
-      let lam = expand_lambda fm Env.empty binder in
+      let lam = expand_lambda fm Trie.Untagged.empty binder in
       Resolver.Scope.include_singleton (path, (lam, ()))
   end;
 
   let exports = Resolver.Scope.get_export () in
   let units = UnitMap.add addr exports units in
-  let tree = expand fm Env.empty tree in
-  let title = fm.title |> Option.map @@ expand fm Env.empty in
+  let tree = expand fm Trie.Untagged.empty tree in
+  let title = fm.title |> Option.map @@ expand fm Trie.Untagged.empty in
   let metas =
     fm.metas |> List.map @@ fun (key, body) ->
-    key, expand fm Env.empty body
+    key, expand fm Trie.Untagged.empty body
   in
 
   let fm = Syn.{title; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date; tags = fm.tags; metas; tex_packages = fm.tex_packages} in

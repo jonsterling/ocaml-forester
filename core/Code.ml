@@ -5,10 +5,10 @@ type node =
   | Text of string
   | Group of delim * t
   | Math of math_mode * t
-  | Ident of string
+  | Ident of Trie.path
   | Transclude of transclusion_mode * string
   | EmbedTeX of t
-  | Let of string * string list * t
+  | Let of Trie.path * string list * t
   | Block of t * t
   | Scope of t
   | Put of string * t 

@@ -1,7 +1,7 @@
 {
   exception SyntaxError of string
   let drop_sigil c str = 1 |> List.nth @@ String.split_on_char c str
-  let ident str = Parser.IDENT (drop_sigil '\\' str)
+  let ident str = Parser.IDENT (String.split_on_char '/' (drop_sigil '\\' str))
   let illegal str = raise @@ SyntaxError ("Lexer - Illegal character: [" ^ str ^ "].")
 
   let text str = Parser.TEXT str
@@ -22,7 +22,7 @@
 let digit = ['0'-'9']
 let alpha = ['a'-'z' 'A'-'Z']
 let int = '-'? digit+
-let ident = '\\' (alpha) (alpha|digit|'-')*
+let ident = '\\' (alpha) (alpha|digit|'-'|'/')*
 let addr = (alpha) (alpha|digit|'_'|'-')*
 let whitespace = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
@@ -33,20 +33,20 @@ rule token =
   | "%" { comment lexbuf }
   | "##{" { return lexbuf @@ Parser.HASH_HASH_LBRACE }
   | "#{" { return lexbuf @@ Parser.HASH_LBRACE }
-  | "\\\\" { return lexbuf @@ Parser.IDENT {|\|} }
-  | "\\," { return lexbuf @@ Parser.IDENT {|,|} }
-  | "\\'" { return lexbuf @@ Parser.IDENT {|'|} }
-  | "\\`" { return lexbuf @@ Parser.IDENT {|`|} }
-  | "\\_" { return lexbuf @@ Parser.IDENT {|_|} }
-  | "\\;" { return lexbuf @@ Parser.IDENT {|;|} }
-  | "\\#" { return lexbuf @@ Parser.IDENT {|#|} }
-  | "\\{" { return lexbuf @@ Parser.IDENT {|{|} }
-  | "\\}" { return lexbuf @@ Parser.IDENT {|}|} }
-  | "\\[" { return lexbuf @@ Parser.IDENT {|[|} }
-  | "\\]" { return lexbuf @@ Parser.IDENT {|]|} }
+  | "\\\\" { return lexbuf @@ Parser.IDENT [{|\|}] }
+  | "\\," { return lexbuf @@ Parser.IDENT [{|,|}] }
+  | "\\'" { return lexbuf @@ Parser.IDENT [{|'|}] }
+  | "\\`" { return lexbuf @@ Parser.IDENT [{|`|}] }
+  | "\\_" { return lexbuf @@ Parser.IDENT [{|_|}] }
+  | "\\;" { return lexbuf @@ Parser.IDENT [{|;|}] }
+  | "\\#" { return lexbuf @@ Parser.IDENT [{|#|}] }
+  | "\\{" { return lexbuf @@ Parser.IDENT [{|{|}] }
+  | "\\}" { return lexbuf @@ Parser.IDENT [{|}|}] }
+  | "\\[" { return lexbuf @@ Parser.IDENT [{|[|}] }
+  | "\\]" { return lexbuf @@ Parser.IDENT [{|]|}] }
   | "\\startverb" { verbatim := true; token lexbuf }
   | "\\stopverb" { verbatim := false; token lexbuf }
-  | "\\ " { return lexbuf @@ Parser.IDENT {| |} }
+  | "\\ " { return lexbuf @@ Parser.IDENT [{| |}] }
   | "\\title" { return lexbuf @@ Parser.TITLE }
   | "\\taxon" { return lexbuf @@ Parser.TAXON }
   | "\\author" { return lexbuf @@ Parser.AUTHOR }

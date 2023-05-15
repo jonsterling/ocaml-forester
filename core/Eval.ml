@@ -1,5 +1,7 @@
 open Base
 
+module Env = Map.Make (String)
+
 let rec eval ~env ~flenv : Syn.t -> Sem.t =
   function
   | [] -> []

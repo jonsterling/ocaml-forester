@@ -40,7 +40,7 @@
       {fm with tags = addr :: fm.tags}
 
     let def (name, xs, body) fm =
-      {fm with decls = Def ([name], (xs, body)) :: fm.decls}
+      {fm with decls = Def (name, (xs, body)) :: fm.decls}
 
     let meta (key, bdy) fm =
       {fm with metas = (key, bdy) :: fm.metas}
@@ -59,7 +59,8 @@
   let collapse_transclude x = Code.Transclude (Collapsed, x)
 %}
 
-%token <string> TEXT IDENT
+%token <string> TEXT 
+%token <string list> IDENT
 %token TRANSCLUDE TRANSCLUDE_STAR TRANSCLUDE_AT SCOPE PUT GET DEFAULT
 %token TITLE IMPORT EXPORT DEF LET TEX TAXON AUTHOR TEX_PACKAGE TAG DATE BLOCK META
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
