@@ -1,1 +1,1 @@
-val title_case : string -> string
+val sentence_case : string -> string

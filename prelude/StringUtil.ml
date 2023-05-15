@@ -3,7 +3,7 @@ let index_of_first_ascii_char word =
   try Option.some @@ Str.search_forward rx word 0 with _ -> None
 
 let title_case_word ix word = 
-  if ix == 0 || String.length word > 3 then 
+  if ix == 0 then 
     begin 
       match index_of_first_ascii_char word with 
       | None -> word 
@@ -14,6 +14,6 @@ let title_case_word ix word =
   else
     word
 
-let title_case str =
+let sentence_case str =
   let words = String.split_on_char ' ' str in
   String.concat " " @@ List.mapi title_case_word words

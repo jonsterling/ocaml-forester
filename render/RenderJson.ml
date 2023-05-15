@@ -47,7 +47,7 @@ let rec render nodes : Printer.t =
 
 and render_node : Sem.node -> Printer.t =
   function
-  | Sem.Text txt -> Printer.text @@ escape @@ StringUtil.title_case txt
+  | Sem.Text txt -> Printer.text @@ escape @@ StringUtil.sentence_case txt
   | Sem.Tag (_,_,body) -> Printer.iter ~sep:Printer.space render body
   | Sem.Link {title; _} -> render title
   | Sem.Transclude _ | Sem.EmbedTeX _ | Sem.Math _ | Sem.Block _ -> Printer.nil
@@ -66,7 +66,7 @@ let render_doc (doc : Sem.doc) : Printer.t =
      begin
        match doc.taxon with
        | None -> Printer.text "null"
-       | Some taxon -> render_string_literal @@ Printer.text @@ StringUtil.title_case taxon
+       | Some taxon -> render_string_literal @@ Printer.text @@ StringUtil.sentence_case taxon
      end;
      "route",
      render_string_literal @@ Printer.text @@

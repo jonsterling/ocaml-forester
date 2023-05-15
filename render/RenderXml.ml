@@ -159,7 +159,7 @@ and render_frontmatter (doc : Sem.doc) =
       doc.title |> Printer.option @@ fun title ->
       Xml.tag "title" [] [
         render ~cfg:{part = Frontmatter} @@
-        Sem.map_text StringUtil.title_case title
+        Sem.map_text StringUtil.sentence_case title
       ]
     end;
     begin
@@ -215,7 +215,7 @@ and render_doc ~cfg ?(mode = Full) (doc : Sem.doc) : printer =
      "root", render_bool @@ E.is_root doc.addr
     ] @
     match doc.taxon with
-    | Some taxon -> ["taxon", StringUtil.title_case taxon]
+    | Some taxon -> ["taxon", StringUtil.sentence_case taxon]
     | None -> []
   in
   Xml.tag "tree" attrs
