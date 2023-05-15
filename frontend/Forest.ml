@@ -166,6 +166,20 @@ struct
       analyze_nodes scope title;
       analyze_nodes scope body
 
+  let rec process_decl scope =
+    function
+    | Code.Tag tag -> 
+      Gph.add_edge tag_graph tag scope
+    | Code.Author author -> 
+      Tbl.add author_pages author scope
+    | Code.Import (_, dep) -> 
+      Gph.add_edge import_graph dep scope
+    | _ -> ()
+
+  and process_decls scope =
+    List.iter @@ process_decl scope
+
+
   let plant_tree ~(abspath : string option) scope (doc : Code.doc) : unit =
     assert (not !frozen);
     let frontmatter, body = doc in
@@ -174,22 +188,7 @@ struct
     Gph.add_vertex link_graph scope;
     Gph.add_vertex import_graph scope;
     Gph.add_vertex tag_graph scope;
-    begin
-      begin
-        frontmatter.tags |> List.iter @@ fun addr ->
-        Gph.add_edge tag_graph addr scope
-      end;
-      begin
-        frontmatter.authors |> List.iter @@ fun author ->
-        Tbl.add author_pages author scope
-      end;
-      begin
-        frontmatter.decls |> List.iter @@ function
-        | Code.Import (_, dep) ->
-          Gph.add_edge import_graph dep scope
-        | _ -> ()
-      end
-    end;
+    process_decls scope frontmatter;
     Tbl.add unexpanded_trees scope doc
 
 

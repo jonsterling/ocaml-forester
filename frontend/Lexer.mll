@@ -58,8 +58,10 @@ rule token =
   | "\\date" { return lexbuf @@ Parser.DATE }
   | "\\import" { return lexbuf @@ Parser.IMPORT }
   | "\\export" { return lexbuf @@ Parser.EXPORT }
+  | "\\namespace" { return lexbuf @@ Parser.NAMESPACE }
   | "\\meta" { return lexbuf @@ Parser.META }
   | "\\def" { return lexbuf @@ Parser.DEF }
+  | "\\alloc" { return lexbuf @@ Parser.ALLOC }
   | "\\let" { return lexbuf @@ Parser.LET }
   | "\\tex" { return lexbuf @@ Parser.TEX }
   | "\\block" { return lexbuf @@ Parser.BLOCK }

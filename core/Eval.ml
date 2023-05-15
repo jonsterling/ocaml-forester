@@ -1,6 +1,7 @@
 open Base
 
 module Env = Map.Make (String)
+module SymEnv = Map.Make (Symbol)
 
 let rec eval ~env ~flenv : Syn.t -> Sem.t =
   function
@@ -31,20 +32,20 @@ let rec eval ~env ~flenv : Syn.t -> Sem.t =
     end
   | Put (k, v, body) :: rest ->
     let body =
-      let flenv = Env.add k (eval ~env ~flenv v) flenv in
+      let flenv = SymEnv.add k (eval ~env ~flenv v) flenv in
       eval ~env ~flenv body
     in
     body @ eval ~env ~flenv rest
   | Default (k, v, body) :: rest ->
     let body =
-      let flenv = if Env.mem k flenv then flenv else Env.add k (eval ~env ~flenv v) flenv in
+      let flenv = if SymEnv.mem k flenv then flenv else SymEnv.add k (eval ~env ~flenv v) flenv in
       eval ~env ~flenv body
     in
     body @ eval ~env ~flenv rest  
   | Get key :: rest -> 
     begin
-      match Env.find_opt key flenv with 
-      | None -> failwith @@ Format.sprintf "Could not find fluid binding named %s" key
+      match SymEnv.find_opt key flenv with 
+      | None -> failwith @@ Format.asprintf "Could not find fluid binding named %a" Symbol.pp key
       | Some v -> v @ eval ~env ~flenv rest
     end
   | (Group _ :: _ | Text _ :: _) as rest->
@@ -94,8 +95,8 @@ and eval_tag ~env ~flenv name =
 
 let eval_doc (doc : Syn.doc) : Sem.doc =
   let fm, tree = doc in
-  let env = Sem.empty in
-  let flenv = Sem.empty in
+  let env = Env.empty in
+  let flenv = SymEnv.empty in
   let tree = eval ~env ~flenv tree in
   let title = fm.title |> Option.map @@ eval ~env ~flenv in
   let metas =

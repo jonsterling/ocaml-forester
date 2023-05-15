@@ -1,11 +1,12 @@
+open Prelude
 open Resolver
 
 module Set = Set.Make (String)
 module UnitMap = Map.Make (String)
 
-type exports = Syn.t Trie.Untagged.t
+type exports = P.data Trie.Untagged.t
 
-let rec expand (fm : Code.frontmatter) (env : Syn.t Trie.Untagged.t) : Code.t -> Syn.t =
+let rec expand (fm : Syn.frontmatter) (env : Syn.t Trie.Untagged.t) : Code.t -> Syn.t =
   function
   | [] -> []
   | Text x :: rest ->
@@ -20,7 +21,10 @@ let rec expand (fm : Code.frontmatter) (env : Syn.t Trie.Untagged.t) : Code.t ->
   | EmbedTeX xs :: rest ->
     EmbedTeX {packages = fm.tex_packages; source = expand fm env xs} :: expand fm env rest
   | Let (a, bs, xs) :: rest ->
-    let env' = Trie.Untagged.update_singleton a (fun _ -> Some (expand_lambda fm env (bs, xs))) env in
+    let env' = 
+      env |>  Trie.Untagged.update_singleton a @@ fun _ -> 
+      Option.some @@ expand_lambda fm env (bs, xs)
+    in
     expand fm env' rest
   | Block (xs, ys) :: rest ->
     Block (expand fm env xs, expand fm env ys) :: expand fm env rest
@@ -32,56 +36,94 @@ let rec expand (fm : Code.frontmatter) (env : Syn.t Trie.Untagged.t) : Code.t ->
     let body = expand fm env body in 
     body @ expand fm env rest
   | Put (k, v) :: rest ->
+    let k = expand_sym k in
     let v = expand fm env v in
     [Put (k, v, expand fm env rest)]
   | Default (k, v) :: rest -> 
+    let k = expand_sym k in
     let v = expand fm env v in
     [Default (k, v, expand fm env rest)]
-  | Get key :: rest -> 
-    Get key :: expand fm env rest
+  | Get k :: rest -> 
+    let k = expand_sym k in 
+    Get k :: expand fm env rest
 
 and expand_ident env path =
   match Trie.Untagged.find_singleton path env with
   | Some x -> x
-  | None ->
+  | _ ->
     match Scope.resolve path, path with
     | None, [name] ->
       [Tag name]
-    | Some (x, ()), _ -> x
-    | _ -> failwith "expand_ident"
+    | Some (`Term x, ()), _ -> x
+    | _ -> 
+      failwith "expand_ident"
+
+and expand_sym path =
+  match Scope.resolve path, path with
+  | None, [name] ->
+    failwith "expand_sym"
+  | Some (`Sym x, ()), _ -> x
+  | _ -> 
+    failwith "expand_ident"
+
+
 
 and expand_lambda fm (env : Syn.t Trie.Untagged.t) : Code.binder -> Syn.t =
   fun (xs, body) ->
-  let set env x = Trie.Untagged.update_singleton [x] (fun _ -> Some [Syn.Var x]) env in
+  let set env x =
+    env |> Trie.Untagged.update_singleton [x] @@ fun _ -> 
+    Some [Syn.Var x]
+  in
   let env' = List.fold_left set env xs in
   [Syn.Lam (xs, expand fm env' body)]
 
+let rec expand_decls units =
+  List.fold_left @@ expand_decl units
 
-let expand_doc units addr (doc : Code.doc) =
-  let fm, tree = doc in
+and expand_decl units fm = 
+  function 
+  | Code.Import (vis, dep) -> 
+    let import = UnitMap.find dep units in
+    begin
+      match vis with
+      | Public -> Resolver.Scope.include_subtree ([], import)
+      | Private -> Resolver.Scope.import_subtree ([], import)
+    end;
+    fm
+  | Code.Def (path, xs, body) ->
+    let lam = expand_lambda fm Trie.Untagged.empty (xs, body) in
+    Resolver.Scope.include_singleton (path, (`Term lam, ()));
+    fm
+  | Code.Alloc path ->
+    let symbol = Symbol.fresh path in 
+    Resolver.Scope.include_singleton (path, (`Sym symbol, ())); 
+    fm
+  | Code.Title xs ->
+    {fm with title = Option.some @@ expand fm Trie.empty xs}
+  | Code.Author author ->
+    {fm with authors = fm.authors @ [author]}
+  | Code.Tag tag -> 
+    {fm with tags = fm.tags @ [tag]}
+  | Code.Taxon taxon -> 
+    {fm with taxon = Some taxon}
+  | Code.Date str -> 
+    let date = Date.parse str in
+    {fm with date = Some date}
+  | Code.Meta (k, v) -> 
+    let v = expand fm Trie.empty v in
+    {fm with metas = fm.metas @ [k,v]}
+  | Code.TeXPackage pkg -> 
+    {fm with tex_packages = fm.tex_packages @ [pkg]}
+  | Code.Namespace (path, body) ->
+    Scope.section path @@ fun () ->
+    expand_decls units fm body
+
+let expand_doc (units : exports UnitMap.t) addr (doc : Code.doc) = 
+  let fm, tree = doc in 
+  let init = Syn.{addr; title = None; taxon = None; date = None; authors = []; tags = []; metas = []; tex_packages = []} in
   Resolver.Scope.run @@ fun () ->
-  begin
-    fm.decls |> List.iter @@ function
-    | Code.Import (vis, dep) ->
-      let import = UnitMap.find dep units in
-      begin
-        match vis with
-        | Public -> Resolver.Scope.include_subtree ([], import)
-        | Private -> Resolver.Scope.import_subtree ([], import)
-      end
-    | Code.Def (path, binder) ->
-      let lam = expand_lambda fm Trie.Untagged.empty binder in
-      Resolver.Scope.include_singleton (path, (lam, ()))
-  end;
-
+  let fm = expand_decls units init fm in
   let exports = Resolver.Scope.get_export () in
   let units = UnitMap.add addr exports units in
-  let tree = expand fm Trie.Untagged.empty tree in
-  let title = fm.title |> Option.map @@ expand fm Trie.Untagged.empty in
-  let metas =
-    fm.metas |> List.map @@ fun (key, body) ->
-    key, expand fm Trie.Untagged.empty body
-  in
-
-  let fm = Syn.{title; addr; taxon = fm.taxon; authors = fm.authors; date = fm.date; tags = fm.tags; metas; tex_packages = fm.tex_packages} in
+  let tree = expand fm Trie.empty tree in
   units, (fm, tree)

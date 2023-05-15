@@ -11,34 +11,39 @@ type node =
   | Let of Trie.path * string list * t
   | Block of t * t
   | Scope of t
-  | Put of string * t 
-  | Default of string * t
-  | Get of string
+  | Put of Trie.path * t 
+  | Default of Trie.path * t
+  | Get of Trie.path
 [@@deriving show]
 
 and t = node list
 [@@deriving show]
 
-type binder = string list * t
+and binder = string list * t
 [@@deriving show]
 
 type decl =
   | Import of visibility * addr
-  | Def of Trie.path * binder
+  | Def of Trie.path * string list * t
+  | Alloc of Trie.path
+  | Title of t 
+  | Taxon of string
+  | Meta of string * t 
+  | Author of string 
+  | Tag of string 
+  | TeXPackage of string
+  | Date of string
+  | Namespace of Trie.path * decl list
 [@@deriving show]
 
-type frontmatter =
-  {title : t option;
-   taxon : string option;
-   authors : addr list;
-   tags : addr list;
-   date: Date.t option;
-   metas : (string * t) list;
-   decls : decl list;
-   tex_packages : string list}
+type frontmatter = decl list
 [@@deriving show]
 
 type doc = frontmatter * t
+[@@deriving show]
+
+let import_private x = Import (Private, x)
+let import_public x = Import (Public, x)
 
 let inline_math e = Math (Inline, e)
 let display_math e = Math (Display, e)

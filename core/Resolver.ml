@@ -1,6 +1,6 @@
 module P =
 struct
-  type data = Syn.t
+  type data = [`Term of Syn.t | `Sym of Symbol.t]
   type tag = unit
 
   type hook = unit (* for modifier hooks; unused here *)

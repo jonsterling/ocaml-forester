@@ -12,9 +12,9 @@ type node =
   | Block of t * t
   | Lam of string list * t
   | Var of string
-  | Put of string * t * t
-  | Default of string * t * t
-  | Get of string
+  | Put of Symbol.t * t * t
+  | Default of Symbol.t * t * t
+  | Get of Symbol.t
 [@@deriving show]
 
 and t = node list
