@@ -9,3 +9,4 @@ end
 
 module Mod = Yuujinchou.Modifier.Make (P)
 module Scope = Yuujinchou.Scope.Make (P) (Mod)
+module Lang = Yuujinchou.Language

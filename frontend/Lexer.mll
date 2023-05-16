@@ -59,6 +59,7 @@ rule token =
   | "\\import" { return lexbuf @@ Parser.IMPORT }
   | "\\export" { return lexbuf @@ Parser.EXPORT }
   | "\\namespace" { return lexbuf @@ Parser.NAMESPACE }
+  | "\\open" { return lexbuf @@ Parser.OPEN }
   | "\\meta" { return lexbuf @@ Parser.META }
   | "\\def" { return lexbuf @@ Parser.DEF }
   | "\\alloc" { return lexbuf @@ Parser.ALLOC }

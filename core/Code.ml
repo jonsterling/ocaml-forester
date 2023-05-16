@@ -8,23 +8,16 @@ type node =
   | Ident of Trie.path
   | Transclude of transclusion_mode * string
   | EmbedTeX of t
-  | Let of Trie.path * string list * t
+  | Let of Trie.path * Trie.path list * t
+  | Open of Trie.path
   | Block of t * t
   | Scope of t
   | Put of Trie.path * t 
   | Default of Trie.path * t
   | Get of Trie.path
-[@@deriving show]
 
-and t = node list
-[@@deriving show]
-
-and binder = string list * t
-[@@deriving show]
-
-type decl =
   | Import of visibility * addr
-  | Def of Trie.path * string list * t
+  | Def of Trie.path * Trie.path list * t
   | Alloc of Trie.path
   | Title of t 
   | Taxon of string
@@ -33,13 +26,13 @@ type decl =
   | Tag of string 
   | TeXPackage of string
   | Date of string
-  | Namespace of Trie.path * decl list
+  | Namespace of Trie.path * t
 [@@deriving show]
 
-type frontmatter = decl list
+and t = node list
 [@@deriving show]
 
-type doc = frontmatter * t
+type doc = t
 [@@deriving show]
 
 let import_private x = Import (Private, x)

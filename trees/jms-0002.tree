@@ -5,27 +5,10 @@
 
 \texpackage{preamble}
 \import{jms-0001}
-
-\def\helloworld{good\world}
-
-\def\world{ASDFASDF}
-
-\def\takesarg[x]{\b{\x}}
-
-\let\D[x]{#{W(\x)}}
-
-This text is in the subree. [A link](jms-0001). \helloworld asdf a
-\takesarg{JON}.
-
-\D{aaa}
-
-\tex{
-  \DiagramSquare{
-    nw = A,
-    ne = B,
-    sw = C,
-    se = D,
-    height = 1.5cm,
-    width = 1.5cm,
-  }
+\namespace\ns{
+  \def\foo[x]{Hello, \x}
 }
+
+\open\ns
+\ns/foo{world}  
+\foo{universe}

@@ -182,13 +182,12 @@ struct
 
   let plant_tree ~(abspath : string option) scope (doc : Code.doc) : unit =
     assert (not !frozen);
-    let frontmatter, body = doc in
     abspath |> Option.iter @@ Tbl.add abspaths scope;
     Gph.add_vertex transclusion_graph scope;
     Gph.add_vertex link_graph scope;
     Gph.add_vertex import_graph scope;
     Gph.add_vertex tag_graph scope;
-    process_decls scope frontmatter;
+    process_decls scope doc;
     Tbl.add unexpanded_trees scope doc
 
 

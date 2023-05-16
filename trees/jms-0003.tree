@@ -1,9 +1,47 @@
 \title{another tree}
 \texpackage{tikz-cd}
+\texpackage{amsmath}
 \import{jms-0002}
 
-\namespace\ns{
-  \def\x{hello world}
+\namespace\square{
+  \alloc\nw
+  \alloc\sw
+  \alloc\ne 
+  \alloc\se
+  \alloc\options
+  \alloc\nw/style
+  \alloc\ne/style
+  \alloc\se/style
+  \alloc\sw/style
+  
+  \def\draw{
+    \tex{
+      \put?\nw{NW}
+      \put?\ne{NE}
+      \put?\se{SE}
+      \put?\sw{SW}
+      \put?\options{}
+      \put?\nw/style{}
+      \put?\ne/style{}
+      \put?\sw/style{}
+      \put?\se/style{}
+
+      \begin{tikzcd}[\get\options]
+        |[\get\nw/style]| \get\nw & |[\get\ne/style]| \get\ne \\
+        |[\get\sw/style]| \get\sw & |[\get\se/style]| \get\se
+      \end{tikzcd}
+    }
+  }
 }
 
-ssdfgsdfg \ns/x
+\scope{
+  \open\square
+  \put\nw{A}
+  \put\sw{B}
+  \put\ne{C}
+  \put\se{D}
+  \put\nw/style{red}
+  \put\options{row sep=1.5cm, column sep=1.5cm}
+  \draw
+}
+adf

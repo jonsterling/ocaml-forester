@@ -1,6 +1,6 @@
 open Base
 
-module Env = Map.Make (String)
+module Env = Map.Make (Symbol)
 module SymEnv = Map.Make (Symbol)
 
 let rec eval ~env ~flenv : Syn.t -> Sem.t =
@@ -27,7 +27,7 @@ let rec eval ~env ~flenv : Syn.t -> Sem.t =
   | Var x :: rest ->
     begin
       match Env.find_opt x env with
-      | None -> failwith @@ Format.sprintf "Could not find variable named %s" x
+      | None -> failwith @@ Format.asprintf "Could not find variable named %a" Symbol.pp x
       | Some v -> v @ eval ~env ~flenv rest
     end
   | Put (k, v, body) :: rest ->
@@ -73,7 +73,7 @@ and eval_no_op ~env ~flenv msg =
     eval ~env ~flenv rest
   | _ -> failwith msg
 
-and pop_args ~env ~flenv : string list * Syn.t -> Syn.t * Sem.env =
+and pop_args ~env ~flenv : Symbol.t list * Syn.t -> Syn.t * Sem.env =
   function
   | [], rest -> rest, env
   | x :: xs, Syn.Group (Braces, u) :: rest ->

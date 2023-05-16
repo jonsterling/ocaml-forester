@@ -10,8 +10,8 @@ type node =
   | Transclude of transclusion_mode * string
   | EmbedTeX of {packages : string list; source : t}
   | Block of t * t
-  | Lam of string list * t
-  | Var of string
+  | Lam of Symbol.t list * t
+  | Var of Symbol.t
   | Put of Symbol.t * t * t
   | Default of Symbol.t * t * t
   | Get of Symbol.t

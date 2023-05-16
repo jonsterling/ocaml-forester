@@ -5,34 +5,16 @@
   let full_transclude x = Code.Transclude (Full, x)
   let splice_transclude x = Code.Transclude (Spliced, x)
   let collapse_transclude x = Code.Transclude (Collapsed, x)
-  
-  type item = Node of Code.node | Decl of Code.decl
-  
-  let rec split_items =
-    function 
-    | [] -> [], [] 
-    | item :: items ->
-      let decls, nodes = split_items items in 
-      match item with 
-      | Node node -> decls, node :: nodes 
-      | Decl decl -> decl :: decls, nodes
-      
-  let get_decls items =
-    fst @@ split_items items
-    
-  let namespace (path, items) = 
-    Code.Namespace (path, get_decls items)
-    
+
 %}
 
 %token <string> TEXT 
 %token <string list> IDENT
+%token TITLE IMPORT EXPORT DEF TAXON AUTHOR TEX_PACKAGE TAG DATE NAMESPACE LET TEX BLOCK META OPEN
 %token TRANSCLUDE TRANSCLUDE_STAR TRANSCLUDE_AT SCOPE PUT GET DEFAULT ALLOC 
-%token TITLE IMPORT EXPORT DEF LET TEX TAXON AUTHOR TEX_PACKAGE TAG DATE BLOCK META NAMESPACE
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token EOF
 
-%type <Code.decl> decl
 %type <Code.t> expr
 %start <Code.doc> main
 
@@ -41,10 +23,13 @@
 let braces(p) == delimited(LBRACE, p, RBRACE)
 let squares(p) == delimited(LSQUARE, p, RSQUARE)
 let parens(p) == delimited(LPAREN, p, RPAREN)
-let binder == list(squares(TEXT))
 
+let bvar := 
+| x = TEXT; { [x] }
 
-let decl :=
+let binder == list(squares(bvar))
+
+let node :=
 | TITLE; ~ = arg; <Code.Title>
 | AUTHOR; ~ = txt_arg; <Code.Author>
 | DATE; ~ = txt_arg; <Code.Date>
@@ -56,9 +41,8 @@ let decl :=
 | IMPORT; ~ = txt_arg; <Code.import_private>
 | EXPORT; ~ = txt_arg; <Code.import_public>
 | TAG; ~ = txt_arg; <Code.Tag>
-| NAMESPACE; ~ = IDENT; LBRACE; ~ = list(item); RBRACE; <namespace>
+| NAMESPACE; ~ = IDENT; ~ = arg; <Code.Namespace>
 
-let node :=
 | ~ = braces(expr); <Code.braces>
 | ~ = squares(expr); <Code.squares>
 | ~ = parens(expr); <Code.parens>
@@ -76,10 +60,7 @@ let node :=
 | PUT; ~ = IDENT; ~ = arg; <Code.Put>
 | DEFAULT; ~ = IDENT; ~ = arg; <Code.Default>
 | GET; ~ = IDENT; <Code.Get>
-
-let item := 
-| ~ = node; <Node>
-| ~ = decl; <Decl>
+| OPEN; ~ = IDENT; <Code.Open>
 
 let expr == list(node)
 
@@ -88,4 +69,4 @@ let txt_arg == braces(TEXT)
 let fun_spec == ~ = IDENT; ~ = binder; ~ = arg; <>
   
 let main := 
-| ~ = list(item); EOF; <split_items>
+| ~ = expr; EOF; <>

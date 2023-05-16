@@ -4,59 +4,213 @@ open Resolver
 module Set = Set.Make (String)
 module UnitMap = Map.Make (String)
 
+type mode = Frontmatter | Body [@@deriving show]
 type exports = P.data Trie.Untagged.t
 
-let rec expand (fm : Syn.frontmatter) (env : Syn.t Trie.Untagged.t) : Code.t -> Syn.t =
-  function
-  | [] -> []
-  | Text x :: rest ->
-    Text x :: expand fm env rest
-  | Group (Squares, title) :: Group (Parens, [Text dest]) :: rest ->
-    let title = expand fm env title in
-    Link {dest; title} :: expand fm env rest
-  | Group (d, xs) :: rest ->
-    Group (d, expand fm env xs) :: expand fm env rest
-  | Transclude (m, addr) :: rest ->
-    Transclude (m, addr) :: expand fm env rest
-  | EmbedTeX xs :: rest ->
-    EmbedTeX {packages = fm.tex_packages; source = expand fm env xs} :: expand fm env rest
-  | Let (a, bs, xs) :: rest ->
-    let env' = 
-      env |>  Trie.Untagged.update_singleton a @@ fun _ -> 
-      Option.some @@ expand_lambda fm env (bs, xs)
-    in
-    expand fm env' rest
-  | Block (xs, ys) :: rest ->
-    Block (expand fm env xs, expand fm env ys) :: expand fm env rest
-  | Math (m, xs) :: rest ->
-    Math (m, expand fm env xs) :: expand fm env rest
-  | Ident str :: rest ->
-    expand_ident env str @ expand fm env rest
-  | Scope body :: rest ->
-    let body = expand fm env body in 
-    body @ expand fm env rest
-  | Put (k, v) :: rest ->
-    let k = expand_sym k in
-    let v = expand fm env v in
-    [Put (k, v, expand fm env rest)]
-  | Default (k, v) :: rest -> 
-    let k = expand_sym k in
-    let v = expand fm env v in
-    [Default (k, v, expand fm env rest)]
-  | Get k :: rest -> 
-    let k = expand_sym k in 
-    Get k :: expand fm env rest
+module U = Algaeff.Reader.Make (struct type env = exports UnitMap.t end)
+module Fm = Algaeff.State.Make (struct type state = Syn.frontmatter end)
+module Mode = 
+struct 
+  include Algaeff.State.Make (struct type state = mode end)
 
-and expand_ident env path =
-  match Trie.Untagged.find_singleton path env with
-  | Some x -> x
-  | _ ->
-    match Scope.resolve path, path with
-    | None, [name] ->
-      [Tag name]
-    | Some (`Term x, ()), _ -> x
-    | _ -> 
-      failwith "expand_ident"
+  let protect kont = 
+    let mode = get () in 
+    let x = kont () in
+    set mode;
+    x
+end
+
+exception FrontmatterInBody of Code.t
+
+let only_frontmatter code () = 
+  match Mode.get () with 
+  | Frontmatter -> () 
+  | Body -> raise @@ FrontmatterInBody code
+
+let rec expand (code : Code.t) : Syn.t = 
+  match code with
+  | [] -> []
+  | Text x :: rest -> 
+    if not (String.trim x = "") then 
+      Mode.set Body;
+    Syn.Text x :: expand rest
+  | Let (a, bs, xs) :: rest ->
+    expand_let (a, bs, xs) @@ fun () -> 
+    expand rest
+  | Namespace (path, body) :: rest -> 
+    only_frontmatter code ();
+    let mode, result = 
+      Scope.section path @@ fun () -> 
+      let x = expand body in 
+      Mode.get (), x
+    in
+    Mode.set mode;
+    result @ expand rest
+  | Open path :: rest -> 
+    expand_open path @@ fun () -> 
+    expand rest 
+  | Group (Squares, title) :: Group (Parens, [Text dest]) :: rest ->
+    Mode.set Body;
+    let title = expand title in
+    Syn.Link {dest; title} :: expand rest
+  | Group (d, xs) :: rest ->
+    Mode.set Body;
+    Syn.Group (d, expand xs) :: expand rest
+  | Transclude (m, addr) :: rest ->
+    Mode.set Body;
+    Syn.Transclude (m, addr) :: expand rest
+  | EmbedTeX xs :: rest ->
+    Mode.set Body;
+    let fm = Fm.get () in
+    Syn.EmbedTeX {packages = fm.tex_packages; source = expand xs} :: expand rest
+  | Block (xs, ys) :: rest ->
+    Mode.set Body;
+    Syn.Block (expand xs, expand ys) :: expand rest
+  | Math (m, xs) :: rest ->
+    Mode.set Body;
+    Syn.Math (m, expand xs) :: expand rest
+  | Ident str :: rest ->
+    Mode.set Body;
+    expand_ident str @ expand rest
+  | Scope body :: rest ->
+    let body = 
+      Scope.section [] @@ fun () -> 
+      expand body
+    in
+    body @ expand rest
+  | Put (k, v) :: rest ->
+    Mode.set Body;
+    let k = expand_sym k in
+    let v = expand v in
+    [Syn.Put (k, v, expand rest)]
+  | Default (k, v) :: rest ->
+    Mode.set Body;
+    let k = expand_sym k in
+    let v = expand v in
+    [Syn.Default (k, v, expand rest)]
+  | Get k :: rest -> 
+    Mode.set Body;
+    let k = expand_sym k in 
+    Syn.Get k :: expand rest
+  | Import (vis, dep) :: rest -> 
+    only_frontmatter code ();
+    let import = UnitMap.find dep @@ U.read () in
+    begin
+      match vis with
+      | Public -> Resolver.Scope.include_subtree ([], import)
+      | Private -> Resolver.Scope.import_subtree ([], import)
+    end;
+    expand rest
+  | Def (path, xs, body) :: rest ->
+    only_frontmatter code ();
+    let lam = Mode.protect @@ fun () ->  expand_lambda (xs, body) in
+    Resolver.Scope.include_singleton (path, (`Term lam, ()));
+    expand rest
+  | Alloc path :: rest ->
+    only_frontmatter code ();
+    let symbol = Symbol.fresh path in 
+    Resolver.Scope.include_singleton (path, (`Sym symbol, ())); 
+    expand rest
+  | Title xs :: rest ->
+    only_frontmatter code ();
+    begin 
+      Mode.protect @@ fun () -> 
+      Fm.modify @@ fun fm -> 
+      {fm with title = Option.some @@ expand xs}
+    end;
+    Mode.set Frontmatter;
+    expand rest
+  | Author author :: rest ->
+    only_frontmatter code ();
+    begin
+      Fm.modify @@ fun fm ->
+      {fm with authors = fm.authors @ [author]}
+    end;
+    Mode.set Frontmatter;
+    expand rest
+  | Tag tag :: rest -> 
+    only_frontmatter code ();
+    begin 
+      Fm.modify @@ fun fm -> 
+      {fm with tags = fm.tags @ [tag]}
+    end;
+    Mode.set Frontmatter;
+    expand rest 
+  | Taxon taxon :: rest -> 
+    only_frontmatter code ();
+    begin 
+      Fm.modify @@ fun fm -> 
+      {fm with taxon = Some taxon}
+    end;
+    Mode.set Frontmatter;
+    expand rest
+  | Date str :: rest -> 
+    only_frontmatter code ();
+    let date = Date.parse str in
+    begin 
+      Fm.modify @@ fun fm -> 
+      {fm with date = Some date}
+    end;
+    Mode.set Frontmatter;
+    expand rest
+  | Meta (k, v) :: rest -> 
+    only_frontmatter code ();
+    begin
+      Mode.protect @@ fun () ->
+      let v = expand v in
+      Fm.modify @@ fun fm ->
+      {fm with metas = fm.metas @ [k,v]}
+    end; 
+    Mode.set Frontmatter;
+    expand rest    
+  | TeXPackage pkg :: rest -> 
+    only_frontmatter code ();
+    begin 
+      Fm.modify @@ fun fm -> 
+      {fm with tex_packages = fm.tex_packages @ [pkg]}
+    end;
+    Mode.set Frontmatter;
+    expand rest
+
+
+and expand_let (a, bs, xs) kont = 
+  let singl = 
+    Mode.protect @@ fun () -> 
+    Trie.Untagged.singleton (a, `Term (expand_lambda (bs, xs))) 
+  in
+  Resolver.Scope.section [] @@ fun _ -> 
+  Resolver.Scope.import_subtree ([], singl);
+  kont ()
+
+and expand_open path kont = 
+  Scope.section [] @@ fun () -> 
+  Scope.modify_visible @@ 
+  Resolver.Lang.union [
+    Resolver.Lang.renaming path [];
+    Resolver.Lang.any   
+  ];
+  kont ()
+
+
+and expand_lambda : Trie.path list * Code.t -> Syn.t =
+  fun (xs, body) ->
+  Scope.section [] @@ fun () -> 
+  let syms = 
+    xs |> List.map @@ fun x -> 
+    let sym = Symbol.fresh x in 
+    let singlx = Trie.Untagged.singleton (x, `Term [Syn.Var sym]) in
+    Scope.import_subtree ([], singlx);
+    sym
+  in
+  [Syn.Lam (syms, expand body)]
+
+and expand_ident path =
+  match Scope.resolve path, path with
+  | None, [name] ->
+    [Tag name]
+  | Some (`Term x, ()), _ -> x
+  | _ -> 
+    failwith "expand_ident"
 
 and expand_sym path =
   match Scope.resolve path, path with
@@ -67,63 +221,18 @@ and expand_sym path =
     failwith "expand_ident"
 
 
-
-and expand_lambda fm (env : Syn.t Trie.Untagged.t) : Code.binder -> Syn.t =
-  fun (xs, body) ->
-  let set env x =
-    env |> Trie.Untagged.update_singleton [x] @@ fun _ -> 
-    Some [Syn.Var x]
-  in
-  let env' = List.fold_left set env xs in
-  [Syn.Lam (xs, expand fm env' body)]
-
-let rec expand_decls units =
-  List.fold_left @@ expand_decl units
-
-and expand_decl units fm = 
-  function 
-  | Code.Import (vis, dep) -> 
-    let import = UnitMap.find dep units in
-    begin
-      match vis with
-      | Public -> Resolver.Scope.include_subtree ([], import)
-      | Private -> Resolver.Scope.import_subtree ([], import)
-    end;
-    fm
-  | Code.Def (path, xs, body) ->
-    let lam = expand_lambda fm Trie.Untagged.empty (xs, body) in
-    Resolver.Scope.include_singleton (path, (`Term lam, ()));
-    fm
-  | Code.Alloc path ->
-    let symbol = Symbol.fresh path in 
-    Resolver.Scope.include_singleton (path, (`Sym symbol, ())); 
-    fm
-  | Code.Title xs ->
-    {fm with title = Option.some @@ expand fm Trie.empty xs}
-  | Code.Author author ->
-    {fm with authors = fm.authors @ [author]}
-  | Code.Tag tag -> 
-    {fm with tags = fm.tags @ [tag]}
-  | Code.Taxon taxon -> 
-    {fm with taxon = Some taxon}
-  | Code.Date str -> 
-    let date = Date.parse str in
-    {fm with date = Some date}
-  | Code.Meta (k, v) -> 
-    let v = expand fm Trie.empty v in
-    {fm with metas = fm.metas @ [k,v]}
-  | Code.TeXPackage pkg -> 
-    {fm with tex_packages = fm.tex_packages @ [pkg]}
-  | Code.Namespace (path, body) ->
-    Scope.section path @@ fun () ->
-    expand_decls units fm body
-
 let expand_doc (units : exports UnitMap.t) addr (doc : Code.doc) = 
-  let fm, tree = doc in 
   let init = Syn.{addr; title = None; taxon = None; date = None; authors = []; tags = []; metas = []; tex_packages = []} in
   Resolver.Scope.run @@ fun () ->
-  let fm = expand_decls units init fm in
-  let exports = Resolver.Scope.get_export () in
-  let units = UnitMap.add addr exports units in
-  let tree = expand fm Trie.empty tree in
-  units, (fm, tree)
+  U.run ~env:units @@ fun () ->
+  Fm.run ~init @@ fun () -> 
+  Mode.run ~init:Frontmatter @@ fun () ->
+  try 
+    let tree = expand doc in
+    let fm = Fm.get () in
+    let exports = Resolver.Scope.get_export () in
+    UnitMap.add addr exports units, (fm, tree)
+  with 
+  | FrontmatterInBody code as exn -> 
+    Format.eprintf "[%s] Encountered frontmatter-only code in body: %a@." addr Code.pp code;
+    raise exn 
