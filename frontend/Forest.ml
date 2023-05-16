@@ -74,17 +74,10 @@ struct
         | None -> None
 
       let get_sorted_trees addrs : Sem.doc list =
-        let by_taxon = Compare.under (fun x -> Sem.(x.taxon)) @@ fun x y ->
-          match x, y with
-          | Some "reference", Some "reference" -> 0
-          | Some "reference", _ -> -1
-          | None, None -> 0
-          | _ -> 1
-        in
         let by_date = Compare.under (fun x -> Sem.(x.date)) @@ Compare.option Date.compare in
         let by_title = Compare.under doc_peek_title @@ Compare.option String.compare in
         let by_addr = Compare.under (fun x -> Sem.(x.addr)) String.compare in
-        let compare = Compare.cascade by_taxon @@ Compare.cascade by_date @@ Compare.cascade by_title by_addr in
+        let compare = Compare.cascade by_date @@ Compare.cascade by_title by_addr in
         let find addr =
           match M.find_opt addr docs with
           | None -> []
