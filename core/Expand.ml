@@ -34,8 +34,13 @@ let rec expand (code : Code.t) : Syn.t =
     if not (String.trim x = "") then 
       Mode.set Body;
     Syn.Text x :: expand rest
-  | Let (a, bs, xs) :: rest ->
-    expand_let (a, bs, xs) @@ fun () -> 
+  | Let (a, bs, def) :: rest ->
+    let singl = 
+      Mode.protect @@ fun () -> 
+      Trie.Untagged.singleton (a, `Term (expand_lambda (bs, def))) 
+    in
+    Resolver.Scope.section [] @@ fun _ -> 
+    Resolver.Scope.import_subtree ([], singl);
     expand rest
   | Namespace (path, body) :: rest -> 
     only_frontmatter code ();
@@ -47,7 +52,12 @@ let rec expand (code : Code.t) : Syn.t =
     Mode.set mode;
     result @ expand rest
   | Open path :: rest -> 
-    expand_open path @@ fun () -> 
+    Scope.section [] @@ fun () -> 
+    Scope.modify_visible @@ 
+    Resolver.Lang.union [
+      Resolver.Lang.renaming path [];
+      Resolver.Lang.any   
+    ];    
     expand rest 
   | Group (Squares, title) :: Group (Parens, [Text dest]) :: rest ->
     Mode.set Body;
@@ -103,7 +113,7 @@ let rec expand (code : Code.t) : Syn.t =
     expand rest
   | Def (path, xs, body) :: rest ->
     only_frontmatter code ();
-    let lam = Mode.protect @@ fun () ->  expand_lambda (xs, body) in
+    let lam = Mode.protect @@ fun () -> expand_lambda (xs, body) in
     Resolver.Scope.include_singleton (path, (`Term lam, ()));
     expand rest
   | Alloc path :: rest ->
@@ -171,25 +181,6 @@ let rec expand (code : Code.t) : Syn.t =
     end;
     Mode.set Frontmatter;
     expand rest
-
-
-and expand_let (a, bs, xs) kont = 
-  let singl = 
-    Mode.protect @@ fun () -> 
-    Trie.Untagged.singleton (a, `Term (expand_lambda (bs, xs))) 
-  in
-  Resolver.Scope.section [] @@ fun _ -> 
-  Resolver.Scope.import_subtree ([], singl);
-  kont ()
-
-and expand_open path kont = 
-  Scope.section [] @@ fun () -> 
-  Scope.modify_visible @@ 
-  Resolver.Lang.union [
-    Resolver.Lang.renaming path [];
-    Resolver.Lang.any   
-  ];
-  kont ()
 
 
 and expand_lambda : Trie.path list * Code.t -> Syn.t =
