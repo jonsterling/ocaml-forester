@@ -25,10 +25,10 @@ let rec eval : Syn.t -> Sem.t =
       match xs, rest with
       | [], rest -> eval body, rest
       | x :: xs, Syn.Group (Braces, u) :: rest -> 
-        let u = eval u in
-        LexEnv.scope (Env.add x u) @@ fun () -> 
+        LexEnv.scope (Env.add x (eval u)) @@ fun () -> 
         loop xs rest
-      | _ -> failwith "pop_args"
+      | _ -> 
+        failwith "eval/Lam"
     in
     let body, rest = loop xs rest in
     body @ eval rest
