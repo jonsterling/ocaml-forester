@@ -162,7 +162,7 @@ and render_frontmatter ~cfg (doc : Sem.doc) =
       doc.title |> Printer.option @@ fun title ->
       Xml.tag "title" [] [
         render ~cfg:{cfg with part = Frontmatter} @@
-        Sem.map_text StringUtil.sentence_case title
+        Sem.sentence_case title
       ]
     end;
     begin

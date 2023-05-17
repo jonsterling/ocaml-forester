@@ -16,7 +16,7 @@ let rec eval : Syn.t -> Sem.t =
   | Tag name :: rest ->
     eval_tag name rest
   | Transclude (tmode, name) :: rest ->
-    Sem.Transclude (TrIx.read (), tmode, name) :: 
+    Sem.Transclude (TrIx.read (), tmode, name) ::
     begin
       TrIx.scope Int.succ @@ fun () ->
       eval rest
@@ -26,13 +26,13 @@ let rec eval : Syn.t -> Sem.t =
   | Block (title, body) :: rest ->
     Sem.Block (eval title, eval body) :: eval rest
   | Lam (xs, body) :: rest ->
-    let rec loop xs rest = 
+    let rec loop xs rest =
       match xs, rest with
       | [], rest -> eval body, rest
-      | x :: xs, Syn.Group (Braces, u) :: rest -> 
-        LexEnv.scope (Env.add x (eval u)) @@ fun () -> 
+      | x :: xs, Syn.Group (Braces, u) :: rest ->
+        LexEnv.scope (Env.add x (eval u)) @@ fun () ->
         loop xs rest
-      | _ -> 
+      | _ ->
         failwith "eval/Lam"
     in
     let body, rest = loop xs rest in
@@ -45,20 +45,20 @@ let rec eval : Syn.t -> Sem.t =
     end
   | Put (k, v, body) :: rest ->
     let body =
-      DynEnv.scope (Env.add k @@ eval v) @@ fun () -> 
+      DynEnv.scope (Env.add k @@ eval v) @@ fun () ->
       eval body
     in
     body @ eval rest
   | Default (k, v, body) :: rest ->
     let body =
       let upd flenv = if Env.mem k flenv then flenv else Env.add k (eval v) flenv in
-      DynEnv.scope upd @@ fun () -> 
+      DynEnv.scope upd @@ fun () ->
       eval body
     in
-    body @ eval rest  
-  | Get key :: rest -> 
+    body @ eval rest
+  | Get key :: rest ->
     begin
-      match Env.find_opt key @@ DynEnv.read () with 
+      match Env.find_opt key @@ DynEnv.read () with
       | None -> failwith @@ Format.asprintf "Could not find fluid binding named %a" Symbol.pp key
       | Some v -> v @ eval rest
     end
@@ -101,9 +101,9 @@ and eval_tag  name =
 
 let eval_doc (doc : Syn.doc) : Sem.doc =
   let fm, tree = doc in
-  LexEnv.run ~env:Env.empty @@ fun () -> 
-  DynEnv.run ~env:Env.empty @@ fun () -> 
-  TrIx.run ~env:1 @@ fun () -> 
+  LexEnv.run ~env:Env.empty @@ fun () ->
+  DynEnv.run ~env:Env.empty @@ fun () ->
+  TrIx.run ~env:1 @@ fun () ->
   let tree = eval tree in
   let title = Option.map eval fm.title in
   let metas =

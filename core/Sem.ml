@@ -22,17 +22,10 @@ and env = t Env.t
 and clo = Clo of env * string list * Syn.t
 [@@deriving show]
 
-let rec node_map_text (f : string -> string) : node -> node =
-  function
-  | Text str -> Text (f str)
-  | Link {dest; title} -> Link {title = map_text f title; dest}
-  | Tag (tag, attrs, xs) -> Tag (tag, attrs, List.map (map_text f) xs)
-  | node -> node
-
-and map_text (f : string -> string) : t -> t =
-  List.map @@ node_map_text f
-
-let empty : env = Env.empty
+let sentence_case =
+  function 
+  | Text str :: xs -> Text (StringUtil.sentence_case str) :: xs
+  | xs -> xs
 
 type doc =
   {title : t option;
