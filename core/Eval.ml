@@ -17,7 +17,7 @@ let rec eval : Syn.t -> Sem.t =
   | Transclude (tmode, name) :: rest ->
     Sem.Transclude (tmode, name) :: eval rest
   | EmbedTeX {packages; source} :: rest ->
-    Sem.EmbedTeX {packages; source = eval  source} :: eval rest
+    Sem.EmbedTeX {packages; source = eval source} :: eval rest
   | Block (title, body) :: rest ->
     Sem.Block (eval title, eval body) :: eval rest
   | Lam (xs, body) :: rest ->

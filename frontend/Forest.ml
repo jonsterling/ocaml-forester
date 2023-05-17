@@ -3,7 +3,6 @@ open Core
 open Render
 
 module T = Domainslib.Task
-module Y = Yuujinchou
 
 module Addr = String
 module Tbl = Hashtbl.Make (Addr)
