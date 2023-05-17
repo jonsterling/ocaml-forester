@@ -44,7 +44,6 @@ let render_title ~taxon title =
   | None -> 
     RenderLaTeX.render @@ Sem.sentence_case title
 
-(* TODO *)
 let render_auto_bibtex ~base_url (doc : Sem.doc) : Printer.t =
   let contributors = E.contributors doc.addr in
   Printer.seq ~sep:Printer.newline [
