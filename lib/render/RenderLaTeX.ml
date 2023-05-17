@@ -1,3 +1,4 @@
+open Bwd
 open Prelude
 open Core
 
@@ -13,6 +14,25 @@ struct
 
   include PrinterKit.Kit (P0)
 end
+
+
+let rec add_qedhere xs =
+  match Bwd.of_list xs with 
+  | Emp -> xs
+  | Snoc (xs', last) ->
+    let qedhere = Sem.Tag ("qedhere", []) in
+    match last with 
+    | Sem.Tag ("ol", ys) -> 
+      Bwd.to_list @@ Bwd.Snoc (xs', Sem.Tag ("ol", add_qedhere ys))
+    | Sem.Tag ("ul", ys) ->
+      Bwd.to_list @@ Bwd.Snoc (xs', Sem.Tag ("ul", add_qedhere ys))
+    | Sem.Tag ("li", ys) ->
+      Bwd.to_list @@ Bwd.Snoc (xs', Sem.Tag ("li", add_qedhere ys))
+    | Sem.Math (Display, ys) -> 
+      Bwd.to_list @@ Bwd.Snoc (xs', Sem.Math (Display, add_qedhere ys))
+    | _ -> 
+      Bwd.to_list @@ Bwd.Snoc (Bwd.Snoc (xs', last), qedhere)
+
 
 let render_date =
   Format.dprintf {|\date{%a}@.|} Date.pp_human
@@ -53,11 +73,11 @@ and render_node : Sem.node -> Printer.t =
     let hash = Digest.to_hex @@ Digest.string code in
     E.enqueue_latex ~name:hash ~packages ~source:code;
     let path = Format.sprintf "resources/%s.pdf" hash in
-    Format.dprintf {|\begin{center}\includegraphics{%s}\end{center}%s|} path "\n"
+    Format.dprintf {|\[\includegraphics{%s}\]%s|} path "\n"
   | Block (title, body) -> 
     Printer.seq [
       Format.dprintf {|\begin{proof}[{%a}]%s|} (Fun.flip render) title "\n";
-      render body;
+      render @@ add_qedhere body;
       Format.dprintf {|\end{proof}%s|} "\n"
     ]
 
