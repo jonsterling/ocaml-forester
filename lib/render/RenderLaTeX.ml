@@ -37,7 +37,7 @@ let rec add_qedhere xs =
 let render_date =
   Format.dprintf {|\date{%a}@.|} Date.pp_human
 
-let rec render  (nodes :  Sem.t) : Printer.t = 
+let rec render  (nodes : Sem.t) : Printer.t = 
   Printer.iter render_node  nodes
 
 and render_node : Sem.node -> Printer.t = 
@@ -59,7 +59,15 @@ and render_node : Sem.node -> Printer.t =
       | None ->
         Format.dprintf {|\href{%s}{%a}|} dest (Fun.flip render) title
       | Some doc ->
-        Format.dprintf {|\ForesterRef{%s}{%a}|} dest (Fun.flip render) title
+        begin 
+          match doc.taxon with 
+          | Some "reference" ->
+            Format.dprintf {|%a~\cite{%s}|} (Fun.flip render) title dest
+          | Some "person" -> 
+            render title
+          | _ ->
+            Format.dprintf {|\ForesterRef{%s}{%a}|} dest (Fun.flip render) title
+        end
     end   
   | Math (Inline, body) ->
     Format.dprintf {|\(%a\)|} (Fun.flip RenderMathMode.render) body
@@ -173,8 +181,12 @@ let render_base_url url =
 let render_doc_page ~base_url (doc : Sem.doc) : Printer.t = 
   let contributors = E.contributors doc.addr in
   Printer.seq ~sep:(Printer.text "\n") [
-    Format.dprintf {|\documentclass{article}|};
-    Format.dprintf {|\usepackage{amsmath,amsthm,amssymb,stmaryrd,mathtools,forester}|};
+    Format.dprintf {|\documentclass[a4paper]{article}|};
+    Format.dprintf {|\usepackage[final]{microtype}|};
+    Format.dprintf {|\usepackage{fontspec}|};
+    Format.dprintf {|\setmonofont{inconsolata}|};
+    Format.dprintf {|\usepackage{amsmath,amsthm,amssymb,stmaryrd,mathtools,biblatex,forester}|};
+    Format.dprintf {|\addbibresource{forest.bib}|};
     base_url |> Printer.option render_base_url;
     doc.title |> Printer.option render_title;
     doc.date |> Printer.option render_date;
@@ -182,5 +194,6 @@ let render_doc_page ~base_url (doc : Sem.doc) : Printer.t =
     Format.dprintf {|\begin{document}|};
     Format.dprintf {|\maketitle|};
     render doc.body;
+    Format.dprintf {|\printbibliography|};
     Format.dprintf {|\end{document}|}
   ]

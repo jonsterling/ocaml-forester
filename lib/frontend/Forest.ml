@@ -224,6 +224,9 @@ struct
     run_renderer docs @@ fun () ->
     let module E = RenderEff.Perform in
     begin
+      let bib_ch = open_out @@ "latex/forest.bib" in
+      Fun.protect ~finally:(fun _ -> close_out bib_ch) @@ fun () -> 
+      let bib_fmt = Format.formatter_of_out_channel bib_ch in 
       docs |> M.iter @@ fun _ doc ->
       begin
         let ch = open_out @@ "output/" ^ E.route doc.addr in
@@ -237,6 +240,7 @@ struct
         let fmt = Format.formatter_of_out_channel ch in
         RenderLaTeX.render_doc_page ~base_url:I.base_url doc fmt
       end;
+      RenderBibTeX.render_bibtex ~base_url:I.base_url doc bib_fmt
     end;
 
     begin
