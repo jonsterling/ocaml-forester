@@ -10,6 +10,7 @@ module type I =
 sig
   val size : int
   val root : addr option
+  val base_url : string option
 end
 
 module Make (_ : I) : S

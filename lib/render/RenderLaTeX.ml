@@ -147,11 +147,15 @@ and render_doc_section (doc : Sem.doc) : Printer.t =
     Printer.nil;
   ]
 
-let render_doc_page (doc : Sem.doc) : Printer.t = 
+let render_base_url url = 
+  Format.dprintf {|\ForesterSetup{forestSite = {%s}}|} url
+
+let render_doc_page ~base_url (doc : Sem.doc) : Printer.t = 
   let contributors = E.contributors doc.addr in
   Printer.seq ~sep:(Printer.text "\n") [
     Format.dprintf {|\documentclass{article}|};
     Format.dprintf {|\usepackage{amsmath,amsthm,amssymb,stmaryrd,mathtools,forester}|};
+    base_url |> Printer.option render_base_url;
     doc.title |> Printer.option render_title;
     doc.date |> Printer.option render_date;
     render_authors (doc.authors, contributors);

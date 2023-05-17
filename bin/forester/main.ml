@@ -38,10 +38,12 @@ let () =
   let input_dirs_ref = ref [] in
   let root_ref = ref "" in
   let dev_ref = ref false in
+  let base_url_ref = ref "" in
 
   let usage_msg = "forester <dir> ..." in
   let args =
     ["--root", Arg.Set_string root_ref, "Set root tree";
+     "--base-url", Arg.Set_string base_url_ref, "Set base URL";
      "--dev", Arg.Set dev_ref, "Development mode"]
   in
   let anon_fun dir = input_dirs_ref := dir :: !input_dirs_ref  in
@@ -53,10 +55,17 @@ let () =
     | addr -> Some addr
   in
 
+  let base_url = 
+    match !base_url_ref with 
+    | "" -> None 
+    | url -> Some url
+  in
+
   let module I =
   struct
     let size = 100
     let root = root
+    let base_url = base_url
   end
   in
 

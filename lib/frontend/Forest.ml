@@ -22,6 +22,7 @@ module type I =
 sig
   val size : int
   val root : addr option
+  val base_url : string option
 end
 
 module Make (I : I) : S =
@@ -234,7 +235,7 @@ struct
         let ch = open_out @@ "latex/" ^ doc.addr ^ ".tex" in 
         Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
         let fmt = Format.formatter_of_out_channel ch in
-        RenderLaTeX.render_doc_page doc fmt
+        RenderLaTeX.render_doc_page ~base_url:I.base_url doc fmt
       end;
     end;
 
