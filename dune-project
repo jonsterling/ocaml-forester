@@ -29,5 +29,4 @@
   ppx_deriving
   domainslib
   yuujinchou
-  algaeff
-  talaria-bibtex))
+  algaeff))

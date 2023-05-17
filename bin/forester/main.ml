@@ -4,27 +4,27 @@ open Lexing
 let colnum pos =
   pos.pos_cnum - pos.pos_bol - 1
 
-let pp_pos fmt pos = 
+let pp_pos fmt pos =
   Format.fprintf fmt "%s: line %i, column %i" pos.pos_fname pos.pos_lnum (colnum pos + 1)
 
 let parse_channel filename ch =
   let lexbuf = Lexing.from_channel ch in
   lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = filename };
-  try Parser.main Lexer.token lexbuf with 
-  | Parser.Error -> 
+  try Parser.main Lexer.token lexbuf with
+  | Parser.Error ->
     failwith @@ Format.asprintf "Parse error at %a" pp_pos lexbuf.lex_curr_p
-  | Lexer.SyntaxError err -> 
+  | Lexer.SyntaxError err ->
     failwith @@ Format.asprintf "Lexing error at %a : %s" pp_pos lexbuf.lex_curr_p err
 
-let parse_file filename = 
-  let ch = open_in filename in 
-  Fun.protect ~finally:(fun _ -> close_in ch) @@ fun _ -> 
-  parse_channel filename ch 
+let parse_file filename =
+  let ch = open_in filename in
+  Fun.protect ~finally:(fun _ -> close_in ch) @@ fun _ ->
+  parse_channel filename ch
 
-module Process (F : Forest.S) = 
-struct 
+module Process (F : Forest.S) =
+struct
   let process_file ~dev filename =
-    if Filename.extension filename = ".tree" then 
+    if Filename.extension filename = ".tree" then
       let addr = Filename.chop_extension @@ Filename.basename filename in
       let abspath = if dev then Some (Unix.realpath filename) else None in
       F.plant_tree ~abspath addr @@ parse_file filename
@@ -40,22 +40,22 @@ let () =
   let dev_ref = ref false in
 
   let usage_msg = "forester <dir> ..." in
-  let args = 
+  let args =
     ["--root", Arg.Set_string root_ref, "Set root tree";
-     "--dev", Arg.Set dev_ref, "Development mode"] 
+     "--dev", Arg.Set dev_ref, "Development mode"]
   in
   let anon_fun dir = input_dirs_ref := dir :: !input_dirs_ref  in
   let () = Arg.parse args anon_fun usage_msg in
 
-  let root = 
-    match !root_ref with 
-    | "" -> None 
-    | addr -> Some addr 
-  in 
+  let root =
+    match !root_ref with
+    | "" -> None
+    | addr -> Some addr
+  in
 
-  let module I = 
-  struct 
-    let size = 100 
+  let module I =
+  struct
+    let size = 100
     let root = root
   end
   in
@@ -63,8 +63,8 @@ let () =
   let module F = Forest.Make (I) in
   let module P = Process (F) in
 
-  begin 
-    !input_dirs_ref |> List.iter @@ 
+  begin
+    !input_dirs_ref |> List.iter @@
     P.process_dir ~dev:!dev_ref
   end;
 

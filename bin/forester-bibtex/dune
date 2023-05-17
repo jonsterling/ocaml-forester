@@ -1,9 +1,0 @@
-(executable
- (public_name forester-bibtex)
- (name main)
- (libraries forester.frontend))
-
-(env
- (dev
-  (flags
-   (:standard -w -66-32-33-27-26))))

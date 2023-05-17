@@ -17,7 +17,6 @@ depends: [
   "domainslib"
   "yuujinchou"
   "algaeff"
-  "talaria-bibtex"
   "odoc" {with-doc}
 ]
 build: [
