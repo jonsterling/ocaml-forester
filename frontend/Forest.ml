@@ -150,7 +150,7 @@ struct
     List.iter @@
     function
     | Sem.Text _ -> ()
-    | Sem.Transclude (_, addr) ->
+    | Sem.Transclude (_, _, addr) ->
       Gph.add_edge transclusion_graph addr scope
     | Sem.Link {title; dest} ->
       analyze_nodes scope title;
@@ -227,7 +227,7 @@ struct
         let ch = open_out @@ "output/" ^ E.route addr in
         Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
         let out = Xmlm.make_output @@ `Channel ch in
-        RenderXml.render_doc_page addr doc out
+        RenderXml.render_doc_page ~trail:Emp addr doc out
       end
     end;
 

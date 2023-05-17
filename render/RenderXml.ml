@@ -1,4 +1,5 @@
 open Prelude
+open Bwd
 open Core
 
 module E = RenderEff.Perform
@@ -11,7 +12,7 @@ type part =
   | Mainmatter
   | Backmatter
 
-type cfg = {part : part}
+type cfg = {part : part; trail : int bwd}
 
 module Printer =
 struct
@@ -69,12 +70,13 @@ let rec render_node ~cfg : Sem.node -> printer =
   | Sem.Tag (name, attrs, xs) ->
     Xml.tag name attrs
       [xs |> Printer.iter ~sep:Printer.space (render ~cfg)]
-  | Sem.Transclude (mode, addr) ->
+  | Sem.Transclude (ix, mode, addr) ->
     begin
       match E.get_doc addr, mode with
       | None, _ ->
         failwith @@ Format.sprintf "Failed to transclude non-existent tree with address '%s'" addr
       | Some doc, mode ->
+        let cfg = {cfg with trail = Snoc(cfg.trail, ix)} in
         render_doc ~mode ~cfg doc
     end
   | Sem.EmbedTeX {packages; source} ->
@@ -107,7 +109,7 @@ and render ~cfg : Sem.t -> printer =
   Printer.iter (render_node ~cfg)
 
 and render_author (author : string) =
-  let cfg = {part = Frontmatter} in
+  let cfg = {part = Frontmatter; trail = Emp} in
   (* If the author string is an address to a biographical page, then link to it *)
   match E.get_doc author with
   | Some bio ->
@@ -142,8 +144,9 @@ and render_authors (doc : Sem.doc) =
       end
     ]
 
-and render_frontmatter (doc : Sem.doc) =
+and render_frontmatter ~cfg (doc : Sem.doc) =
   Xml.tag "frontmatter" [] [
+    render_trail cfg.trail;
     Xml.tag "addr" [] [Printer.text doc.addr];
     begin
       match E.abs_path doc.addr with
@@ -158,23 +161,23 @@ and render_frontmatter (doc : Sem.doc) =
     begin
       doc.title |> Printer.option @@ fun title ->
       Xml.tag "title" [] [
-        render ~cfg:{part = Frontmatter} @@
+        render ~cfg:{cfg with part = Frontmatter} @@
         Sem.map_text StringUtil.sentence_case title
       ]
     end;
     begin
       doc.metas |> Printer.iter @@ fun (key, body) ->
-      Xml.tag "meta" ["name", key] [render ~cfg:{part = Frontmatter} body]
+      Xml.tag "meta" ["name", key] [render ~cfg:{cfg with part = Frontmatter} body]
     end
   ]
 
-and render_mainmatter (doc : Sem.doc) =
+and render_mainmatter ~cfg (doc : Sem.doc) =
   Xml.tag "mainmatter" [] [
-    render ~cfg:{part = Mainmatter} doc.body
+    render ~cfg:{cfg with part = Mainmatter} doc.body
   ]
 
-and render_backmatter (doc : Sem.doc) =
-  let cfg = {part = Backmatter} in
+and render_backmatter ~cfg (doc : Sem.doc) =
+  let cfg = {cfg with part = Backmatter} in
   Xml.tag "backmatter" [] [
     Xml.tag "contributions" [] [
       E.contributions doc.addr |> Printer.iter @@
@@ -198,34 +201,45 @@ and render_backmatter (doc : Sem.doc) =
     ];
   ]
 
+and render_trail trail =
+  let render_crumb i = Xml.tag "crumb" [] [Printer.text @@ string_of_int i] in
+  Xml.tag "trail" [] @@
+  List.map render_crumb @@ 
+  Bwd.to_list trail
+
 and mode_to_string =
   function
   | Full -> "full"
   | Spliced -> "spliced"
   | Collapsed -> "collapsed"
 
-and render_bool =
+and bool_to_string =
   function
   | true -> "true"
   | false -> "false"
 
+
+and trail_to_string =
+  function 
+  | Emp -> ""
+  | Snoc (trail, i) -> 
+    Format.sprintf "%s.%i" (trail_to_string trail) i
+
 and render_doc ~cfg ?(mode = Full) (doc : Sem.doc) : printer =
-  let attrs =
-    ["mode", mode_to_string mode;
-     "root", render_bool @@ E.is_root doc.addr
-    ] @
-    match doc.taxon with
-    | Some taxon -> ["taxon", StringUtil.sentence_case taxon]
-    | None -> []
+  let module S = Algaeff.Sequencer.Make (struct type elt = string * string end) in
+  let attrs = 
+    List.of_seq @@ S.run @@ fun () -> 
+    S.yield ("mode", mode_to_string mode);
+    S.yield ("root", bool_to_string @@ E.is_root doc.addr);
+    doc.taxon |> Option.iter (fun taxon -> S.yield ("taxon", StringUtil.sentence_case taxon))
   in
   Xml.tag "tree" attrs
-    [render_frontmatter doc;
-     render_mainmatter doc;
+    [render_frontmatter ~cfg doc;
+     render_mainmatter ~cfg doc;
      match cfg.part with
-     | Top -> render_backmatter doc
+     | Top -> render_backmatter ~cfg doc
      | _ -> Printer.nil]
 
-let render_doc_page (scope : addr) (doc : Sem.doc) : printer =
+let render_doc_page ~trail (scope : addr) (doc : Sem.doc) : printer =
   Xml.with_xsl "forest.xsl" @@
-  render_doc ~cfg:{part = Top} doc
-
+  render_doc ~cfg:{trail; part = Top} doc

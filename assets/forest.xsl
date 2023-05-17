@@ -68,6 +68,19 @@
     <xsl:text>\)</xsl:text>
   </xsl:template>
 
+  <xsl:template match="trail">
+    <xsl:for-each select="crumb">
+      <xsl:apply-templates />
+      <xsl:if test="position()!=last()">
+        <xsl:text>.</xsl:text>
+      </xsl:if>
+    </xsl:for-each>
+  </xsl:template>
+
+  <xsl:template match="crumb">
+    <xsl:value-of select="." />
+  </xsl:template>
+
 
   <xsl:template match="/">
     <html>
@@ -172,6 +185,10 @@
       <xsl:attribute name="class">leaf</xsl:attribute>
       <span class="taxon">
         <xsl:value-of select="../@taxon" />
+        <xsl:if test="trail/crumb">
+          <xsl:text> </xsl:text>
+        </xsl:if>
+        <xsl:apply-templates select="trail" />
         <xsl:text>. </xsl:text>
       </span>
       <xsl:apply-templates select="title" />
@@ -246,6 +263,12 @@
     <header>
       <h1>
         <xsl:attribute name="class">tree</xsl:attribute>
+
+        <xsl:apply-templates select="trail" />
+        <xsl:if test="trail/crumb">
+          <xsl:text>. </xsl:text>
+        </xsl:if>
+
         <xsl:apply-templates select="title" />
         <xsl:text> </xsl:text>
         <xsl:call-template name="FrontmatterSlugLink" />
@@ -260,9 +283,10 @@
     </header>
   </xsl:template>
 
+
   <xsl:template match="backmatter/references">
     <xsl:if test="tree">
-      <section class="block">
+      <section class="block link-list">
         <h2>References</h2>
         <xsl:apply-templates select="tree" />
       </section>
@@ -271,7 +295,7 @@
 
   <xsl:template match="backmatter/context">
     <xsl:if test="tree">
-      <section class="block">
+      <section class="block link-list">
         <h2>Context</h2>
         <xsl:apply-templates select="tree" />
       </section>
@@ -280,7 +304,7 @@
 
   <xsl:template match="backmatter/contributions">
     <xsl:if test="tree">
-      <section class="block">
+      <section class="block link-list">
         <h2>Contributions</h2>
         <xsl:apply-templates select="tree" />
       </section>
@@ -289,7 +313,7 @@
 
   <xsl:template match="backmatter/related">
     <xsl:if test="tree">
-      <section class="block">
+      <section class="block link-list">
         <h2>Related</h2>
         <xsl:apply-templates select="tree" />
       </section>
@@ -298,7 +322,7 @@
 
   <xsl:template match="backmatter/backlinks">
     <xsl:if test="tree">
-      <section class="block">
+      <section class="block link-list">
         <h2>Backlinks</h2>
         <xsl:apply-templates select="tree" />
       </section>

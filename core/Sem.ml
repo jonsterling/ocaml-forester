@@ -6,7 +6,7 @@ type attr = string * string
 
 type node =
   | Text of string
-  | Transclude of transclusion_mode * addr
+  | Transclude of int * transclusion_mode * addr
   | Link of {dest : string; title : t}
   | Tag of string * attr list * t list
   | Math of math_mode * t

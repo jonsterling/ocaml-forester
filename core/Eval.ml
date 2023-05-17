@@ -2,6 +2,7 @@ open Base
 
 module LexEnv = Algaeff.Reader.Make (struct type env = Sem.t Env.t end)
 module DynEnv = Algaeff.Reader.Make (struct type env = Sem.t Env.t end)
+module TrIx = Algaeff.Reader.Make (struct type env = int end)
 
 let rec eval : Syn.t -> Sem.t =
   function
@@ -15,7 +16,11 @@ let rec eval : Syn.t -> Sem.t =
   | Tag name :: rest ->
     eval_tag name rest
   | Transclude (tmode, name) :: rest ->
-    Sem.Transclude (tmode, name) :: eval rest
+    Sem.Transclude (TrIx.read (), tmode, name) :: 
+    begin
+      TrIx.scope Int.succ @@ fun () ->
+      eval rest
+    end
   | EmbedTeX {packages; source} :: rest ->
     Sem.EmbedTeX {packages; source = eval source} :: eval rest
   | Block (title, body) :: rest ->
@@ -98,6 +103,7 @@ let eval_doc (doc : Syn.doc) : Sem.doc =
   let fm, tree = doc in
   LexEnv.run ~env:Env.empty @@ fun () -> 
   DynEnv.run ~env:Env.empty @@ fun () -> 
+  TrIx.run ~env:1 @@ fun () -> 
   let tree = eval tree in
   let title = Option.map eval fm.title in
   let metas =
