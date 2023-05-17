@@ -40,7 +40,7 @@ and render xs =
 and render_arg delim (arg : Sem.t) : Printer.t =
   match arg with 
   | [] -> Printer.nil 
-  | _ -> 
+  | _ ->
     let l, r =
       match delim with
       | Braces -> "{", "}"

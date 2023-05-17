@@ -62,17 +62,38 @@ and render_node : Sem.node -> Printer.t =
     ]
 
 and render_title title = 
-  Format.dprintf {|\title{%a}%s|} (Fun.flip render) title "\n"
+  Format.dprintf {|\title{%a}%s|} (Fun.flip render) (Sem.sentence_case title) "\n"
 
-and render_tag name body = 
-  let name = 
-    match name with
-    | "p" -> "par"
-    | "b" | "strong" -> "textbf"
-    | "em" -> "emph"
-    | _ -> name
-  in 
-  Format.dprintf {|\%s{%a}|} name (Fun.flip render) body
+and render_tag name body =
+  match name with 
+  | "ol" ->
+    Printer.seq ~sep:(Printer.text "\n") [
+      Format.dprintf {|\begin{enumerate}|};
+      render body;
+      Format.dprintf {|\end{enumerate}|};
+    ]
+  | "ul" ->
+    Printer.seq ~sep:(Printer.text "\n") [
+      Format.dprintf {|\begin{itemize}|};
+      render body;
+      Format.dprintf {|\end{itemize}|};
+    ]
+  | "blockquote" ->
+    Printer.seq ~sep:(Printer.text "\n") [
+      Format.dprintf {|\begin{quotation}|};
+      render body;
+      Format.dprintf {|\end{quotation}|};
+    ]
+  | _ -> 
+    let name = 
+      match name with
+      | "p" -> "par"
+      | "b" | "strong" -> "textbf"
+      | "em" -> "emph"
+      | "li" -> "item"
+      | _ -> name
+    in 
+    Format.dprintf {|\%s{%a}|} name (Fun.flip render) body
 
 
 and render_author author = 
@@ -88,7 +109,7 @@ and render_author author =
 
 and render_authors =
   function 
-  | [], _ -> Printer.nil 
+  | [], [] -> Printer.nil 
   | authors, contributors ->
     let pp_sep fmt () = Format.fprintf fmt {| \and |} in
     Format.dprintf {|\author{%a%a}%s|}
@@ -106,8 +127,13 @@ and render_contributors =
       (Format.pp_print_list ~pp_sep (Fun.flip render_author))
       contributors
 
+and strip_first_paragraph xs = 
+  match xs with 
+  | Sem.Tag ("p", body) :: rest -> body @ rest
+  | _ -> xs
+
 and render_doc_section (doc : Sem.doc) : Printer.t =
-  let title = Option.value ~default:[] doc.title in
+  let title = Sem.sentence_case @@ Option.value ~default:[] doc.title in
   let taxon = Option.value ~default:"" doc.taxon in
   Printer.seq ~sep:(Printer.text "\n") [
     Printer.nil;
@@ -116,7 +142,7 @@ and render_doc_section (doc : Sem.doc) : Printer.t =
       (Fun.flip render) title
       taxon
       doc.addr;
-    render doc.body;
+    render @@ strip_first_paragraph doc.body;
     Format.dprintf {|\end{tree}|};
     Printer.nil;
   ]
@@ -125,7 +151,7 @@ let render_doc_page (doc : Sem.doc) : Printer.t =
   let contributors = E.contributors doc.addr in
   Printer.seq ~sep:(Printer.text "\n") [
     Format.dprintf {|\documentclass{article}|};
-    Format.dprintf {|\usepackage{amsmath,mathtools,forester}|};
+    Format.dprintf {|\usepackage{amsmath,amsthm,amssymb,stmaryrd,mathtools,forester}|};
     doc.title |> Printer.option render_title;
     doc.date |> Printer.option render_date;
     render_authors (doc.authors, contributors);
