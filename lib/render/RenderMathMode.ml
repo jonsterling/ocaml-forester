@@ -38,13 +38,16 @@ and render xs =
   Printer.iter ~sep:Printer.space render_node xs
 
 and render_arg delim (arg : Sem.t) : Printer.t =
-  let l, r =
-    match delim with
-    | Braces -> "{", "}"
-    | Squares -> "[", "]"
-    | Parens -> "(", ")"
-  in
-  Printer.seq
-    [Printer.text l;
-     render arg;
-     Printer.text r]
+  match arg with 
+  | [] -> Printer.nil 
+  | _ -> 
+    let l, r =
+      match delim with
+      | Braces -> "{", "}"
+      | Squares -> "[", "]"
+      | Parens -> "(", ")"
+    in
+    Printer.seq
+      [Printer.text l;
+       render arg;
+       Printer.text r]
