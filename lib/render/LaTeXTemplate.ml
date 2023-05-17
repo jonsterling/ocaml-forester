@@ -1,9 +1,16 @@
 let write ch ~packages ~source =
-  Printf.fprintf ch "\\documentclass[crop,dvisvgm]{standalone}\n";
+  let newline() = Printf.fprintf ch "\n" in
+  Printf.fprintf ch {|\RequirePackage{ifpdf}|};
+  newline ();
+  Printf.fprintf ch {|\ifpdf\documentclass[crop]{standalone}\else\documentclass[crop,dvisvgm]{standalone}\fi|};
+  newline ();
   begin
     packages |> List.iter @@ fun pkg ->
-    Printf.fprintf ch "\\usepackage{%s}\n" pkg
+    Printf.fprintf ch {|\usepackage{%s}|} pkg;
+    newline ();
   end;
-  Printf.fprintf ch "\\begin{document}\n";
+  Printf.fprintf ch {|\begin{document}|};
+  newline ();
   Printf.fprintf ch "%s" source;
-  Printf.fprintf ch "\n\\end{document}\n"
+  newline ();
+  Printf.fprintf ch {|\end{document}|}

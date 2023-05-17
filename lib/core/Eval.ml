@@ -94,9 +94,9 @@ and eval_tag  name =
   function
   | Syn.Group (Braces, u) :: rest ->
     let u' = eval u in
-    Sem.Tag (name, [], [u']) :: eval rest
+    Sem.Tag (name, u') :: eval rest
   | rest ->
-    Sem.Tag (name, [], []) :: eval rest
+    Sem.Tag (name, []) :: eval rest
 
 
 let eval_doc (doc : Syn.doc) : Sem.doc =

@@ -29,8 +29,8 @@ struct
 
     let worker i =
       match tasks.(i) with
-      | `Task (name, packages, source) -> BuildSvg.build_svg ~name ~source ~packages
-      | `Uninitialized -> failwith "Unexpected uninitialized task in SVG queue"
+      | `Task (name, packages, source) -> BuildLaTeX.build_latex ~name ~source ~packages
+      | `Uninitialized -> failwith "Unexpected uninitialized task in LaTeX queue"
     in
 
     let pool = T.setup_pool ~num_domains:10 () in

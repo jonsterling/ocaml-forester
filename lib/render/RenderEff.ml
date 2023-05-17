@@ -11,7 +11,7 @@ sig
   val parents : addr -> Sem.doc list
   val contributors : addr -> string list
   val contributions : addr -> Sem.doc list
-  val enqueue_svg : name:string -> packages:string list -> source:string -> unit
+  val enqueue_latex : name:string -> packages:string list -> source:string -> unit
   val get_doc : addr -> Sem.doc option
 end
 
@@ -25,7 +25,7 @@ type _ Effect.t +=
   | Parents : addr -> Sem.doc list Effect.t
   | Contributions : addr -> Sem.doc list Effect.t
   | Contributors : addr -> string list Effect.t
-  | EnqueueSvg : {name : string; packages : string list; source : string} -> unit Effect.t
+  | EnqueueLaTeX : {name : string; packages : string list; source : string} -> unit Effect.t
   | GetDoc : addr -> Sem.doc option Effect.t
 
 module Perform : Handler =
@@ -39,7 +39,7 @@ struct
   let contributions addr = Effect.perform @@ Contributions addr
   let parents addr = Effect.perform @@ Parents addr
   let contributors addr = Effect.perform @@ Contributors addr
-  let enqueue_svg ~name ~packages ~source = Effect.perform @@ EnqueueSvg {name; packages; source}
+  let enqueue_latex ~name ~packages ~source = Effect.perform @@ EnqueueLaTeX {name; packages; source}
   let get_doc addr = Effect.perform @@ GetDoc addr
 end
 
@@ -72,8 +72,8 @@ struct
            resume @@ fun () -> H.contributors addr
          | Contributions addr ->
            resume @@ fun () -> H.contributions addr
-         | EnqueueSvg {name; packages; source} ->
-           resume @@ fun () -> H.enqueue_svg ~name ~packages ~source
+         | EnqueueLaTeX {name; packages; source} ->
+           resume @@ fun () -> H.enqueue_latex ~name ~packages ~source
          | GetDoc addr ->
            resume @@ fun () -> H.get_doc addr
          | _ ->

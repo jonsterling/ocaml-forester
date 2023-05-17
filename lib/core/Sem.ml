@@ -8,7 +8,7 @@ type node =
   | Text of string
   | Transclude of int * transclusion_mode * addr
   | Link of {dest : string; title : t}
-  | Tag of string * attr list * t list
+  | Tag of string * t
   | Math of math_mode * t
   | EmbedTeX of {packages : string list; source : t}
   | Block of t * t

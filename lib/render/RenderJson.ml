@@ -48,7 +48,7 @@ let rec render nodes : Printer.t =
 and render_node : Sem.node -> Printer.t =
   function
   | Sem.Text txt -> Printer.text @@ escape @@ StringUtil.sentence_case txt
-  | Sem.Tag (_,_,body) -> Printer.iter ~sep:Printer.space render body
+  | Sem.Tag (_,body) -> render body
   | Sem.Link {title; _} -> render title
   | Sem.Transclude _ | Sem.EmbedTeX _ | Sem.Math _ | Sem.Block _ -> Printer.nil
 

@@ -67,9 +67,8 @@ let rec render_node ~cfg : Sem.node -> printer =
       | None ->
         render_external_link ~cfg ~title ~url:dest
     end
-  | Sem.Tag (name, attrs, xs) ->
-    Xml.tag name attrs
-      [xs |> Printer.iter ~sep:Printer.space (render ~cfg)]
+  | Sem.Tag (name, xs) ->
+    Xml.tag name [] [render ~cfg xs]
   | Sem.Transclude (ix, mode, addr) ->
     begin
       match E.get_doc addr, mode with
@@ -85,7 +84,7 @@ let rec render_node ~cfg : Sem.node -> printer =
       RenderMathMode.render source
     in
     let hash = Digest.to_hex @@ Digest.string code in
-    E.enqueue_svg ~name:hash ~packages ~source:code;
+    E.enqueue_latex ~name:hash ~packages ~source:code;
     let path = Format.sprintf "resources/%s.svg" hash in
     Xml.tag "center" []
       [Xml.tag "img" ["src", path] []]
@@ -240,6 +239,6 @@ and render_doc ~cfg ?(mode = Full) (doc : Sem.doc) : printer =
      | Top -> render_backmatter ~cfg doc
      | _ -> Printer.nil]
 
-let render_doc_page ~trail (scope : addr) (doc : Sem.doc) : printer =
+let render_doc_page ~trail (doc : Sem.doc) : printer =
   Xml.with_xsl "forest.xsl" @@
   render_doc ~cfg:{trail; part = Top} doc

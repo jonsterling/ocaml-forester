@@ -11,7 +11,7 @@ sig
   val parents : addr -> Sem.doc list
   val contributors : addr -> string list
   val contributions : addr -> Sem.doc list
-  val enqueue_svg : name:string -> packages:string list -> source:string -> unit
+  val enqueue_latex : name:string -> packages:string list -> source:string -> unit
   val get_doc : addr -> Sem.doc option
 end
 

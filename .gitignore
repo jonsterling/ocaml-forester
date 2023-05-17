@@ -1,6 +1,7 @@
 node_modules
 build
 output
+latex
 
 # -*- mode: gitignore; -*-
 *.install

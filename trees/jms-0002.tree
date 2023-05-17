@@ -2,6 +2,7 @@
 \date{2023-05-11}
 \author{jonsterling}
 \author{Another Person}
+\taxon{lemma}
 
 \texpackage{preamble}
 \import{jms-0001}

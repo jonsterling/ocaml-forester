@@ -26,7 +26,7 @@ end
 
 module Make (I : I) : S =
 struct
-  module SvgQueue = SvgQueue.Make (I)
+  module LaTeXQueue = LaTeXQueue.Make (I)
 
   let frozen = ref false
   let unexpanded_trees : Code.doc Tbl.t = Tbl.create I.size
@@ -59,8 +59,8 @@ struct
       let get_doc addr =
         M.find_opt addr docs
 
-      let enqueue_svg ~name ~packages ~source =
-        SvgQueue.enqueue ~name ~packages ~source
+      let enqueue_latex ~name ~packages ~source =
+        LaTeXQueue.enqueue ~name ~packages ~source
 
       let doc_peek_title (doc : Sem.doc) =
         match doc.title with
@@ -155,8 +155,8 @@ struct
     | Sem.Link {title; dest} ->
       analyze_nodes scope title;
       Gph.add_edge link_graph dest scope
-    | Sem.Tag (_, _, xs) ->
-      xs |> List.iter @@ analyze_nodes scope
+    | Sem.Tag (_, xs) ->
+      analyze_nodes scope xs
     | Sem.Math (_, x) ->
       analyze_nodes scope x
     | Sem.EmbedTeX {source; _} ->
@@ -218,17 +218,24 @@ struct
 
     Shell.ensure_dir "build";
     Shell.ensure_dir_path ["output"; "resources"];
+    Shell.ensure_dir_path ["latex"; "resources"];
 
     run_renderer docs @@ fun () ->
     let module E = RenderEff.Perform in
     begin
-      docs |> M.iter @@ fun addr doc ->
+      docs |> M.iter @@ fun _ doc ->
       begin
-        let ch = open_out @@ "output/" ^ E.route addr in
+        let ch = open_out @@ "output/" ^ E.route doc.addr in
         Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
         let out = Xmlm.make_output @@ `Channel ch in
-        RenderXml.render_doc_page ~trail:Emp addr doc out
-      end
+        RenderXml.render_doc_page ~trail:Emp doc out
+      end;
+      begin 
+        let ch = open_out @@ "latex/" ^ doc.addr ^ ".tex" in 
+        Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
+        let fmt = Format.formatter_of_out_channel ch in
+        RenderLaTeX.render_doc_page doc fmt
+      end;
     end;
 
     begin
@@ -249,19 +256,26 @@ struct
       else
         begin
           Shell.copy_file_to_dir ~source:fp ~dest_dir:"build";
-          Shell.copy_file_to_dir ~source:fp ~dest_dir:"output"
+          Shell.copy_file_to_dir ~source:fp ~dest_dir:"output";
+          Shell.copy_file_to_dir ~source:fp ~dest_dir:"latex"
         end
     end;
 
     begin
       Shell.within_dir "build" @@ fun _ ->
-      SvgQueue.process ()
+      LaTeXQueue.process ()
     end;
 
     begin
       Sys.readdir "build" |> Array.iter @@ fun basename ->
-      if Filename.extension basename = ".svg" then
-        let fp = Format.sprintf "build/%s" basename in
-        Shell.copy_file_to_dir ~source:fp ~dest_dir:"output/resources/"
+      let ext = Filename.extension basename in
+      let fp = Format.sprintf "build/%s" basename in
+      match ext with 
+      | ".svg" ->           
+        Shell.copy_file_to_dir ~source:fp ~dest_dir:"output/resources/";
+      | ".pdf" ->
+        Shell.copy_file_to_dir ~source:fp ~dest_dir:"latex/resources/"
+      | _ -> ()
+
     end;
 end

@@ -22,37 +22,20 @@ let rec render_node : Sem.node -> Printer.t =
     Printer.text txt
   | Sem.Math(_, xs) ->
     render xs
-  | Sem.Tag (name, attrs, args) ->
-    render_tag name attrs args
+  | Sem.Tag (name, body) ->
+    render_tag name body
   | node ->
     Format.eprintf "missing case: %a@." Sem.pp_node node;
     failwith "RenderMathMode.render_node"
 
-and render_tag name attrs args =
+and render_tag name body =
   Printer.seq
     [Printer.text "\\";
      Printer.text name;
-     render_attrs attrs;
-     render_args args]
+     render_arg Braces body]
 
 and render xs =
   Printer.iter ~sep:Printer.space render_node xs
-
-and render_attrs (attrs : Sem.attr list) : Printer.t =
-  match List.length attrs with
-  | 0 -> Printer.nil
-  | n ->
-    Printer.seq
-      [Printer.text "{";
-       Printer.iter ~sep:(Printer.text ",") render_attr attrs;
-       Printer.text "}"]
-
-and render_attr (attr : Sem.attr) : Printer.t  =
-  let k, v = attr in
-  Printer.seq
-    [Printer.text k;
-     Printer.text " = ";
-     Printer.text v]
 
 and render_arg delim (arg : Sem.t) : Printer.t =
   let l, r =
@@ -65,6 +48,3 @@ and render_arg delim (arg : Sem.t) : Printer.t =
     [Printer.text l;
      render arg;
      Printer.text r]
-
-and render_args (args : Sem.t list) : Printer.t =
-  Printer.iter (render_arg Braces) args
