@@ -63,27 +63,18 @@ struct
       let enqueue_latex ~name ~packages ~source =
         LaTeXQueue.enqueue ~name ~packages ~source
 
-      let doc_peek_title (doc : Sem.doc) =
-        match doc.title with
-        | Some (Sem.Text txt :: _) -> Some txt
-        | _ -> None
-
       let addr_peek_title scope =
         match M.find_opt scope docs with
-        | Some doc -> doc_peek_title doc
+        | Some doc -> Sem.Doc.peek_title doc
         | None -> None
 
       let get_sorted_trees addrs : Sem.doc list =
-        let by_date = Compare.under (fun x -> Sem.(x.date)) @@ Compare.option Date.compare in
-        let by_title = Compare.under doc_peek_title @@ Compare.option String.compare in
-        let by_addr = Compare.under (fun x -> Sem.(x.addr)) String.compare in
-        let compare = Compare.cascade by_date @@ Compare.cascade by_title by_addr in
         let find addr =
           match M.find_opt addr docs with
           | None -> []
           | Some doc -> [doc]
         in
-        List.sort compare @@ List.concat_map find @@ S.elements addrs
+        Sem.Doc.sort @@ List.concat_map find @@ S.elements addrs
 
       let get_all_links scope =
         get_sorted_trees @@ S.of_list @@ Gph.pred link_graph scope
@@ -247,7 +238,7 @@ struct
       let ch = open_out @@ "output/forest.json" in
       Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
       let fmt = Format.formatter_of_out_channel ch in
-      let docs = List.of_seq @@ Seq.map snd @@ M.to_seq docs in
+      let docs = Sem.Doc.sort @@ List.of_seq @@ Seq.map snd @@ M.to_seq docs in
       RenderJson.render_docs docs fmt
     end;
 

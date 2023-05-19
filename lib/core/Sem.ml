@@ -36,3 +36,18 @@ type doc =
    metas : (string * t) list;
    body : t}
 [@@deriving show]
+
+module Doc = 
+struct 
+  let peek_title (doc : doc) =
+    match doc.title with
+    | Some (Text txt :: _) -> Some txt
+    | _ -> None
+
+  let sort =
+    let by_date = Compare.under (fun x -> x.date) @@ Compare.option Date.compare in
+    let by_title = Compare.under peek_title @@ Compare.option String.compare in
+    let by_addr = Compare.under (fun x -> x.addr) String.compare in
+    let compare = Compare.cascade by_date @@ Compare.cascade by_title by_addr in
+    List.sort @@ Fun.flip compare
+end
