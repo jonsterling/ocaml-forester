@@ -56,7 +56,7 @@ let rec expand (code : Code.t) : Syn.t =
     Scope.modify_visible @@ 
     Resolver.Lang.union [
       Resolver.Lang.renaming path [];
-      Resolver.Lang.any   
+      Resolver.Lang.all   
     ];    
     expand rest 
   | Group (Squares, title) :: Group (Parens, [Text dest]) :: rest ->

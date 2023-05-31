@@ -7,6 +7,5 @@ struct
   type context = unit (* for advanced printing and reporting; unused here *)
 end
 
-module Mod = Yuujinchou.Modifier.Make (P)
-module Scope = Yuujinchou.Scope.Make (P) (Mod)
+module Scope = Yuujinchou.Scope.Make (P)
 module Lang = Yuujinchou.Language
