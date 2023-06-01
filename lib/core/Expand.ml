@@ -44,7 +44,7 @@ let rec expand (code : Code.t) : Syn.t =
     expand rest
   | Namespace (path, body) :: rest -> 
     only_frontmatter code ();
-    let mode, result = 
+    let mode, result =
       Scope.section path @@ fun () -> 
       let x = expand body in 
       Mode.get (), x
@@ -55,9 +55,9 @@ let rec expand (code : Code.t) : Syn.t =
     Scope.section [] @@ fun () -> 
     Scope.modify_visible @@ 
     Resolver.Lang.union [
-      Resolver.Lang.renaming path [];
-      Resolver.Lang.any   
-    ];    
+      Resolver.Lang.all;
+      Resolver.Lang.renaming path []
+    ];
     expand rest 
   | Group (Squares, title) :: Group (Parens, [Text dest]) :: rest ->
     Mode.set Body;

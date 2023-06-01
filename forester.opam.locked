@@ -48,7 +48,7 @@ depends: [
   "uutf" {= "1.0.3"}
   "xmlm" {= "1.4.0"}
   "yojson" {= "2.1.0"}
-  "yuujinchou" {= "4.0.0"}
+  "yuujinchou" {= "5.0.1"}
 ]
 build: [
   ["dune" "subst"] {dev}
