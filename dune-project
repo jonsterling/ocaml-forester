@@ -28,6 +28,7 @@
   xmlm
   ppx_deriving
   domainslib
+  ptime
   (yuujinchou
    (>= 5.0.1))
   algaeff))
