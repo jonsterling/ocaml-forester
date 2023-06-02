@@ -1,6 +1,6 @@
 (library
  (name Prelude)
- (libraries unix str)
+ (libraries unix str ptime)
  (public_name forester.prelude))
 
 (env

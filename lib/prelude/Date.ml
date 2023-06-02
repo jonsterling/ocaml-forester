@@ -1,20 +1,22 @@
 type t = {yyyy : int; mm : int option; dd : int option}
 
 (* approximate, only for sorting *)
-let to_int (date : t) : int = 
+let to_ptime (date : t) : Ptime.t = 
   let dd = Option.value ~default:1 date.dd in 
-  let mm = Option.value ~default:1 date.mm in 
-  date.yyyy * 365 + mm * 30 + dd
+  let mm = Option.value ~default:1 date.mm in
+  match Ptime.of_date (date.yyyy, mm, dd) with 
+  | None -> failwith "to_ptime"
+  | Some t -> t
 
 let compare (d0 : t) (d1 : t) = 
-  Int.compare (to_int d0) (to_int d1)
+  Ptime.compare (to_ptime d0) (to_ptime d1)
 
 let parse_date str = 
   match String.split_on_char '-' str with 
   | yyyy :: rest -> 
     let yyyy = int_of_string yyyy in 
     begin
-      match rest with 
+      match rest with
       | mm :: rest -> 
         let mm = Some (int_of_string mm) in 
         begin
