@@ -90,6 +90,7 @@ let rec render_node ~cfg : Sem.node -> printer =
     end
   | Sem.Query (title, mode, query) ->
     let docs = E.run_query query in
+    let anchor = string_of_int @@ Oo.id (object end) in
     begin
       match docs with 
       | [] -> Printer.nil 
@@ -101,6 +102,7 @@ let rec render_node ~cfg : Sem.node -> printer =
         Xml.tag "tree" ["mode", mode_to_string mode; "root", "false"] [
           Xml.tag "frontmatter" [] [
             render_trail trail;
+            Xml.tag "anchor" [] [Printer.text anchor];
             Xml.tag "title" [] [
               render ~cfg:{cfg with part = Frontmatter} @@
               Sem.sentence_case title
