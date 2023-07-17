@@ -60,10 +60,13 @@ struct
     with End_of_file -> ()
 
 
-  let run cmd args =
+  let run ?(quiet = false) cmd args =
     let cmd' = String.concat " " @@ cmd :: args in
-    let ic, oc, ec as proc = 
-      Format.eprintf "Running %s@." cmd';
+    let ic, oc, ec as proc =
+      begin 
+        if not quiet then 
+          Format.eprintf "Running %s@." cmd';
+      end;
       Unix.open_process_full cmd' (Unix.environment ())
     in
 
@@ -81,13 +84,5 @@ struct
       Format.sprintf "ERROR RUNNING [%s]: %s" cmd' (Buffer.contents err_buf);
 end
 
-let copy_file ~source ~dest =
-  let src_ch = open_in source in 
-  Fun.protect ~finally:(fun _ -> close_in src_ch) @@ fun _ ->
-  let dst_ch = open_out dest in
-  Fun.protect ~finally:(fun _ -> close_out dst_ch) @@ fun _ ->
-  Chan.dump ~inp:src_ch ~out:dst_ch
-
 let copy_file_to_dir ~source ~dest_dir =
-  let dest = Format.sprintf "%s/%s" dest_dir @@ Filename.basename source in
-  copy_file ~source ~dest
+  Proc.run ~quiet:true "cp" ["-r"; source; dest_dir]

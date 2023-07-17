@@ -270,16 +270,11 @@ struct
     begin
       Sys.readdir "assets" |> Array.iter @@ fun basename ->
       let fp = Format.sprintf "assets/%s" basename in
-      if Sys.is_directory fp then
-        failwith @@
-        Format.sprintf "Expected flat directory structure in 'assets' but found '%s'"
-          basename
-      else
-        begin
-          Shell.copy_file_to_dir ~source:fp ~dest_dir:"build";
-          Shell.copy_file_to_dir ~source:fp ~dest_dir:"output";
-          Shell.copy_file_to_dir ~source:fp ~dest_dir:"latex"
-        end
+      begin
+        Shell.copy_file_to_dir ~source:fp ~dest_dir:"build";
+        Shell.copy_file_to_dir ~source:fp ~dest_dir:"output";
+        Shell.copy_file_to_dir ~source:fp ~dest_dir:"latex"
+      end
     end;
 
     begin
