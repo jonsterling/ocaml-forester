@@ -344,8 +344,10 @@
         </xsl:if>
 
         <xsl:apply-templates select="title" />
-        <xsl:text> </xsl:text>
-        <xsl:call-template name="FrontmatterSlugLink" />
+        <xsl:if test="not(../@root='true')">
+          <xsl:text> </xsl:text>
+          <xsl:call-template name="FrontmatterSlugLink" />
+        </xsl:if>
       </h1>
       <xsl:call-template name="Metadata" />
     </header>
@@ -356,7 +358,9 @@
     <div class="metadata">
       <ul>
         <xsl:apply-templates select="date" />
-        <xsl:apply-templates select="authors" />
+        <xsl:if test="not(meta[@name = 'author']/.='false')">
+          <xsl:apply-templates select="authors" />
+        </xsl:if>
         <xsl:apply-templates select="meta[@name='venue']" />
         <xsl:apply-templates select="meta[@name='external']" />
         <xsl:apply-templates select="meta[@name='slides']" />
