@@ -43,7 +43,7 @@ let rec render  (nodes : Sem.t) : Printer.t =
 and render_node : Sem.node -> Printer.t = 
   function 
   | Text txt -> Printer.text txt
-  | Transclude (_, _, addr) -> 
+  | Transclude (_, addr) -> 
     begin 
       match E.get_doc addr with
       | None ->
@@ -88,6 +88,8 @@ and render_node : Sem.node -> Printer.t =
       render @@ add_qedhere body;
       Format.dprintf {|\end{proof}%s|} "\n"
     ]
+  | Bibliography _ ->
+    Printer.nil
 
 and render_title title = 
   Format.dprintf {|\title{%a}%s|} (Fun.flip render) (Sem.sentence_case title) "\n"

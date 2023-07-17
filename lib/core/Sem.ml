@@ -6,7 +6,8 @@ type attr = string * string
 
 type node =
   | Text of string
-  | Transclude of int * transclusion_mode * addr
+  | Transclude of transclusion_mode * addr
+  | Bibliography of t * transclusion_mode * addr Query.t
   | Link of {dest : string; title : t}
   | Tag of string * t
   | Math of math_mode * t
@@ -34,6 +35,7 @@ type doc =
    date: Date.t option;
    addr : addr;
    metas : (string * t) list;
+   tags: addr list;
    body : t}
 [@@deriving show]
 

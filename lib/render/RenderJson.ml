@@ -50,7 +50,7 @@ and render_node : Sem.node -> Printer.t =
   | Sem.Text txt -> Printer.text @@ escape @@ StringUtil.sentence_case txt
   | Sem.Tag (_,body) -> render body
   | Sem.Link {title; _} -> render title
-  | Sem.Transclude _ | Sem.EmbedTeX _ | Sem.Math _ | Sem.Block _ -> Printer.nil
+  | Sem.Transclude _ | Sem.EmbedTeX _ | Sem.Math _ | Sem.Block _ | Sem.Bibliography _ -> Printer.nil
 
 
 let render_doc (doc : Sem.doc) : Printer.t =

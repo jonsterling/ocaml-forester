@@ -5,6 +5,10 @@
   let full_transclude x = Code.Transclude (Full, x)
   let splice_transclude x = Code.Transclude (Spliced, x)
   let collapse_transclude x = Code.Transclude (Collapsed, x)
+  
+  let full_bibliography (title, query) = Code.Bibliography (title, Full, query)
+  let collapsed_bibliography (title, query) = Code.Bibliography (title, Collapsed, query)
+  let spliced_bibliography (title, query) = Code.Bibliography (title, Spliced, query)
 
 %}
 
@@ -13,6 +17,8 @@
 %token TITLE IMPORT EXPORT DEF TAXON AUTHOR TEX_PACKAGE TAG DATE NAMESPACE LET TEX BLOCK META OPEN
 %token TRANSCLUDE TRANSCLUDE_STAR TRANSCLUDE_AT SCOPE PUT GET DEFAULT ALLOC 
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
+%token QUERY_AND QUERY_OR QUERY_AUTHOR QUERY_TAG QUERY_TAXON 
+%token BIBLIOGRAPHY BIBLIOGRAPHY_STAR BIBLIOGRAPHY_AT
 %token EOF
 
 %type <Code.t> expr
@@ -61,6 +67,24 @@ let node :=
 | DEFAULT; ~ = IDENT; ~ = arg; <Code.Default>
 | GET; ~ = IDENT; <Code.Get>
 | OPEN; ~ = IDENT; <Code.Open>
+| BIBLIOGRAPHY; ~ = arg; ~ = braces(query); <full_bibliography>
+| BIBLIOGRAPHY_STAR; ~ = arg; ~ = braces(query); <collapsed_bibliography>
+| BIBLIOGRAPHY_AT; ~ = arg; ~ = braces(query); <spliced_bibliography>
+
+let eat_text == option(TEXT)
+
+let query0 := 
+| QUERY_AUTHOR; ~ = txt_arg; <Query.Author>
+| QUERY_TAG; ~ = txt_arg; <Query.Tag>
+| QUERY_TAXON; ~ = txt_arg; <Query.Taxon>
+| QUERY_AND; ~ = braces(queries); <Query.And>
+| QUERY_OR; ~ = braces(queries); <Query.Or>
+
+let queries := 
+| TEXT; { [] }
+| qs = queries; q = query0; _ = eat_text; {qs @ [q]}
+
+let query := _ = eat_text; q = query0; eat_text; {q}
 
 let expr == list(node)
 

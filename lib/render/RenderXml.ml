@@ -12,7 +12,7 @@ type part =
   | Mainmatter
   | Backmatter
 
-type cfg = {part : part; trail : int bwd}
+type cfg = {part : part; trail : int bwd; counter : int ref}
 
 module Printer =
 struct
@@ -43,6 +43,8 @@ struct
     bdy out
 end
 
+
+
 let rec render_node ~cfg : Sem.node -> printer =
   function
   | Sem.Text txt ->
@@ -69,14 +71,46 @@ let rec render_node ~cfg : Sem.node -> printer =
     end
   | Sem.Tag (name, xs) ->
     Xml.tag name [] [render ~cfg xs]
-  | Sem.Transclude (ix, mode, addr) ->
+  | Sem.Transclude (mode, addr) ->
     begin
       match E.get_doc addr, mode with
       | None, _ ->
         failwith @@ Format.sprintf "Failed to transclude non-existent tree with address '%s'" addr
       | Some doc, mode ->
-        let cfg = {cfg with trail = Snoc(cfg.trail, ix)} in
+        let cfg = 
+          match mode with
+          | Spliced -> cfg 
+          | _ -> 
+            let ctr = cfg.counter in
+            let ix = !ctr + 1 in
+            ctr := ix;
+            {cfg with trail = Snoc(cfg.trail, ix); counter = ref 0} 
+        in
         render_doc ~mode ~cfg doc
+    end
+  | Sem.Bibliography (title, mode, query) ->
+    let docs = E.run_query query in
+    begin
+      match docs with 
+      | [] -> Printer.nil 
+      | _ -> 
+        let ctr = cfg.counter in
+        let ix = !ctr + 1 in
+        let trail = Snoc (cfg.trail, ix) in
+        ctr := ix;
+        Xml.tag "tree" ["mode", mode_to_string mode; "root", "false"] [
+          Xml.tag "frontmatter" [] [
+            render_trail trail;
+            Xml.tag "title" [] [
+              render ~cfg:{cfg with part = Frontmatter} @@
+              Sem.sentence_case title
+            ]
+          ];
+          Xml.tag "mainmatter" [] [
+            docs |> Printer.iter @@
+            render_doc ~cfg:cfg ~mode:Collapsed
+          ]
+        ]
     end
   | Sem.EmbedTeX {packages; source} ->
     let code =
@@ -93,6 +127,13 @@ let rec render_node ~cfg : Sem.node -> printer =
     [Xml.tag "headline" [] [render ~cfg title];
      render ~cfg body]
 
+and transclude ~cfg ~mode doc = 
+  let ctr = cfg.counter in
+  let ix = !ctr + 1 in
+  ctr := ix;
+  let cfg = {cfg with trail = Snoc(cfg.trail, ix); counter = ref 0} in
+  render_doc ~mode ~cfg doc
+
 and render_internal_link ~cfg ~title ~addr =
   let url = E.route addr in
   Xml.tag "link"
@@ -108,7 +149,7 @@ and render ~cfg : Sem.t -> printer =
   Printer.iter (render_node ~cfg)
 
 and render_author (author : string) =
-  let cfg = {part = Frontmatter; trail = Emp} in
+  let cfg = {part = Frontmatter; trail = Emp; counter = ref 0} in
   (* If the author string is an address to a biographical page, then link to it *)
   match E.get_doc author with
   | Some bio ->
@@ -241,4 +282,4 @@ and render_doc ~cfg ?(mode = Full) (doc : Sem.doc) : printer =
 
 let render_doc_page ~trail (doc : Sem.doc) : printer =
   Xml.with_xsl "forest.xsl" @@
-  render_doc ~cfg:{trail; part = Top} doc
+  render_doc ~cfg:{trail; part = Top; counter = ref 0} doc

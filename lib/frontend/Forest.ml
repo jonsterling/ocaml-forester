@@ -107,6 +107,27 @@ struct
         let by_title = Compare.under addr_peek_title @@ Compare.option String.compare in
         let compare = Compare.cascade by_title String.compare in
         List.sort compare @@ S.elements proper_contributors
+
+      let rec test_query query (doc : Sem.doc) =
+        match query with
+        | Query.Author addr ->
+          List.mem addr doc.authors
+        | Query.Tag addr -> 
+          List.mem addr doc.tags
+        | Query.Taxon taxon -> 
+          doc.taxon = Some taxon
+        | Query.Or qs -> 
+          qs |> List.exists @@ fun q -> test_query q doc
+        | Query.And qs -> 
+          qs |> List.for_all @@ fun q -> test_query q doc
+        | Query.Not q -> 
+          not @@ test_query q doc
+        | Query.True -> 
+          true
+
+      let run_query query = 
+        get_sorted_trees @@ S.of_seq @@ Seq.map fst @@ M.to_seq @@ 
+        M.filter (fun _ doc -> test_query query doc) docs
     end
     in
     let module Run = RenderEff.Run (H) in
@@ -142,7 +163,7 @@ struct
     List.iter @@
     function
     | Sem.Text _ -> ()
-    | Sem.Transclude (_, _, addr) ->
+    | Sem.Transclude (_, addr) ->
       Gph.add_edge transclusion_graph addr scope
     | Sem.Link {title; dest} ->
       analyze_nodes scope title;
@@ -156,10 +177,12 @@ struct
     | Sem.Block (title, body) ->
       analyze_nodes scope title;
       analyze_nodes scope body
+    | Sem.Bibliography (title, _, _) ->
+      analyze_nodes scope title
 
   let rec process_decl scope =
     function
-    | Code.Tag tag -> 
+    | Code.Tag tag ->
       Gph.add_edge tag_graph tag scope
     | Code.Author author -> 
       Tbl.add author_pages author scope

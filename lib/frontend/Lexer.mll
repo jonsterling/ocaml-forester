@@ -71,6 +71,14 @@ rule token =
   | "\\transclude*" { return lexbuf @@ Parser.TRANSCLUDE_STAR }
   | "\\transclude@" { return lexbuf @@ Parser.TRANSCLUDE_AT }
   | "\\transclude" { return lexbuf @@ Parser.TRANSCLUDE }
+  | "\\query/and" {return lexbuf @@ Parser.QUERY_AND }
+  | "\\query/or" {return lexbuf @@ Parser.QUERY_OR }
+  | "\\query/author" {return lexbuf @@ Parser.QUERY_AUTHOR }
+  | "\\query/tag" {return lexbuf @@ Parser.QUERY_TAG }
+  | "\\query/taxon" {return lexbuf @@ Parser.QUERY_TAXON }
+  | "\\bibliography*" { return lexbuf @@ Parser.BIBLIOGRAPHY_STAR }
+  | "\\bibliography@" { return lexbuf @@ Parser.BIBLIOGRAPHY_AT }
+  | "\\bibliography" { return lexbuf @@ Parser.BIBLIOGRAPHY }
   | "#" { return lexbuf @@ Parser.TEXT "#" }
   | ident { return lexbuf @@ ident (Lexing.lexeme lexbuf) }
   | '{' { return lexbuf @@ Parser.LBRACE }

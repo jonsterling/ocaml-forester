@@ -13,6 +13,7 @@ sig
   val contributions : addr -> Sem.doc list
   val enqueue_latex : name:string -> packages:string list -> source:string -> unit
   val get_doc : addr -> Sem.doc option
+  val run_query : addr Query.t -> Sem.doc list
 end
 
 type _ Effect.t +=
@@ -27,6 +28,7 @@ type _ Effect.t +=
   | Contributors : addr -> string list Effect.t
   | EnqueueLaTeX : {name : string; packages : string list; source : string} -> unit Effect.t
   | GetDoc : addr -> Sem.doc option Effect.t
+  | RunQuery : addr Query.t -> Sem.doc list Effect.t
 
 module Perform : Handler =
 struct
@@ -41,6 +43,7 @@ struct
   let contributors addr = Effect.perform @@ Contributors addr
   let enqueue_latex ~name ~packages ~source = Effect.perform @@ EnqueueLaTeX {name; packages; source}
   let get_doc addr = Effect.perform @@ GetDoc addr
+  let run_query query = Effect.perform @@ RunQuery query
 end
 
 module Run (H : Handler) =
@@ -76,6 +79,8 @@ struct
            resume @@ fun () -> H.enqueue_latex ~name ~packages ~source
          | GetDoc addr ->
            resume @@ fun () -> H.get_doc addr
+         | RunQuery query -> 
+           resume @@ fun () -> H.run_query query
          | _ ->
            None}
 end

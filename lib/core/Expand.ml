@@ -69,6 +69,10 @@ let rec expand (code : Code.t) : Syn.t =
   | Transclude (m, addr) :: rest ->
     Mode.set Body;
     Syn.Transclude (m, addr) :: expand rest
+  | Bibliography (title, mode, query) :: rest -> 
+    Mode.set Body;
+    let title = expand title in 
+    Syn.Bibliography (title, mode, query) :: expand rest
   | EmbedTeX xs :: rest ->
     Mode.set Body;
     let fm = Fm.get () in
