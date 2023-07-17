@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "forester"
-version: "2.0"
+version: "2.2"
 synopsis: "A tool for tending mathematical forests"
 maintainer: "Jonathan Sterling"
 authors: "Jonathan Sterling"
@@ -39,6 +39,7 @@ depends: [
   "ppx_derivers" {= "1.2.1"}
   "ppx_deriving" {= "5.2.1"}
   "ppxlib" {= "0.29.1"}
+  "ptime" {= "1.1.0"}
   "re" {= "1.10.4"}
   "result" {= "1.5"}
   "seq" {= "base"}
