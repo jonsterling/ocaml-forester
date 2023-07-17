@@ -86,7 +86,7 @@ let rec render_node ~cfg : Sem.node -> printer =
             ctr := ix;
             {cfg with trail = Snoc(cfg.trail, ix); counter = ref 0} 
         in
-        render_doc ~mode ~cfg doc
+        render_doc ~mode ~cfg ~toc:true doc
     end
   | Sem.Query (title, mode, query) ->
     let docs = E.run_query query in
@@ -94,14 +94,20 @@ let rec render_node ~cfg : Sem.node -> printer =
     begin
       match docs with 
       | [] -> Printer.nil 
-      | _ -> 
-        let ctr = cfg.counter in
-        let ix = !ctr + 1 in
-        let trail = Snoc (cfg.trail, ix) in
-        ctr := ix;
+      | _ ->
+        let rendered_trail = 
+          match mode with 
+          | Spliced -> Printer.nil 
+          | _ ->         
+            let ctr = cfg.counter in
+            let ix = !ctr + 1 in
+            let trail = Snoc (cfg.trail, ix) in
+            ctr := ix;
+            render_trail trail
+        in 
         Xml.tag "tree" ["mode", mode_to_string mode; "root", "false"] [
           Xml.tag "frontmatter" [] [
-            render_trail trail;
+            rendered_trail;
             Xml.tag "anchor" [] [Printer.text anchor];
             Xml.tag "title" [] [
               render ~cfg:{cfg with part = Frontmatter} @@
@@ -110,7 +116,7 @@ let rec render_node ~cfg : Sem.node -> printer =
           ];
           Xml.tag "mainmatter" [] [
             docs |> Printer.iter @@
-            render_doc ~cfg:cfg ~mode:Collapsed
+            render_doc ~cfg:cfg ~mode:Collapsed ~toc:false
           ]
         ]
     end
@@ -128,13 +134,6 @@ let rec render_node ~cfg : Sem.node -> printer =
     Xml.tag "block" ["open", "open"] @@
     [Xml.tag "headline" [] [render ~cfg title];
      render ~cfg body]
-
-and transclude ~cfg ~mode doc = 
-  let ctr = cfg.counter in
-  let ix = !ctr + 1 in
-  ctr := ix;
-  let cfg = {cfg with trail = Snoc(cfg.trail, ix); counter = ref 0} in
-  render_doc ~mode ~cfg doc
 
 and render_internal_link ~cfg ~title ~addr =
   let url = E.route addr in
@@ -186,9 +185,9 @@ and render_authors (doc : Sem.doc) =
       end
     ]
 
-and render_frontmatter ~cfg (doc : Sem.doc) =
+and render_frontmatter ~cfg ?(toc = true) (doc : Sem.doc) =
   Xml.tag "frontmatter" [] [
-    render_trail cfg.trail;
+    if toc then render_trail cfg.trail else Printer.nil;
     Xml.tag "addr" [] [Printer.text doc.addr];
     begin
       match E.abs_path doc.addr with
@@ -267,7 +266,7 @@ and trail_to_string =
   | Snoc (trail, i) -> 
     Format.sprintf "%s.%i" (trail_to_string trail) i
 
-and render_doc ~cfg ?(mode = Full) (doc : Sem.doc) : printer =
+and render_doc ~cfg ?(mode = Full) ?(toc = true) (doc : Sem.doc) : printer =
   let module S = Algaeff.Sequencer.Make (struct type elt = string * string end) in
   let attrs = 
     List.of_seq @@ S.run @@ fun () -> 
@@ -276,7 +275,7 @@ and render_doc ~cfg ?(mode = Full) (doc : Sem.doc) : printer =
     doc.taxon |> Option.iter (fun taxon -> S.yield ("taxon", StringUtil.sentence_case taxon))
   in
   Xml.tag "tree" attrs
-    [render_frontmatter ~cfg doc;
+    [render_frontmatter ~cfg ~toc doc;
      render_mainmatter ~cfg doc;
      match cfg.part with
      | Top -> render_backmatter ~cfg doc
