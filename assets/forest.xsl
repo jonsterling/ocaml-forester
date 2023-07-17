@@ -289,6 +289,18 @@
     </header>
   </xsl:template>
 
+  <xsl:template match="tree[@taxon='Person']/frontmatter">
+    <header>
+      <h1>
+        <xsl:attribute name="class">leaf</xsl:attribute>
+        <xsl:apply-templates select="title" />
+        <xsl:text> </xsl:text>
+        <xsl:call-template name="FrontmatterSlugLink" />
+      </h1>
+      <xsl:call-template name="Metadata" />
+    </header>
+  </xsl:template>
+
 
   <xsl:template match="tree[not(@taxon)]/frontmatter">
     <header>

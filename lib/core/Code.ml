@@ -16,7 +16,7 @@ type node =
   | Default of Trie.path * t
   | Get of Trie.path
 
-  | Bibliography of t * transclusion_mode * string Query.t
+  | Query of t * transclusion_mode * string Query.t
 
   | Import of visibility * addr
   | Def of Trie.path * Trie.path list * t

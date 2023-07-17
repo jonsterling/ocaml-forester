@@ -16,9 +16,9 @@ let rec eval : Syn.t -> Sem.t =
     eval_tag name rest
   | Transclude (tmode, name) :: rest ->
     Sem.Transclude (tmode, name) :: eval rest
-  | Bibliography (title, mode, query) :: rest -> 
+  | Query (title, mode, query) :: rest -> 
     let title = eval title in
-    Sem.Bibliography (title, mode, query) :: eval rest
+    Sem.Query (title, mode, query) :: eval rest
   | EmbedTeX {packages; source} :: rest ->
     Sem.EmbedTeX {packages; source = eval source} :: eval rest
   | Block (title, body) :: rest ->

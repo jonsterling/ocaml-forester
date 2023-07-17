@@ -8,7 +8,7 @@ type node =
   | Tag of string
   | Link of {dest : string; title : t}
   | Transclude of transclusion_mode * string
-  | Bibliography of t * transclusion_mode * string Query.t
+  | Query of t * transclusion_mode * string Query.t
   | EmbedTeX of {packages : string list; source : t}
   | Block of t * t
   | Lam of Symbol.t list * t

@@ -88,7 +88,7 @@ let rec render_node ~cfg : Sem.node -> printer =
         in
         render_doc ~mode ~cfg doc
     end
-  | Sem.Bibliography (title, mode, query) ->
+  | Sem.Query (title, mode, query) ->
     let docs = E.run_query query in
     begin
       match docs with 

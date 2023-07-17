@@ -88,7 +88,7 @@ and render_node : Sem.node -> Printer.t =
       render @@ add_qedhere body;
       Format.dprintf {|\end{proof}%s|} "\n"
     ]
-  | Bibliography _ ->
+  | Query _ ->
     Printer.nil
 
 and render_title title = 

@@ -76,9 +76,10 @@ rule token =
   | "\\query/author" {return lexbuf @@ Parser.QUERY_AUTHOR }
   | "\\query/tag" {return lexbuf @@ Parser.QUERY_TAG }
   | "\\query/taxon" {return lexbuf @@ Parser.QUERY_TAXON }
-  | "\\bibliography*" { return lexbuf @@ Parser.BIBLIOGRAPHY_STAR }
-  | "\\bibliography@" { return lexbuf @@ Parser.BIBLIOGRAPHY_AT }
-  | "\\bibliography" { return lexbuf @@ Parser.BIBLIOGRAPHY }
+  | "\\query/meta" {return lexbuf @@ Parser.QUERY_META }
+  | "\\query*" { return lexbuf @@ Parser.QUERY_TREE_STAR }
+  | "\\query@" { return lexbuf @@ Parser.QUERY_TREE_AT }
+  | "\\query" { return lexbuf @@ Parser.QUERY_TREE }
   | "#" { return lexbuf @@ Parser.TEXT "#" }
   | ident { return lexbuf @@ ident (Lexing.lexeme lexbuf) }
   | '{' { return lexbuf @@ Parser.LBRACE }

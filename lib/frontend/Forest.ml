@@ -114,6 +114,8 @@ struct
           List.mem addr doc.authors
         | Query.Tag addr -> 
           List.mem addr doc.tags
+        | Query.Meta (key, value) -> 
+          List.mem (key, [Sem.Text value]) doc.metas
         | Query.Taxon taxon -> 
           doc.taxon = Some taxon
         | Query.Or qs -> 
@@ -177,7 +179,7 @@ struct
     | Sem.Block (title, body) ->
       analyze_nodes scope title;
       analyze_nodes scope body
-    | Sem.Bibliography (title, _, _) ->
+    | Sem.Query (title, _, _) ->
       analyze_nodes scope title
 
   let rec process_decl scope =
