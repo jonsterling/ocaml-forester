@@ -245,6 +245,10 @@
     </a>
   </xsl:template>
 
+  <xsl:template match="meta[@name='bibtex']">
+    <pre><xsl:value-of select="." /></pre>
+  </xsl:template>
+
   <xsl:template match="meta[@name='venue']">
     <li class="meta-item">
       <span class="venue">
@@ -443,6 +447,8 @@
           <xsl:apply-templates select="frontmatter" />
         </summary>
         <xsl:apply-templates select="mainmatter" />
+
+        <xsl:apply-templates select="frontmatter/meta[@name='bibtex']" />
       </details>
     </section>
   </xsl:template>

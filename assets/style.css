@@ -35,6 +35,11 @@ center {
   overflow-y: hidden;
 }
 
+pre {
+  font-size: .9em;
+  margin-top: 0em;
+}
+
 body {
   font-family: "Inria Sans";
   font-size: 12pt;
