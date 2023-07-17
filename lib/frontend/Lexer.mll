@@ -35,6 +35,7 @@ rule token =
   | "#{" { return lexbuf @@ Parser.HASH_LBRACE }
   | "\\\\" { return lexbuf @@ Parser.IDENT [{|\|}] }
   | "\\," { return lexbuf @@ Parser.IDENT [{|,|}] }
+  | "\\\"" { return lexbuf @@ Parser.IDENT [{|"|}] }
   | "\\'" { return lexbuf @@ Parser.IDENT [{|'|}] }
   | "\\`" { return lexbuf @@ Parser.IDENT [{|`|}] }
   | "\\_" { return lexbuf @@ Parser.IDENT [{|_|}] }
