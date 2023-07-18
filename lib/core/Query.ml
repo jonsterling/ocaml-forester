@@ -1,7 +1,7 @@
 type 'a t = 
-  | Author of string
-  | Tag of string
-  | Taxon of string
+  | Author of 'a
+  | Tag of 'a
+  | Taxon of 'a
   | Meta of string * 'a
   | Or of 'a t list
   | And of 'a t list
@@ -11,9 +11,9 @@ type 'a t =
 
 let rec map f = 
   function 
-  | Author x -> Author x
-  | Tag x -> Tag x
-  | Taxon x -> Taxon x 
+  | Author x -> Author (f x)
+  | Tag x -> Tag (f x)
+  | Taxon x -> Taxon (f x )
   | Meta (k, v) -> Meta (k, f v)
   | Or qs -> Or (List.map (map f) qs)
   | And qs -> And (List.map (map f) qs)

@@ -74,9 +74,9 @@ let node :=
 let eat_text == option(TEXT)
 
 let query0 := 
-| QUERY_AUTHOR; ~ = txt_arg; <Query.Author>
-| QUERY_TAG; ~ = txt_arg; <Query.Tag>
-| QUERY_TAXON; ~ = txt_arg; <Query.Taxon>
+| QUERY_AUTHOR; ~ = arg; <Query.Author>
+| QUERY_TAG; ~ = arg; <Query.Tag>
+| QUERY_TAXON; ~ = arg; <Query.Taxon>
 | QUERY_AND; ~ = braces(queries); <Query.And>
 | QUERY_OR; ~ = braces(queries); <Query.Or>
 | QUERY_META; k = txt_arg; v = arg; <Query.Meta>

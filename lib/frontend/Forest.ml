@@ -110,13 +110,13 @@ struct
 
       let rec test_query query (doc : Sem.doc) =
         match query with
-        | Query.Author addr ->
+        | Query.Author [Sem.Text addr] ->
           List.mem addr doc.authors
-        | Query.Tag addr -> 
+        | Query.Tag [Sem.Text addr] -> 
           List.mem addr doc.tags
         | Query.Meta (key, value) -> 
           List.mem (key, value) doc.metas
-        | Query.Taxon taxon -> 
+        | Query.Taxon [Sem.Text taxon] -> 
           doc.taxon = Some taxon
         | Query.Or qs -> 
           qs |> List.exists @@ fun q -> test_query q doc
@@ -126,6 +126,8 @@ struct
           not @@ test_query q doc
         | Query.True -> 
           true
+        | _ -> 
+          failwith "Invalid query"
 
       let run_query query = 
         get_sorted_trees @@ S.of_seq @@ Seq.map fst @@ M.to_seq @@ 
