@@ -13,7 +13,7 @@ sig
   val contributions : addr -> Sem.doc list
   val enqueue_latex : name:string -> packages:string list -> source:string -> unit
   val get_doc : addr -> Sem.doc option
-  val run_query : addr Query.t -> Sem.doc list
+  val run_query : Sem.t Query.t -> Sem.doc list
 end
 
 type _ Effect.t +=
@@ -28,7 +28,7 @@ type _ Effect.t +=
   | Contributors : addr -> string list Effect.t
   | EnqueueLaTeX : {name : string; packages : string list; source : string} -> unit Effect.t
   | GetDoc : addr -> Sem.doc option Effect.t
-  | RunQuery : addr Query.t -> Sem.doc list Effect.t
+  | RunQuery : Sem.t Query.t -> Sem.doc list Effect.t
 
 module Perform : Handler =
 struct

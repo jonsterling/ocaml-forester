@@ -13,7 +13,7 @@ sig
   val contributions : addr -> Sem.doc list
   val enqueue_latex : name:string -> packages:string list -> source:string -> unit
   val get_doc : addr -> Sem.doc option
-  val run_query : addr Query.t -> Sem.doc list
+  val run_query : Sem.t Query.t -> Sem.doc list
 end
 
 module Perform : Handler

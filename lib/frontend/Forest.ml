@@ -115,7 +115,7 @@ struct
         | Query.Tag addr -> 
           List.mem addr doc.tags
         | Query.Meta (key, value) -> 
-          List.mem (key, [Sem.Text value]) doc.metas
+          List.mem (key, value) doc.metas
         | Query.Taxon taxon -> 
           doc.taxon = Some taxon
         | Query.Or qs -> 

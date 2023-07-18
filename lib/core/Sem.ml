@@ -7,7 +7,7 @@ type attr = string * string
 type node =
   | Text of string
   | Transclude of {mode : transclusion_mode; toc : bool; addr : addr}
-  | Query of t * transclusion_mode * addr Query.t
+  | Query of t * transclusion_mode * t Query.t
   | Link of {dest : string; title : t}
   | Tag of string * t
   | Math of math_mode * t

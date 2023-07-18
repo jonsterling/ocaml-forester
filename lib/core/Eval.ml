@@ -16,8 +16,9 @@ let rec eval : Syn.t -> Sem.t =
     eval_tag name rest
   | Transclude (tmode, name) :: rest ->
     Sem.Transclude {mode = tmode; addr = name; toc = true} :: eval rest
-  | Query (title, mode, query) :: rest -> 
-    let title = eval title in
+  | Query (title, mode, query) :: rest ->
+    let title = eval title in 
+    let query = Query.map eval query in
     Sem.Query (title, mode, query) :: eval rest
   | EmbedTeX {packages; source} :: rest ->
     Sem.EmbedTeX {packages; source = eval source} :: eval rest

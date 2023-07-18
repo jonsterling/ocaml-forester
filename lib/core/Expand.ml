@@ -72,6 +72,7 @@ let rec expand (code : Code.t) : Syn.t =
   | Query (title, mode, query) :: rest -> 
     Mode.set Body;
     let title = expand title in 
+    let query = Query.map expand query in
     Syn.Query (title, mode, query) :: expand rest
   | EmbedTeX xs :: rest ->
     Mode.set Body;

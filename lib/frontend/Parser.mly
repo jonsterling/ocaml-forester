@@ -79,7 +79,7 @@ let query0 :=
 | QUERY_TAXON; ~ = txt_arg; <Query.Taxon>
 | QUERY_AND; ~ = braces(queries); <Query.And>
 | QUERY_OR; ~ = braces(queries); <Query.Or>
-| QUERY_META; k = txt_arg; v = txt_arg; <Query.Meta>
+| QUERY_META; k = txt_arg; v = arg; <Query.Meta>
 
 let queries := 
 | TEXT; { [] }
