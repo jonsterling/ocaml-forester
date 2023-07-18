@@ -126,8 +126,7 @@ struct
           not @@ test_query q doc
         | Query.True -> 
           true
-        | _ -> 
-          failwith "Invalid query"
+        | _ -> false
 
       let run_query query = 
         get_sorted_trees @@ S.of_seq @@ Seq.map fst @@ M.to_seq @@ 
