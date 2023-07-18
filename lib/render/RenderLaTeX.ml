@@ -43,7 +43,7 @@ let rec render  (nodes : Sem.t) : Printer.t =
 and render_node : Sem.node -> Printer.t = 
   function 
   | Text txt -> Printer.text txt
-  | Transclude (_, addr) -> 
+  | Transclude {addr; _} -> 
     begin 
       match E.get_doc addr with
       | None ->
@@ -165,13 +165,14 @@ and strip_first_paragraph xs =
 and render_doc_section (doc : Sem.doc) : Printer.t =
   let title = Sem.sentence_case @@ Option.value ~default:[] doc.title in
   let taxon = Option.value ~default:"" doc.taxon in
+  let addr = Option.value doc.addr ~default:(string_of_int @@ Oo.id (object end)) in
   Printer.seq ~sep:(Printer.text "\n") [
     Printer.nil;
     Format.dprintf 
       {|\begin{tree}{title={%a}, taxon={%s}, slug={%s}}|}
       (Fun.flip render) title
       taxon
-      doc.addr;
+      addr;
     render @@ strip_first_paragraph doc.body;
     Format.dprintf {|\end{tree}|};
     Printer.nil;
@@ -181,7 +182,11 @@ let render_base_url url =
   Format.dprintf {|\ForesterSetup{forestSite = {%s}}|} url
 
 let render_doc_page ~base_url (doc : Sem.doc) : Printer.t = 
-  let contributors = E.contributors doc.addr in
+  let contributors = 
+    match doc.addr with 
+    | Some addr -> E.contributors addr
+    | None -> []
+  in
   Printer.seq ~sep:(Printer.text "\n") [
     Format.dprintf {|\documentclass[a4paper]{article}|};
     Format.dprintf {|\usepackage[final]{microtype}|};

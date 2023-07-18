@@ -165,7 +165,7 @@ struct
     List.iter @@
     function
     | Sem.Text _ -> ()
-    | Sem.Transclude (_, addr) ->
+    | Sem.Transclude {addr; _} ->
       Gph.add_edge transclusion_graph addr scope
     | Sem.Link {title; dest} ->
       analyze_nodes scope title;
@@ -244,19 +244,20 @@ struct
       Fun.protect ~finally:(fun _ -> close_out bib_ch) @@ fun () -> 
       let bib_fmt = Format.formatter_of_out_channel bib_ch in 
       docs |> M.iter @@ fun _ doc ->
+      RenderBibTeX.render_bibtex ~base_url:I.base_url doc bib_fmt;
+      doc.addr |> Option.iter @@ fun addr ->
       begin
-        let ch = open_out @@ "output/" ^ E.route doc.addr in
+        let ch = open_out @@ "output/" ^ E.route addr in
         Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
         let out = Xmlm.make_output @@ `Channel ch in
         RenderXml.render_doc_page ~trail:Emp doc out
       end;
       begin 
-        let ch = open_out @@ "latex/" ^ doc.addr ^ ".tex" in 
+        let ch = open_out @@ "latex/" ^ addr ^ ".tex" in 
         Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
         let fmt = Format.formatter_of_out_channel ch in
         RenderLaTeX.render_doc_page ~base_url:I.base_url doc fmt
       end;
-      RenderBibTeX.render_bibtex ~base_url:I.base_url doc bib_fmt
     end;
 
     begin

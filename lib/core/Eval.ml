@@ -15,7 +15,7 @@ let rec eval : Syn.t -> Sem.t =
   | Tag name :: rest ->
     eval_tag name rest
   | Transclude (tmode, name) :: rest ->
-    Sem.Transclude (tmode, name) :: eval rest
+    Sem.Transclude {mode = tmode; addr = name; toc = true} :: eval rest
   | Query (title, mode, query) :: rest -> 
     let title = eval title in
     Sem.Query (title, mode, query) :: eval rest
@@ -110,7 +110,7 @@ let eval_doc (doc : Syn.doc) : Sem.doc =
   let open Sem in
   {title;
    body = tree;
-   addr = fm.addr;
+   addr = Some fm.addr;
    taxon = fm.taxon;
    authors = fm.authors;
    date = fm.date;

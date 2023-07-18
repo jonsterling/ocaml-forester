@@ -71,54 +71,35 @@ let rec render_node ~cfg : Sem.node -> printer =
     end
   | Sem.Tag (name, xs) ->
     Xml.tag name [] [render ~cfg xs]
-  | Sem.Transclude (mode, addr) ->
+  | Sem.Transclude {mode; addr; toc} ->
     begin
       match E.get_doc addr, mode with
       | None, _ ->
         failwith @@ Format.sprintf "Failed to transclude non-existent tree with address '%s'" addr
       | Some doc, mode ->
-        let cfg = 
-          match mode with
-          | Spliced -> cfg 
-          | _ -> 
-            let ctr = cfg.counter in
-            let ix = !ctr + 1 in
-            ctr := ix;
-            {cfg with trail = Snoc(cfg.trail, ix); counter = ref 0} 
-        in
-        render_doc ~mode ~cfg ~toc:true doc
+        render_transclusion ~cfg ~mode ~toc doc
     end
   | Sem.Query (title, mode, query) ->
     let docs = E.run_query query in
-    let anchor = string_of_int @@ Oo.id (object end) in
     begin
       match docs with 
       | [] -> Printer.nil 
       | _ ->
-        let rendered_trail = 
-          match mode with 
-          | Spliced -> Printer.nil 
-          | _ ->         
-            let ctr = cfg.counter in
-            let ix = !ctr + 1 in
-            let trail = Snoc (cfg.trail, ix) in
-            ctr := ix;
-            render_trail trail
-        in 
-        Xml.tag "tree" ["mode", mode_to_string mode; "root", "false"] [
-          Xml.tag "frontmatter" [] [
-            rendered_trail;
-            Xml.tag "anchor" [] [Printer.text anchor];
-            Xml.tag "title" [] [
-              render ~cfg:{cfg with part = Frontmatter} @@
-              Sem.sentence_case title
-            ]
-          ];
-          Xml.tag "mainmatter" [] [
-            docs |> Printer.iter @@
-            render_doc ~cfg:cfg ~mode:Collapsed ~toc:false
-          ]
-        ]
+        let body = docs |> List.filter_map @@ fun (doc : Sem.doc) -> 
+          doc.addr |> Option.map @@ fun addr ->
+          Sem.Transclude {mode = Collapsed; toc = false; addr}
+        in
+        let doc : Sem.doc = 
+          {addr = None;
+           taxon = None;
+           title = Some title;
+           authors = [];
+           date = None;
+           metas = [];
+           tags = [];
+           body = body}
+        in
+        render_transclusion ~cfg ~mode ~toc:true doc
     end
   | Sem.EmbedTeX {packages; source} ->
     let code =
@@ -134,6 +115,19 @@ let rec render_node ~cfg : Sem.node -> printer =
     Xml.tag "block" ["open", "open"] @@
     [Xml.tag "headline" [] [render ~cfg title];
      render ~cfg body]
+
+and render_transclusion ~cfg ~mode ~toc doc = 
+  let cfg = 
+    match mode with
+    | Spliced -> cfg 
+    | _ -> 
+      let ctr = cfg.counter in
+      let ix = !ctr + 1 in
+      ctr := ix;
+      {cfg with trail = Snoc(cfg.trail, ix); counter = ref 0} 
+  in
+  render_doc ~mode ~cfg ~toc doc
+
 
 and render_internal_link ~cfg ~title ~addr =
   let url = E.route addr in
@@ -154,12 +148,18 @@ and render_author (author : string) =
   (* If the author string is an address to a biographical page, then link to it *)
   match E.get_doc author with
   | Some bio ->
-    let url = E.route bio.addr in
-    Xml.tag "link"
-      ["href", url; "type", "local"]
-      [match bio.title with
-       | None -> Printer.text "Untitled"
-       | Some title -> render ~cfg title]
+    begin 
+      match bio.addr with 
+      | None -> 
+        Printer.text author
+      | Some addr -> 
+        let url = E.route addr in
+        Xml.tag "link"
+          ["href", url; "type", "local"]
+          [match bio.title with
+           | None -> Printer.text "Untitled"
+           | Some title -> render ~cfg title]
+    end
   | None ->
     Printer.text author
 
@@ -171,7 +171,12 @@ and render_date (doc : Sem.doc) =
     Xml.tag "date" [] [Printer.text str]
 
 and render_authors (doc : Sem.doc) =
-  match doc.authors, E.contributors doc.addr with
+  let contributors = 
+    match doc.addr with 
+    | Some addr -> E.contributors addr
+    | None -> [] 
+  in 
+  match doc.authors, contributors with
   | [], [] -> Printer.nil
   | authors, contributors ->
     Xml.tag "authors" [] [
@@ -185,18 +190,25 @@ and render_authors (doc : Sem.doc) =
       end
     ]
 
+and with_addr (doc : Sem.doc) k = 
+  match doc.addr with 
+  | Some addr -> k addr 
+  | None -> Printer.nil 
+
 and render_frontmatter ~cfg ?(toc = true) (doc : Sem.doc) =
+  let anchor = string_of_int @@ Oo.id (object end) in
   Xml.tag "frontmatter" [] [
     if toc then render_trail cfg.trail else Printer.nil;
-    Xml.tag "addr" [] [Printer.text doc.addr];
-    begin
-      match E.abs_path doc.addr with
+    Xml.tag "anchor" [] [Printer.text anchor];
+    with_addr doc (fun addr -> Xml.tag "addr" [] [Printer.text addr]);
+    with_addr doc begin fun addr -> 
+      match E.abs_path addr with
       | Some abspath ->
         Xml.tag "abspath" [] [Printer.text abspath]
       | None ->
         Printer.nil
     end;
-    Xml.tag "route" [] [Printer.text @@ E.route doc.addr];
+    with_addr doc (fun addr -> Xml.tag "route" [] [Printer.text @@ E.route addr]);
     render_date doc;
     render_authors doc;
     begin
@@ -219,25 +231,26 @@ and render_mainmatter ~cfg (doc : Sem.doc) =
 
 and render_backmatter ~cfg (doc : Sem.doc) =
   let cfg = {cfg with part = Backmatter} in
+  with_addr doc @@ fun addr ->
   Xml.tag "backmatter" [] [
     Xml.tag "contributions" [] [
-      E.contributions doc.addr |> Printer.iter @@
+      E.contributions addr |> Printer.iter @@
       render_doc ~cfg
     ];
     Xml.tag "context" [] [
-      E.parents doc.addr |> Printer.iter @@
+      E.parents addr |> Printer.iter @@
       render_doc ~cfg
     ];
     Xml.tag "related" [] [
-      E.related doc.addr |> Printer.iter @@
+      E.related addr |> Printer.iter @@
       render_doc ~cfg
     ];
     Xml.tag "backlinks" [] [
-      E.backlinks doc.addr |> Printer.iter @@
+      E.backlinks addr |> Printer.iter @@
       render_doc ~cfg
     ];
     Xml.tag "references" [] [
-      E.bibliography doc.addr |> Printer.iter @@
+      E.bibliography addr |> Printer.iter @@
       render_doc ~cfg
     ];
   ]
@@ -271,7 +284,7 @@ and render_doc ~cfg ?(mode = Full) ?(toc = true) (doc : Sem.doc) : printer =
   let attrs = 
     List.of_seq @@ S.run @@ fun () -> 
     S.yield ("mode", mode_to_string mode);
-    S.yield ("root", bool_to_string @@ E.is_root doc.addr);
+    doc.addr |> Option.iter (fun addr -> S.yield ("root", bool_to_string @@ E.is_root addr));
     doc.taxon |> Option.iter (fun taxon -> S.yield ("taxon", StringUtil.sentence_case taxon))
   in
   Xml.tag "tree" attrs

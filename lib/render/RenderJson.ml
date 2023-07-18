@@ -54,23 +54,26 @@ and render_node : Sem.node -> Printer.t =
 
 
 let render_doc (doc : Sem.doc) : Printer.t =
-  render_key doc.addr @@ braces @@
-  Printer.iter ~sep:comma (fun (k, x) -> render_key k x)
-    ["title",
-     begin
-       match doc.title with
-       | None -> Printer.text "null"
-       | Some title -> render_string_literal @@ render title
-     end;
-     "taxon",
-     begin
-       match doc.taxon with
-       | None -> Printer.text "null"
-       | Some taxon -> render_string_literal @@ Printer.text @@ StringUtil.sentence_case taxon
-     end;
-     "route",
-     render_string_literal @@ Printer.text @@
-     E.route doc.addr]
+  match doc.addr with 
+  | None -> Printer.nil 
+  | Some addr -> 
+    render_key addr @@ braces @@
+    Printer.iter ~sep:comma (fun (k, x) -> render_key k x)
+      ["title",
+       begin
+         match doc.title with
+         | None -> Printer.text "null"
+         | Some title -> render_string_literal @@ render title
+       end;
+       "taxon",
+       begin
+         match doc.taxon with
+         | None -> Printer.text "null"
+         | Some taxon -> render_string_literal @@ Printer.text @@ StringUtil.sentence_case taxon
+       end;
+       "route",
+       render_string_literal @@ Printer.text @@
+       E.route addr]
 
 let render_docs (docs : Sem.doc list) : Printer.t =
   braces @@ Printer.iter ~sep:comma render_doc docs

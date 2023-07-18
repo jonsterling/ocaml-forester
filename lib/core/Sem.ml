@@ -6,7 +6,7 @@ type attr = string * string
 
 type node =
   | Text of string
-  | Transclude of transclusion_mode * addr
+  | Transclude of {mode : transclusion_mode; toc : bool; addr : addr}
   | Query of t * transclusion_mode * addr Query.t
   | Link of {dest : string; title : t}
   | Tag of string * t
@@ -20,7 +20,7 @@ and t = node list
 and env = t Env.t
 [@@deriving show]
 
-and clo = Clo of env * string list * Syn.t
+and clo = Clo of env   * string list * Syn.t
 [@@deriving show]
 
 let sentence_case =
@@ -33,9 +33,9 @@ type doc =
    taxon : string option;
    authors : addr list;
    date: Date.t option;
-   addr : addr;
+   addr : addr option;
    metas : (string * t) list;
-   tags: addr list;
+   tags: string list;
    body : t}
 [@@deriving show]
 
@@ -49,6 +49,6 @@ struct
   let sort =
     let by_date = Fun.flip @@ Compare.under (fun x -> x.date) @@ Compare.option Date.compare in
     let by_title = Compare.under peek_title @@ Compare.option String.compare in
-    let by_addr = Compare.under (fun x -> x.addr) String.compare in
+    let by_addr = Compare.under (fun x -> x.addr) @@ Compare.option String.compare in
     List.sort @@ Compare.cascade by_date @@ Compare.cascade by_title by_addr
 end
