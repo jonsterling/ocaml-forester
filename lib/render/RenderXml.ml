@@ -118,13 +118,13 @@ let rec render_node ~cfg : Sem.node -> printer =
 
 and render_transclusion ~cfg ~mode ~toc doc = 
   let cfg = 
-    match mode with
-    | Spliced -> cfg 
-    | _ -> 
+    match mode, toc with 
+    | (Full | Collapsed), true ->
       let ctr = cfg.counter in
       let ix = !ctr + 1 in
       ctr := ix;
       {cfg with trail = Snoc(cfg.trail, ix); counter = ref 0} 
+    | _ -> cfg
   in
   render_doc ~mode ~cfg ~toc doc
 
@@ -280,6 +280,7 @@ and trail_to_string =
     Format.sprintf "%s.%i" (trail_to_string trail) i
 
 and render_doc ~cfg ?(mode = Full) ?(toc = true) (doc : Sem.doc) : printer =
+  let toc = toc && not (mode = Spliced) in
   let module S = Algaeff.Sequencer.Make (struct type elt = string * string end) in
   let attrs = 
     List.of_seq @@ S.run @@ fun () -> 
