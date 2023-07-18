@@ -26,7 +26,7 @@
   </xsl:template>
 
   <xsl:template
-    match="p | img | code | pre | a | em | b | strong | ol | ul | li | center | blockquote">
+    match="p | img | code | pre | a | em | b | strong | ol | ul | li | center | blockquote | table | tr | th | td ">
     <xsl:copy>
       <xsl:apply-templates select="node()|@*" />
     </xsl:copy>
@@ -152,15 +152,8 @@
           <a class="toc">
             <xsl:for-each select="frontmatter">
               <xsl:attribute name="href">
-                <xsl:choose>
-                  <xsl:when test="route">
-                    <xsl:value-of select="route" />
-                  </xsl:when>
-                  <xsl:otherwise>
-                    <xsl:text>#</xsl:text>
-                    <xsl:value-of select="anchor" />
-                  </xsl:otherwise>
-                </xsl:choose>
+                <xsl:text>#</xsl:text>
+                <xsl:value-of select="anchor" />
               </xsl:attribute>
               <span class="toc-item-label">
                 <xsl:if test="../@taxon">
@@ -249,13 +242,10 @@
     <pre><xsl:value-of select="." /></pre>
   </xsl:template>
 
-  <xsl:template match="meta[@name='venue']">
+  <xsl:template match="meta[@name='venue']|meta[@name='position']|meta[@name='institution']">
     <li class="meta-item">
-      <span class="venue">
-        <xsl:value-of select="." />
-      </span>
+      <xsl:value-of select="." />
     </li>
-
   </xsl:template>
 
   <xsl:template match="meta[@name='external']">
@@ -337,7 +327,7 @@
   </xsl:template>
 
 
-  <xsl:template match="tree[not(@taxon)]/frontmatter">
+  <xsl:template match="tree[not(@taxon)]/frontmatter | tree[@taxon='Person']/frontmatter">
     <header>
       <h1>
         <xsl:attribute name="class">tree</xsl:attribute>
@@ -365,6 +355,8 @@
         <xsl:if test="not(meta[@name = 'author']/.='false')">
           <xsl:apply-templates select="authors" />
         </xsl:if>
+        <xsl:apply-templates select="meta[@name='position']" />
+        <xsl:apply-templates select="meta[@name='institution']" />
         <xsl:apply-templates select="meta[@name='venue']" />
         <xsl:apply-templates select="meta[@name='external']" />
         <xsl:apply-templates select="meta[@name='slides']" />

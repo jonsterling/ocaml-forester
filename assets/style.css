@@ -36,8 +36,12 @@ center {
 }
 
 pre {
-  font-size: .9em;
+  font-size: 11pt;
   margin-top: 0em;
+}
+
+code {
+  font-size: 11pt;
 }
 
 body {
@@ -327,6 +331,10 @@ ninja-keys::part(ninja-action) {
 
 body {
   hyphens: auto;
+}
+
+table {
+  margin-bottom: 1em;
 }
 
 table.macros {
