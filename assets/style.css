@@ -356,6 +356,16 @@ table.macros td {
   vertical-align: baseline;
 }
 
+th {
+  text-align: left;
+}
+
+th,
+td {
+  padding: 0 15px;
+  vertical-align: top;
+}
+
 td.macro-name,
 td.macro-body {
   white-space: nowrap;

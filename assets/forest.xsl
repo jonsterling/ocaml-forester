@@ -157,9 +157,11 @@
               <span class="toc-item-label">
                 <xsl:if test="../@taxon">
                   <xsl:value-of select="../@taxon" />
-                  <xsl:text> </xsl:text>
+                  <xsl:if test="trail">
+                    <xsl:text> </xsl:text>
+                  </xsl:if>
                 </xsl:if>
-                <xsl:if test="trail">
+                <xsl:if test="trail or ../@taxon">
                   <xsl:apply-templates select="trail" />
                   <xsl:text>. </xsl:text>
                 </xsl:if>
