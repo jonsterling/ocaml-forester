@@ -80,13 +80,6 @@ and eval_textual prefix : Syn.t -> Sem.t =
     let txt = String.concat "" @@ List.rev prefix in
     Text txt :: eval rest
 
-and eval_no_op ~env ~flenv msg =
-  function
-  | Syn.Group (Braces, _) :: rest ->
-    eval rest
-  | _ -> failwith msg
-
-
 
 (* Just take only one argument, I guess *)
 and eval_tag  name =
