@@ -88,7 +88,7 @@ let rec render_node ~cfg : Sem.node -> printer =
         let body = 
           docs |> List.filter_map @@ fun (doc : Sem.doc) -> 
           doc.addr |> Option.map @@ fun addr ->
-          let opts = Sem.{expanded = false; show_heading = true; title_override = None; toc = false; numbered = false} in
+          let opts = Sem.{expanded = false; show_heading = true; title_override = None; toc = false; numbered = false; show_metadata = true} in
           Sem.Transclude (opts, addr)
         in
         let doc : Sem.doc = 
@@ -235,7 +235,7 @@ and render_mainmatter ~cfg (doc : Sem.doc) =
 
 and render_backmatter ~cfg (doc : Sem.doc) =
   let cfg = {cfg with part = Backmatter} in
-  let opts = Sem.{title_override = None; toc = false; show_heading = true; expanded = false; numbered = false} in
+  let opts = Sem.{title_override = None; toc = false; show_heading = true; expanded = false; numbered = false; show_metadata = true} in
   with_addr doc @@ fun addr ->
   Xml.tag "backmatter" [] [
     Xml.tag "contributions" [] [
@@ -299,6 +299,7 @@ and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
     List.of_seq @@ S.run @@ fun () -> 
     S.yield ("expanded", string_of_bool opts.expanded);
     S.yield ("show_heading", string_of_bool opts.show_heading);
+    S.yield ("show_metadata", string_of_bool opts.show_metadata);
     S.yield ("toc", string_of_bool opts.toc);
     S.yield ("root", string_of_bool @@ Option.fold doc.addr ~none:false ~some:(fun addr -> E.is_root addr));
     doc.taxon |> Option.iter (fun taxon -> S.yield ("taxon", StringUtil.sentence_case taxon))
@@ -312,5 +313,5 @@ and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
 
 let render_doc_page ~trail (doc : Sem.doc) : printer =
   let cfg = {trail; part = Top; counter = ref 0} in 
-  let opts = Sem.{title_override = None; toc = false; show_heading = true; expanded = true; numbered = true} in
+  let opts = Sem.{title_override = None; toc = false; show_heading = true; expanded = true; numbered = true; show_metadata = true} in
   Xml.with_xsl "forest.xsl" @@ render_doc ~cfg ~opts doc

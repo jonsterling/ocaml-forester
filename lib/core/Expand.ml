@@ -230,6 +230,7 @@ struct
     let show_heading_sym, alloc_show_heading = create ["transclude"; "heading"]
     let toc_sym, alloc_toc = create ["transclude"; "toc"]
     let numbered_sym, alloc_numbered = create ["transclude"; "numbered"]
+    let show_metadata_sym, alloc_show_metadata = create ["transclude"; "metadata"]
   end
 end 
 
@@ -241,6 +242,7 @@ let expand_doc (units : exports UnitMap.t) addr (doc : Code.doc) =
   Builtins.Transclude.alloc_show_heading ();
   Builtins.Transclude.alloc_toc ();
   Builtins.Transclude.alloc_numbered ();
+  Builtins.Transclude.alloc_show_metadata ();
 
   U.run ~env:units @@ fun () ->
   Fm.run ~init @@ fun () -> 

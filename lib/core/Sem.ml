@@ -19,6 +19,7 @@ type node =
 and transclusion_opts = 
   {toc : bool;
    show_heading : bool;
+   show_metadata : bool;
    title_override : t option;
    expanded : bool; 
    numbered : bool}
