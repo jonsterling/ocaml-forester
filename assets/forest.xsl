@@ -83,7 +83,6 @@
     <xsl:value-of select="." />
   </xsl:template>
 
-
   <xsl:template match="/">
     <html>
       <head>
@@ -130,7 +129,7 @@
             <xsl:apply-templates select="tree" />
           </article>
           <xsl:if
-            test="tree/mainmatter/tree[frontmatter/trail/crumb] and not(/tree/frontmatter/meta[@name = 'toc']/.='false')">
+            test="tree/mainmatter/tree[@toc='true'] and not(/tree/frontmatter/meta[@name = 'toc']/.='false')">
             <nav id="toc">
               <div class="block">
                 <h1>Table of Contents</h1>
@@ -147,7 +146,7 @@
 
   <xsl:template name="toc">
     <ul class="block">
-      <xsl:for-each select="tree[frontmatter/trail/crumb]">
+      <xsl:for-each select="tree[@toc='true']">
         <li>
           <a class="toc">
             <xsl:for-each select="frontmatter">
@@ -160,8 +159,10 @@
                   <xsl:value-of select="../@taxon" />
                   <xsl:text> </xsl:text>
                 </xsl:if>
-                <xsl:apply-templates select="trail" />
-                <xsl:text>. </xsl:text>
+                <xsl:if test="trail">
+                  <xsl:apply-templates select="trail" />
+                  <xsl:text>. </xsl:text>
+                </xsl:if>
               </span>
               <xsl:apply-templates select="title" />
             </xsl:for-each>
@@ -229,13 +230,27 @@
   </xsl:template>
 
   <xsl:template match="meta[@name='doi']">
-    <a class="doi">
-      <xsl:attribute name="href">
-        <xsl:text>https://www.doi.org/</xsl:text>
+    <li class="meta-item">
+      <a class="doi">
+        <xsl:attribute name="href">
+          <xsl:text>https://www.doi.org/</xsl:text>
+          <xsl:value-of select="." />
+        </xsl:attribute>
         <xsl:value-of select="." />
-      </xsl:attribute>
-      <xsl:value-of select="." />
-    </a>
+      </a>
+    </li>
+  </xsl:template>
+
+  <xsl:template match="meta[@name='orcid']">
+    <li class="meta-item">
+      <a class="orcid">
+        <xsl:attribute name="href">
+          <xsl:text>https://orcid.org/</xsl:text>
+          <xsl:value-of select="." />
+        </xsl:attribute>
+        <xsl:value-of select="." />
+      </a>
+    </li>
   </xsl:template>
 
   <xsl:template match="meta[@name='bibtex']">
@@ -282,18 +297,24 @@
     </li>
   </xsl:template>
 
-  <xsl:template match="tree[@taxon]/frontmatter">
+  <!-- To be applied in frontmatter -->
+  <xsl:template name="Taxon">
+    <span class="taxon">
+      <xsl:value-of select="../@taxon" />
+      <xsl:if test="trail/crumb">
+        <xsl:text> </xsl:text>
+      </xsl:if>
+      <xsl:apply-templates select="trail" />
+      <xsl:text>. </xsl:text>
+    </span>
+  </xsl:template>
+
+  <!-- Formatting for the topmost tree -->
+  <xsl:template match="/tree[@taxon]/frontmatter">
     <header>
       <h1>
-        <xsl:attribute name="class">leaf</xsl:attribute>
-        <span class="taxon">
-          <xsl:value-of select="../@taxon" />
-          <xsl:if test="trail/crumb">
-            <xsl:text> </xsl:text>
-          </xsl:if>
-          <xsl:apply-templates select="trail" />
-          <xsl:text>. </xsl:text>
-        </span>
+        <xsl:attribute name="class">tree</xsl:attribute>
+        <xsl:call-template name="Taxon" />
         <xsl:apply-templates select="title" />
         <xsl:text> </xsl:text>
         <xsl:call-template name="FrontmatterSlugLink" />
@@ -302,10 +323,11 @@
     </header>
   </xsl:template>
 
-  <xsl:template match="tree[@taxon='Reference']/frontmatter">
+  <xsl:template match="*/tree[@taxon]/frontmatter">
     <header>
       <h1>
         <xsl:attribute name="class">leaf</xsl:attribute>
+        <xsl:call-template name="Taxon" />
         <xsl:apply-templates select="title" />
         <xsl:text> </xsl:text>
         <xsl:call-template name="FrontmatterSlugLink" />
@@ -314,20 +336,7 @@
     </header>
   </xsl:template>
 
-  <xsl:template match="tree[@taxon='Person']/frontmatter">
-    <header>
-      <h1>
-        <xsl:attribute name="class">leaf</xsl:attribute>
-        <xsl:apply-templates select="title" />
-        <xsl:text> </xsl:text>
-        <xsl:call-template name="FrontmatterSlugLink" />
-      </h1>
-      <xsl:call-template name="Metadata" />
-    </header>
-  </xsl:template>
-
-
-  <xsl:template match="tree[not(@taxon)]/frontmatter | tree[@taxon='Person']/frontmatter">
+  <xsl:template match="tree[not(@taxon)]/frontmatter">
     <header>
       <h1>
         <xsl:attribute name="class">tree</xsl:attribute>
@@ -358,10 +367,11 @@
         <xsl:apply-templates select="meta[@name='position']" />
         <xsl:apply-templates select="meta[@name='institution']" />
         <xsl:apply-templates select="meta[@name='venue']" />
+        <xsl:apply-templates select="meta[@name='doi']" />
+        <xsl:apply-templates select="meta[@name='orcid']" />
         <xsl:apply-templates select="meta[@name='external']" />
         <xsl:apply-templates select="meta[@name='slides']" />
         <xsl:apply-templates select="meta[@name='video']" />
-        <xsl:apply-templates select="meta[@name='doi']" />
       </ul>
     </div>
   </xsl:template>
@@ -415,12 +425,24 @@
 
   <xsl:template match="/tree/backmatter">
     <footer>
-      <xsl:apply-templates select="context|backlinks|related|contributions|references" />
+      <xsl:apply-templates select="references" />
+      <xsl:apply-templates select="context" />
+      <xsl:apply-templates select="backlinks" />
+      <xsl:apply-templates select="related" />
+      <xsl:apply-templates select="contributions" />
     </footer>
   </xsl:template>
 
   <xsl:template name="Tree">
-    <section class="block">
+    <section>
+      <xsl:choose>
+        <xsl:when test="@show_metadata = 'false'">
+          <xsl:attribute name="class">block hide-metadata</xsl:attribute>
+        </xsl:when>
+        <xsl:otherwise>
+          <xsl:attribute name="class">block</xsl:attribute>
+        </xsl:otherwise>
+      </xsl:choose>
       <xsl:if test="frontmatter/anchor">
         <xsl:attribute name="id">
           <xsl:value-of select="frontmatter/anchor" />
@@ -432,29 +454,24 @@
         </xsl:attribute>
       </xsl:if>
       <details>
-        <xsl:if test="@mode = 'full'">
+        <xsl:if test="@expanded = 'true'">
           <xsl:attribute name="open">open</xsl:attribute>
         </xsl:if>
         <summary>
           <xsl:apply-templates select="frontmatter" />
         </summary>
         <xsl:apply-templates select="mainmatter" />
-
         <xsl:apply-templates select="frontmatter/meta[@name='bibtex']" />
       </details>
     </section>
   </xsl:template>
 
-  <xsl:template name="TreeSpliced">
-    <section class="block">
-      <xsl:apply-templates select="mainmatter" />
-    </section>
-  </xsl:template>
-
   <xsl:template match="/tree|mainmatter/tree">
     <xsl:choose>
-      <xsl:when test="@mode = 'spliced'">
-        <xsl:call-template name="TreeSpliced" />
+      <xsl:when test="@show_heading = 'false'">
+        <section class="block">
+          <xsl:apply-templates select="mainmatter" />
+        </section>
       </xsl:when>
       <xsl:otherwise>
         <xsl:call-template name="Tree" />
@@ -467,6 +484,12 @@
 
   <xsl:template match="backmatter/*/tree">
     <section class="block">
+      <xsl:if test="@taxon">
+        <xsl:attribute name="data-taxon">
+          <xsl:value-of select="@taxon" />
+        </xsl:attribute>
+      </xsl:if>
+
       <details>
         <summary>
           <xsl:apply-templates select="frontmatter" />
