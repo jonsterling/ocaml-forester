@@ -12,7 +12,7 @@ type part =
   | Mainmatter
   | Backmatter
 
-type cfg = {part : part; trail : int bwd; counter : int ref}
+type cfg = {part : part; trail : int bwd option; counter : int ref}
 
 module Printer =
 struct
@@ -88,7 +88,7 @@ let rec render_node ~cfg : Sem.node -> printer =
         let body = 
           docs |> List.filter_map @@ fun (doc : Sem.doc) -> 
           doc.addr |> Option.map @@ fun addr ->
-          let opts = Sem.{expanded = false; show_heading = true; title_override = None; toc = false} in
+          let opts = Sem.{expanded = false; show_heading = true; title_override = None; toc = false; numbered = false} in
           Sem.Transclude (opts, addr)
         in
         let doc : Sem.doc = 
@@ -121,9 +121,15 @@ let rec render_node ~cfg : Sem.node -> printer =
 and render_transclusion ~cfg ~opts doc = 
   let cfg =
     let ctr = cfg.counter in
-    let ix = !ctr + 1 in
+    let ix = if opts.numbered then !ctr + 1 else !ctr in
     ctr := ix;
-    {cfg with trail = Snoc (cfg.trail, ix); counter = ref 0} 
+    let trail = 
+      match opts.numbered with 
+      | true -> cfg.trail |> Option.map @@ fun tr -> Snoc (tr, ix)
+      | false -> None
+    in 
+    let counter = ref 0 in
+    {cfg with trail; counter} 
   in
   render_doc ~cfg ~opts doc
 
@@ -142,7 +148,7 @@ and render ~cfg : Sem.t -> printer =
   Printer.iter (render_node ~cfg)
 
 and render_author (author : string) =
-  let cfg = {part = Frontmatter; trail = Emp; counter = ref 0} in
+  let cfg = {part = Frontmatter; trail = Some Emp; counter = ref 0} in
   (* If the author string is an address to a biographical page, then link to it *)
   match E.get_doc author with
   | Some bio ->
@@ -229,7 +235,7 @@ and render_mainmatter ~cfg (doc : Sem.doc) =
 
 and render_backmatter ~cfg (doc : Sem.doc) =
   let cfg = {cfg with part = Backmatter} in
-  let opts = Sem.{title_override = None; toc = false; show_heading = true; expanded = false} in
+  let opts = Sem.{title_override = None; toc = false; show_heading = true; expanded = false; numbered = false} in
   with_addr doc @@ fun addr ->
   Xml.tag "backmatter" [] [
     Xml.tag "contributions" [] [
@@ -255,10 +261,13 @@ and render_backmatter ~cfg (doc : Sem.doc) =
   ]
 
 and render_trail trail =
-  let render_crumb i = Xml.tag "crumb" [] [Printer.text @@ string_of_int i] in
-  Xml.tag "trail" [] @@
-  List.map render_crumb @@ 
-  Bwd.to_list trail
+  match trail with 
+  | None -> Printer.nil 
+  | Some trail ->
+    let render_crumb i = Xml.tag "crumb" [] [Printer.text @@ string_of_int i] in
+    Xml.tag "trail" [] @@
+    List.map render_crumb @@ 
+    Bwd.to_list trail
 
 and mode_to_string =
   function
@@ -290,6 +299,7 @@ and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
     List.of_seq @@ S.run @@ fun () -> 
     S.yield ("expanded", string_of_bool opts.expanded);
     S.yield ("show_heading", string_of_bool opts.show_heading);
+    S.yield ("toc", string_of_bool opts.toc);
     S.yield ("root", string_of_bool @@ Option.fold doc.addr ~none:false ~some:(fun addr -> E.is_root addr));
     doc.taxon |> Option.iter (fun taxon -> S.yield ("taxon", StringUtil.sentence_case taxon))
   in
@@ -302,5 +312,5 @@ and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
 
 let render_doc_page ~trail (doc : Sem.doc) : printer =
   let cfg = {trail; part = Top; counter = ref 0} in 
-  let opts = Sem.{title_override = None; toc = false; show_heading = true; expanded = true} in
+  let opts = Sem.{title_override = None; toc = false; show_heading = true; expanded = true; numbered = true} in
   Xml.with_xsl "forest.xsl" @@ render_doc ~cfg ~opts doc

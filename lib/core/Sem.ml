@@ -20,7 +20,8 @@ and transclusion_opts =
   {toc : bool;
    show_heading : bool;
    title_override : t option;
-   expanded : bool}
+   expanded : bool; 
+   numbered : bool}
 [@@deriving show]
 
 and t = node list

@@ -13,5 +13,6 @@ sig
     val expanded_sym : Symbol.t
     val show_heading_sym : Symbol.t
     val toc_sym : Symbol.t
+    val numbered_sym : Symbol.t
   end 
 end

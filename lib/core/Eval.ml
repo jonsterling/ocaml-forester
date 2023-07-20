@@ -15,7 +15,8 @@ let get_transclusion_opts () =
   let expanded = get_bool Expand.Builtins.Transclude.expanded_sym true in 
   let show_heading = get_bool Expand.Builtins.Transclude.show_heading_sym true in 
   let toc = get_bool Expand.Builtins.Transclude.toc_sym true in 
-  Sem.{title_override; toc; show_heading; expanded}
+  let numbered = get_bool Expand.Builtins.Transclude.numbered_sym true in
+  Sem.{title_override; toc; show_heading; expanded; numbered}
 
 let rec eval : Syn.t -> Sem.t =
   function

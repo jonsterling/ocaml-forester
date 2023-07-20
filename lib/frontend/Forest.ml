@@ -256,7 +256,7 @@ struct
         let ch = open_out @@ "output/" ^ E.route addr in
         Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
         let out = Xmlm.make_output @@ `Channel ch in
-        RenderXml.render_doc_page ~trail:Emp doc out
+        RenderXml.render_doc_page ~trail:(Some Emp) doc out
       end;
       begin 
         let ch = open_out @@ "latex/" ^ addr ^ ".tex" in 
