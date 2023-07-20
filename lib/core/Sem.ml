@@ -4,15 +4,23 @@ open Prelude
 type attr = string * string
 [@@deriving show]
 
+
 type node =
   | Text of string
-  | Transclude of {mode : transclusion_mode; toc : bool; addr : addr}
-  | Query of t * transclusion_mode * t Query.t
+  | Transclude of transclusion_opts * addr
+  | Query of transclusion_opts * t Query.t
   | Link of {dest : string; title : t}
   | Tag of string * t
   | Math of math_mode * t
   | EmbedTeX of {packages : string list; source : t}
   | Block of t * t
+[@@deriving show]
+
+and transclusion_opts = 
+  {toc : bool;
+   show_heading : bool;
+   title_override : t option;
+   expanded : bool}
 [@@deriving show]
 
 and t = node list

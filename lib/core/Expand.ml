@@ -66,14 +66,13 @@ let rec expand (code : Code.t) : Syn.t =
   | Group (d, xs) :: rest ->
     Mode.set Body;
     Syn.Group (d, expand xs) :: expand rest
-  | Transclude (m, addr) :: rest ->
+  | Transclude addr :: rest ->
     Mode.set Body;
-    Syn.Transclude (m, addr) :: expand rest
-  | Query (title, mode, query) :: rest -> 
+    Syn.Transclude addr :: expand rest
+  | Query query :: rest -> 
     Mode.set Body;
-    let title = expand title in 
     let query = Query.map expand query in
-    Syn.Query (title, mode, query) :: expand rest
+    Syn.Query query :: expand rest
   | EmbedTeX xs :: rest ->
     Mode.set Body;
     let fm = Fm.get () in
@@ -217,9 +216,30 @@ and expand_sym path =
     failwith "expand_ident"
 
 
+module Builtins = 
+struct
+  let create path =
+    let sym = Symbol.fresh path in 
+    sym, fun () -> 
+      Resolver.Scope.include_singleton (path, (`Sym sym, ()))
+
+  module Transclude = 
+  struct 
+    let title_sym, alloc_title = create ["transclude"; "title"]
+    let expanded_sym, alloc_expanded = create ["transclude"; "expanded"]
+    let show_heading_sym, alloc_show_heading = create ["transclude"; "heading"]
+    let toc_sym, alloc_toc_sym = create ["transclude"; "toc"]
+  end
+end 
+
 let expand_doc (units : exports UnitMap.t) addr (doc : Code.doc) = 
   let init = Syn.{addr; title = None; taxon = None; date = None; authors = []; tags = []; metas = []; tex_packages = []} in
   Resolver.Scope.run @@ fun () ->
+  Builtins.Transclude.alloc_title ();
+  Builtins.Transclude.alloc_expanded ();
+  Builtins.Transclude.alloc_show_heading ();
+  Builtins.Transclude.alloc_toc_sym ();
+
   U.run ~env:units @@ fun () ->
   Fm.run ~init @@ fun () -> 
   Mode.run ~init:Frontmatter @@ fun () ->

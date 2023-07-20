@@ -1,24 +1,15 @@
 %{
   open Prelude
   open Core
-
-  let full_transclude x = Code.Transclude (Full, x)
-  let splice_transclude x = Code.Transclude (Spliced, x)
-  let collapse_transclude x = Code.Transclude (Collapsed, x)
-  
-  let full_query_tree (title, query) = Code.Query (title, Full, query)
-  let collapsed_query_tree (title, query) = Code.Query (title, Collapsed, query)
-  let spliced_query_tree (title, query) = Code.Query (title, Spliced, query)
-
 %}
 
 %token <string> TEXT 
 %token <string list> IDENT
 %token TITLE IMPORT EXPORT DEF TAXON AUTHOR TEX_PACKAGE TAG DATE NAMESPACE LET TEX BLOCK META OPEN
-%token TRANSCLUDE TRANSCLUDE_STAR TRANSCLUDE_AT SCOPE PUT GET DEFAULT ALLOC 
+%token TRANSCLUDE SCOPE PUT GET DEFAULT ALLOC 
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token QUERY_AND QUERY_OR QUERY_AUTHOR QUERY_TAG QUERY_TAXON QUERY_META
-%token QUERY_TREE QUERY_TREE_STAR QUERY_TREE_AT
+%token QUERY_TREE
 %token EOF
 
 %type <Code.t> expr
@@ -54,9 +45,7 @@ let node :=
 | ~ = parens(expr); <Code.parens>
 | ~ = delimited(HASH_LBRACE, expr, RBRACE); <Code.inline_math>
 | ~ = delimited(HASH_HASH_LBRACE, expr, RBRACE); <Code.display_math>
-| TRANSCLUDE; ~ = txt_arg; <full_transclude>
-| TRANSCLUDE_STAR; ~ = txt_arg; <collapse_transclude>
-| TRANSCLUDE_AT; ~ = txt_arg; <splice_transclude>
+| TRANSCLUDE; ~ = txt_arg; <Code.Transclude>
 | LET; (~,~,~) = fun_spec; <Code.Let>
 | TEX; ~ = arg; <Code.EmbedTeX>
 | BLOCK; x = arg; y = arg; <Code.Block>
@@ -67,9 +56,7 @@ let node :=
 | DEFAULT; ~ = IDENT; ~ = arg; <Code.Default>
 | GET; ~ = IDENT; <Code.Get>
 | OPEN; ~ = IDENT; <Code.Open>
-| QUERY_TREE; ~ = arg; ~ = braces(query); <full_query_tree>
-| QUERY_TREE_STAR; ~ = arg; ~ = braces(query); <collapsed_query_tree>
-| QUERY_TREE_AT; ~ = arg; ~ = braces(query); <spliced_query_tree>
+| QUERY_TREE; ~ = braces(query); <Code.Query>
 
 let eat_text == option(TEXT)
 

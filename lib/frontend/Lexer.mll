@@ -68,8 +68,6 @@ rule token =
   | "\\tex" { return lexbuf @@ Parser.TEX }
   | "\\block" { return lexbuf @@ Parser.BLOCK }
   | "\\texpackage" { return lexbuf @@ Parser.TEX_PACKAGE }
-  | "\\transclude*" { return lexbuf @@ Parser.TRANSCLUDE_STAR }
-  | "\\transclude@" { return lexbuf @@ Parser.TRANSCLUDE_AT }
   | "\\transclude" { return lexbuf @@ Parser.TRANSCLUDE }
   | "\\query/and" {return lexbuf @@ Parser.QUERY_AND }
   | "\\query/or" {return lexbuf @@ Parser.QUERY_OR }
@@ -77,8 +75,6 @@ rule token =
   | "\\query/tag" {return lexbuf @@ Parser.QUERY_TAG }
   | "\\query/taxon" {return lexbuf @@ Parser.QUERY_TAXON }
   | "\\query/meta" {return lexbuf @@ Parser.QUERY_META }
-  | "\\query*" { return lexbuf @@ Parser.QUERY_TREE_STAR }
-  | "\\query@" { return lexbuf @@ Parser.QUERY_TREE_AT }
   | "\\query" { return lexbuf @@ Parser.QUERY_TREE }
   | "#" { return lexbuf @@ Parser.TEXT "#" }
   | ident { return lexbuf @@ ident (Lexing.lexeme lexbuf) }

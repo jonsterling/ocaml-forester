@@ -166,7 +166,8 @@ struct
     List.iter @@
     function
     | Sem.Text _ -> ()
-    | Sem.Transclude {addr; _} ->
+    | Sem.Transclude (opts, addr) ->
+      analyze_transclusion_opts scope opts;
       Gph.add_edge transclusion_graph addr scope
     | Sem.Link {title; dest} ->
       analyze_nodes scope title;
@@ -180,8 +181,12 @@ struct
     | Sem.Block (title, body) ->
       analyze_nodes scope title;
       analyze_nodes scope body
-    | Sem.Query (title, _, _) ->
-      analyze_nodes scope title
+    | Sem.Query (opts, _) ->
+      analyze_transclusion_opts scope opts
+
+  and analyze_transclusion_opts scope : Sem.transclusion_opts -> unit = 
+    function Sem.{title_override; _} -> 
+      title_override |> Option.iter @@ analyze_nodes scope
 
   let rec process_decl scope =
     function

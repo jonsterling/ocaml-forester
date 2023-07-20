@@ -43,7 +43,7 @@ let rec render  (nodes : Sem.t) : Printer.t =
 and render_node : Sem.node -> Printer.t = 
   function 
   | Text txt -> Printer.text txt
-  | Transclude {addr; _} -> 
+  | Transclude (_, addr) -> 
     begin 
       match E.get_doc addr with
       | None ->

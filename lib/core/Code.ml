@@ -6,7 +6,7 @@ type node =
   | Group of delim * t
   | Math of math_mode * t
   | Ident of Trie.path
-  | Transclude of transclusion_mode * string
+  | Transclude of string
   | EmbedTeX of t
   | Let of Trie.path * Trie.path list * t
   | Open of Trie.path
@@ -16,7 +16,7 @@ type node =
   | Default of Trie.path * t
   | Get of Trie.path
 
-  | Query of t * transclusion_mode * t Query.t
+  | Query of t Query.t
 
   | Import of visibility * addr
   | Def of Trie.path * Trie.path list * t

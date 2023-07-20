@@ -71,35 +71,37 @@ let rec render_node ~cfg : Sem.node -> printer =
     end
   | Sem.Tag (name, xs) ->
     Xml.tag name [] [render ~cfg xs]
-  | Sem.Transclude {mode; addr; toc} ->
+  | Sem.Transclude (opts, addr) -> 
     begin
-      match E.get_doc addr, mode with
-      | None, _ ->
+      match E.get_doc addr with
+      | None ->
         failwith @@ Format.sprintf "Failed to transclude non-existent tree with address '%s'" addr
-      | Some doc, mode ->
-        render_transclusion ~cfg ~mode ~toc doc
+      | Some doc ->
+        render_transclusion ~cfg ~opts doc
     end
-  | Sem.Query (title, mode, query) ->
+  | Sem.Query (opts, query) ->
     let docs = E.run_query query in
     begin
       match docs with 
       | [] -> Printer.nil 
       | _ ->
-        let body = docs |> List.filter_map @@ fun (doc : Sem.doc) -> 
+        let body = 
+          docs |> List.filter_map @@ fun (doc : Sem.doc) -> 
           doc.addr |> Option.map @@ fun addr ->
-          Sem.Transclude {mode = Collapsed; toc = false; addr}
+          let opts = Sem.{expanded = false; show_heading = true; title_override = None; toc = false} in
+          Sem.Transclude (opts, addr)
         in
         let doc : Sem.doc = 
           {addr = None;
            taxon = None;
-           title = Some title;
+           title = None;
            authors = [];
            date = None;
            metas = [];
            tags = [];
            body = body}
         in
-        render_transclusion ~cfg ~mode ~toc:true doc
+        render_transclusion ~cfg ~opts doc
     end
   | Sem.EmbedTeX {packages; source} ->
     let code =
@@ -116,18 +118,14 @@ let rec render_node ~cfg : Sem.node -> printer =
     [Xml.tag "headline" [] [render ~cfg title];
      render ~cfg body]
 
-and render_transclusion ~cfg ~mode ~toc doc = 
-  let cfg = 
-    match mode, toc with 
-    | (Full | Collapsed), true ->
-      let ctr = cfg.counter in
-      let ix = !ctr + 1 in
-      ctr := ix;
-      {cfg with trail = Snoc(cfg.trail, ix); counter = ref 0} 
-    | _ -> cfg
+and render_transclusion ~cfg ~opts doc = 
+  let cfg =
+    let ctr = cfg.counter in
+    let ix = !ctr + 1 in
+    ctr := ix;
+    {cfg with trail = Snoc (cfg.trail, ix); counter = ref 0} 
   in
-  render_doc ~mode ~cfg ~toc doc
-
+  render_doc ~cfg ~opts doc
 
 and render_internal_link ~cfg ~title ~addr =
   let url = E.route addr in
@@ -231,27 +229,28 @@ and render_mainmatter ~cfg (doc : Sem.doc) =
 
 and render_backmatter ~cfg (doc : Sem.doc) =
   let cfg = {cfg with part = Backmatter} in
+  let opts = Sem.{title_override = None; toc = false; show_heading = true; expanded = false} in
   with_addr doc @@ fun addr ->
   Xml.tag "backmatter" [] [
     Xml.tag "contributions" [] [
       E.contributions addr |> Printer.iter @@
-      render_doc ~cfg
+      render_doc ~cfg ~opts
     ];
     Xml.tag "context" [] [
       E.parents addr |> Printer.iter @@
-      render_doc ~cfg
+      render_doc ~cfg ~opts
     ];
     Xml.tag "related" [] [
       E.related addr |> Printer.iter @@
-      render_doc ~cfg
+      render_doc ~cfg ~opts
     ];
     Xml.tag "backlinks" [] [
       E.backlinks addr |> Printer.iter @@
-      render_doc ~cfg
+      render_doc ~cfg ~opts
     ];
     Xml.tag "references" [] [
       E.bibliography addr |> Printer.iter @@
-      render_doc ~cfg
+      render_doc ~cfg ~opts
     ];
   ]
 
@@ -279,22 +278,29 @@ and trail_to_string =
   | Snoc (trail, i) -> 
     Format.sprintf "%s.%i" (trail_to_string trail) i
 
-and render_doc ~cfg ?(mode = Full) ?(toc = true) (doc : Sem.doc) : printer =
-  let toc = toc && not (mode = Spliced) in
+
+and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
+  let doc = 
+    match opts.title_override with 
+    | Some _ as title -> {doc with title}
+    | None -> doc
+  in
   let module S = Algaeff.Sequencer.Make (struct type elt = string * string end) in
   let attrs = 
     List.of_seq @@ S.run @@ fun () -> 
-    S.yield ("mode", mode_to_string mode);
-    doc.addr |> Option.iter (fun addr -> S.yield ("root", bool_to_string @@ E.is_root addr));
+    S.yield ("expanded", string_of_bool opts.expanded);
+    S.yield ("show_heading", string_of_bool opts.show_heading);
+    S.yield ("root", string_of_bool @@ Option.fold doc.addr ~none:false ~some:(fun addr -> E.is_root addr));
     doc.taxon |> Option.iter (fun taxon -> S.yield ("taxon", StringUtil.sentence_case taxon))
   in
   Xml.tag "tree" attrs
-    [render_frontmatter ~cfg ~toc doc;
+    [render_frontmatter ~cfg ~toc:opts.toc doc;
      render_mainmatter ~cfg doc;
      match cfg.part with
      | Top -> render_backmatter ~cfg doc
      | _ -> Printer.nil]
 
 let render_doc_page ~trail (doc : Sem.doc) : printer =
-  Xml.with_xsl "forest.xsl" @@
-  render_doc ~cfg:{trail; part = Top; counter = ref 0} doc
+  let cfg = {trail; part = Top; counter = ref 0} in 
+  let opts = Sem.{title_override = None; toc = false; show_heading = true; expanded = true} in
+  Xml.with_xsl "forest.xsl" @@ render_doc ~cfg ~opts doc
