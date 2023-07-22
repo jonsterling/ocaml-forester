@@ -207,8 +207,8 @@ and render_frontmatter ~cfg ?(toc = true) (doc : Sem.doc) =
     with_addr doc (fun addr -> Xml.tag "addr" [] [Printer.text addr]);
     with_addr doc begin fun addr -> 
       match E.abs_path addr with
-      | Some abspath ->
-        Xml.tag "abspath" [] [Printer.text abspath]
+      | Some sourcePath ->
+        Xml.tag "sourcePath" [] [Printer.text sourcePath]
       | None ->
         Printer.nil
     end;

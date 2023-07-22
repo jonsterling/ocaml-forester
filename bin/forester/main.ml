@@ -26,8 +26,8 @@ struct
   let process_file ~dev filename =
     if Filename.extension filename = ".tree" then
       let addr = Filename.chop_extension @@ Filename.basename filename in
-      let abspath = if dev then Some (Unix.realpath filename) else None in
-      F.plant_tree ~abspath addr @@ parse_file filename
+      let sourcePath = if dev then Some (Unix.realpath filename) else None in
+      F.plant_tree ~sourcePath addr @@ parse_file filename
 
   let process_dir ~dev dir =
     Sys.readdir dir |> Array.iter @@ fun filename ->

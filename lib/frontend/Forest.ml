@@ -14,7 +14,7 @@ module M = Map.Make (String)
 
 module type S =
 sig
-  val plant_tree : abspath:string option -> addr -> Code.doc -> unit
+  val plant_tree : sourcePath:string option -> addr -> Code.doc -> unit
   val render_trees : unit -> unit
 end
 
@@ -32,7 +32,7 @@ struct
   let frozen = ref false
   let unexpanded_trees : Code.doc Tbl.t = Tbl.create I.size
 
-  let abspaths : string Tbl.t = Tbl.create I.size
+  let sourcePaths : string Tbl.t = Tbl.create I.size
   let import_graph : Gph.t = Gph.create ()
 
   let transclusion_graph : Gph.t = Gph.create ()
@@ -55,7 +55,7 @@ struct
         | false -> addr ^ ".xml"
 
       let abs_path addr =
-        Tbl.find_opt abspaths addr
+        Tbl.find_opt sourcePaths addr
 
       let get_doc addr =
         M.find_opt addr docs
@@ -202,9 +202,9 @@ struct
     List.iter @@ process_decl scope
 
 
-  let plant_tree ~(abspath : string option) scope (doc : Code.doc) : unit =
+  let plant_tree ~(sourcePath : string option) scope (doc : Code.doc) : unit =
     assert (not !frozen);
-    abspath |> Option.iter @@ Tbl.add abspaths scope;
+    sourcePath |> Option.iter @@ Tbl.add sourcePaths scope;
     Gph.add_vertex transclusion_graph scope;
     Gph.add_vertex link_graph scope;
     Gph.add_vertex import_graph scope;
