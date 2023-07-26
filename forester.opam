@@ -5,8 +5,8 @@ synopsis: "A tool for tending mathematical forests"
 maintainer: ["Jonathan Sterling"]
 authors: ["Jonathan Sterling"]
 license: "GPL-3.0-or-later"
-homepage: "https://github.com/jonsterling/ocaml-forester"
-bug-reports: "https://github.com/jonsterling/ocaml-forester/issues"
+homepage: "https://sr.ht/~jonsterling/forester/"
+bug-reports: "https://todo.sr.ht/~jonsterling/forester"
 depends: [
   "menhir"
   "ocamlgraph"
@@ -34,4 +34,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/jonsterling/ocaml-forester.git"
+dev-repo: "git+https://git.sr.ht/~jonsterling/ocaml-forester"

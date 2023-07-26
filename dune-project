@@ -4,16 +4,20 @@
 
 (name forester)
 
+(authors "Jonathan Sterling")
+
+(maintainers "Jonathan Sterling")
+
 (version 2.2)
 
 (generate_opam_files true)
 
 (source
- (github jonsterling/ocaml-forester))
+ (sourcehut jonsterling/ocaml-forester))
 
-(authors "Jonathan Sterling")
+(bug_reports https://todo.sr.ht/~jonsterling/forester)
 
-(maintainers "Jonathan Sterling")
+(homepage https://sr.ht/~jonsterling/forester/)
 
 (license GPL-3.0-or-later)
 
