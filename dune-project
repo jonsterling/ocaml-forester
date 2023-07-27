@@ -31,7 +31,8 @@
   dune
   xmlm
   ppx_deriving
-  domainslib
+  (domainslib
+   (>= 0.5.0))
   ptime
   (yuujinchou
    (>= 5.0.1))
