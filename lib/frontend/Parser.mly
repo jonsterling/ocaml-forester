@@ -13,7 +13,7 @@
 %token EOF
 
 %type <Code.t> expr
-%start <Code.doc> main
+%start <Core.Code.t> main
 
 %%
 
