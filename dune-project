@@ -8,7 +8,7 @@
 
 (maintainers "Jonathan Sterling")
 
-(version 2.2)
+(version 2.2.1)
 
 (generate_opam_files true)
 
