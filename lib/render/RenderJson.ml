@@ -71,6 +71,11 @@ let render_doc (doc : Sem.doc) : Printer.t =
          | None -> Printer.text "null"
          | Some taxon -> render_string_literal @@ Printer.text @@ StringUtil.sentence_case taxon
        end;
+       "tags", 
+       begin 
+         squares @@ 
+         Printer.iter ~sep:comma (fun tag -> render_string_literal @@ Printer.text tag) doc.tags
+       end;
        "route",
        render_string_literal @@ Printer.text @@
        E.route addr]
