@@ -204,6 +204,8 @@ struct
 
   let plant_tree ~(sourcePath : string option) scope (doc : Code.doc) : unit =
     assert (not !frozen);
+    if Tbl.mem unexpanded_trees scope then 
+      failwith @@ Format.asprintf "Duplicate tree %s" scope;
     sourcePath |> Option.iter @@ Tbl.add sourcePaths scope;
     Gph.add_vertex transclusion_graph scope;
     Gph.add_vertex link_graph scope;
