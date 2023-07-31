@@ -42,17 +42,6 @@ let escape =
   Str.global_substitute (Str.regexp {|"|}) @@
   fun _ -> {|\"|}
 
-let rec render nodes : Printer.t =
-  Printer.iter render_node nodes
-
-and render_node : Sem.node -> Printer.t =
-  function
-  | Sem.Text txt -> Printer.text @@ escape @@ StringUtil.sentence_case txt
-  | Sem.Tag (_,body) -> render body
-  | Sem.Link {title; _} -> render title
-  | Sem.Transclude _ | Sem.EmbedTeX _ | Sem.Math _ | Sem.Block _ | Sem.Query _ -> Printer.nil
-
-
 let render_doc (doc : Sem.doc) : Printer.t =
   match doc.addr with 
   | None -> Printer.nil 
@@ -61,9 +50,9 @@ let render_doc (doc : Sem.doc) : Printer.t =
     Printer.iter ~sep:comma (fun (k, x) -> render_key k x)
       ["title",
        begin
-         match doc.title with
+         match Sem.Doc.title_as_string doc with
          | None -> Printer.text "null"
-         | Some title -> render_string_literal @@ render title
+         | Some title -> render_string_literal @@ Printer.text @@ escape title
        end;
        "taxon",
        begin
