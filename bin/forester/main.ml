@@ -1,68 +1,13 @@
-open Forester
-open Lexing
+open Forester 
+open Cmdliner
 
-let colnum pos =
-  pos.pos_cnum - pos.pos_bol - 1
+let version = 
+  Format.asprintf "%s" @@
+  match Build_info.V1.version () with
+  | None -> "n/a"
+  | Some v -> Build_info.V1.Version.to_string v
 
-let pp_pos fmt pos =
-  Format.fprintf fmt "%s: line %i, column %i" pos.pos_fname pos.pos_lnum (colnum pos + 1)
-
-let parse_channel filename ch =
-  let lexbuf = Lexing.from_channel ch in
-  lexbuf.lex_curr_p <- { lexbuf.lex_curr_p with pos_fname = filename };
-  try Parser.main Lexer.token lexbuf with
-  | Parser.Error ->
-    failwith @@ Format.asprintf "Parse error at %a" pp_pos lexbuf.lex_curr_p
-  | Lexer.SyntaxError err ->
-    failwith @@ Format.asprintf "Lexing error at %a : %s" pp_pos lexbuf.lex_curr_p err
-
-let parse_file filename =
-  let ch = open_in filename in
-  Fun.protect ~finally:(fun _ -> close_in ch) @@ fun _ ->
-  parse_channel filename ch
-
-module Process (F : Forest.S) =
-struct
-  let rec process_file ~dev filename =
-    if Filename.extension filename = ".tree" then
-      let addr = Filename.chop_extension @@ Filename.basename filename in
-      let sourcePath = if dev then Some (Unix.realpath filename) else None in
-      F.plant_tree ~sourcePath addr @@ parse_file filename
-    else if Sys.is_directory filename then 
-      process_dir ~dev filename
-
-  and process_dir ~dev dir =
-    Sys.readdir dir |> Array.iter @@ fun filename ->
-    process_file ~dev @@ dir ^ "/" ^ filename
-end
-
-let () =
-  let input_dirs_ref = ref [] in
-  let root_ref = ref "" in
-  let dev_ref = ref false in
-  let base_url_ref = ref "" in
-
-  let usage_msg = "forester <dir> ..." in
-  let args =
-    ["--root", Arg.Set_string root_ref, "Set root tree";
-     "--base-url", Arg.Set_string base_url_ref, "Set base URL";
-     "--dev", Arg.Set dev_ref, "Development mode"]
-  in
-  let anon_fun dir = input_dirs_ref := dir :: !input_dirs_ref  in
-  let () = Arg.parse args anon_fun usage_msg in
-
-  let root =
-    match !root_ref with
-    | "" -> None
-    | addr -> Some addr
-  in
-
-  let base_url = 
-    match !base_url_ref with 
-    | "" -> None 
-    | url -> Some url
-  in
-
+let run input_dirs root base_url dev = 
   let module I =
   struct
     let size = 100
@@ -72,11 +17,47 @@ let () =
   in
 
   let module F = Forest.Make (I) in
-  let module P = Process (F) in
+  let module P = Process.Make (F) in
 
   begin
-    !input_dirs_ref |> List.iter @@
-    P.process_dir ~dev:!dev_ref
+    input_dirs |> List.iter @@
+    P.process_dir ~dev
   end;
 
   F.render_trees ()
+
+let arg_input_dirs = 
+  Arg.non_empty @@ Arg.pos_all Arg.file [] @@ 
+  Arg.info [] ~docv:"INPUT_DIR"
+
+let arg_root = 
+  let doc = "The address of the root tree, e.g. $(i,jms-0001); if this option is supplied, the tree $(i,jms-0001) will be rendered to $(i,output/index.xml)." in
+  Arg.value @@ Arg.opt (Arg.some Arg.string) None @@ 
+  Arg.info ["root"] ~docv:"ADDR" ~doc
+
+let arg_dev =
+  let doc = "Run forester in development mode; this will attach source file locations to the generated json." in
+  Arg.value @@ Arg.flag @@ Arg.info ["dev"] ~doc
+
+let arg_base_url = 
+  let doc = "Set the base URL for local hyperlinks." in 
+  Arg.value @@ Arg.opt (Arg.some Arg.string) None @@
+  Arg.info ["base-url"] ~docv:"URL" ~doc
+
+
+let cmd =
+  let doc = "a tool for tending mathematical forests" in
+  let man = [
+    `S Manpage.s_description;
+    `P "The $(tname) command builds a hypertext $(b,forest) from trees stored in each $(i,INPUT_DIR) or any of its subdirectories; tree files are expected to be of the form $(i,addr.tree) where $(i,addr) is the global address of the tree. Note that the physical location of a tree is not taken into account, and two trees with the same address are not permitted.";
+    `S Manpage.s_bugs;
+    `P "Email bug reports to <~jonsterling/forester-discuss@lists.sr.ht>." ;
+    `S Manpage.s_authors;
+    `P "Jonathan Sterling"
+  ]
+  in
+  let info = Cmd.info "forester" ~version ~doc ~man in
+  Cmd.v info Term.(const run $ arg_input_dirs $ arg_root $ arg_base_url $ arg_dev)
+
+let () = 
+  exit @@ Cmd.eval cmd
