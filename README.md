@@ -10,4 +10,4 @@ You can install forester by running `opam install forester`.
 
 ### Example Use
 
-Please see my [Forest](https://github.com/jonsterling/forest) for an example of using forester.
+Please see my [Forest](https://github.com/jonsterling/forest) for an example of using forester, or clone your own [template forest](https://git.sr.ht/~jonsterling/forest-template).
