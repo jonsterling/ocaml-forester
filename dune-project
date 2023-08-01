@@ -31,6 +31,7 @@
   dune
   xmlm
   ppx_deriving
+  cmdliner
   dune-build-info
   (domainslib
    (>= 0.5.0))
