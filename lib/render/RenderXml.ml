@@ -44,6 +44,7 @@ struct
 end
 
 
+let (let*?) = Option.bind
 
 let rec render_node ~cfg : Sem.node -> printer =
   function
@@ -135,9 +136,33 @@ and render_transclusion ~cfg ~opts doc =
 
 and render_internal_link ~cfg ~title ~addr =
   let url = E.route addr in
+  let target_title_attr =
+    match Option.bind (E.get_doc addr) Sem.Doc.title_as_string with
+    | Some s -> ["title", s]
+    | None -> []
+  in
   Xml.tag "link"
-    ["href", url; "type", "local"]
+    (["href", url; "type", "local"] @ target_title_attr)
     [render ~cfg title]
+
+(* Best-effort rendering of a Sem.t as a string. This is used to render document
+   titles into the title of a link target, which the browser shows up as a
+   overlay when hovering the link. *)
+and stringify nodes =
+  let rec go = function
+    | [] -> Some []
+    | node :: nodes ->
+      let*? s = stringify_node node in
+      let*? ns = go nodes in
+      Some (s :: ns) in
+  Option.map (String.concat " ") (go nodes)
+
+and stringify_node = function
+  | Sem.Text s -> Some s
+  | Sem.Link {title; _} -> stringify title
+  | Sem.Tag (_, bdy) | Sem.Math (_, bdy) -> stringify bdy
+  | Sem.EmbedTeX {source; _} -> stringify source
+  | Sem.Transclude _ | Sem.Query _ | Sem.Block _ -> None
 
 and render_external_link ~cfg ~title ~url =
   Xml.tag "link"

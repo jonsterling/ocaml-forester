@@ -56,6 +56,25 @@ struct
     | Some (Text txt :: _) -> Some txt
     | _ -> None
 
+  (** Best-effort rendering of a doc title as a string, to use in text-only
+      contexts.
+
+      Returns [None] when the document does not have a title. Returns [Some s]
+      otherwise, where [s] is a rendering of the title. Elements that could not
+      be rendered are dropped. Consequently, when the title could not be
+      rendered at all, [s] is the empty string. *)
+  let title_as_string (doc : doc) : string option =
+    let rec render nodes =
+      String.concat "" (List.filter_map render_node nodes)
+    and render_node = function
+      | Text s -> Some s
+      | Link {title; _} -> Some (render title)
+      | Tag (_, bdy) | Math (_, bdy) -> Some (render bdy)
+      | EmbedTeX {source; _} -> Some (render source)
+      | Transclude _ | Query _ | Block _ -> None
+    in
+    Option.map (fun title -> StringUtil.sentence_case (render title)) doc.title
+
   let sort =
     let by_date = Fun.flip @@ Compare.under (fun x -> x.date) @@ Compare.option Date.compare in
     let by_title = Compare.under peek_title @@ Compare.option String.compare in
