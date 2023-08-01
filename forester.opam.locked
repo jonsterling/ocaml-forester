@@ -1,54 +1,45 @@
 opam-version: "2.0"
 name: "forester"
-version: "2.2"
+version: "2.2.1"
 synopsis: "A tool for tending mathematical forests"
 maintainer: "Jonathan Sterling"
 authors: "Jonathan Sterling"
 license: "GPL-3.0-or-later"
-homepage: "https://github.com/jonsterling/ocaml-forester"
-bug-reports: "https://github.com/jonsterling/ocaml-forester/issues"
+homepage: "https://sr.ht/~jonsterling/forester/"
+bug-reports: "https://todo.sr.ht/~jonsterling/forester"
 depends: [
-  "alcotest" {= "1.7.0"}
-  "algaeff" {= "0.2.1"}
-  "astring" {= "0.8.5"}
+  "algaeff" {= "0.2.0"}
   "base-bigarray" {= "base"}
   "base-domains" {= "base"}
   "base-nnp" {= "base"}
   "base-threads" {= "base"}
   "base-unix" {= "base"}
   "bwd" {= "2.1.0"}
-  "cmdliner" {= "1.2.0"}
-  "cppo" {= "1.6.9"}
-  "domain_shims" {= "0.1.0"}
+  "cppo" {= "1.6.6"}
   "domainslib" {= "0.5.0"}
-  "dune" {= "3.9.1"}
-  "fmt" {= "0.9.0"}
-  "lockfree" {= "0.3.1"}
-  "menhir" {= "20230608"}
-  "menhirLib" {= "20230608"}
-  "menhirSdk" {= "20230608"}
+  "dune" {= "3.7.0"}
+  "dune-build-info" {= "3.9.2"}
+  "lockfree" {= "0.2.0"}
+  "menhir" {= "20200123"}
+  "menhirLib" {= "20200123"}
+  "menhirSdk" {= "20200123"}
   "ocaml" {= "5.0.0"}
   "ocaml-base-compiler" {= "5.0.0"}
-  "ocaml-compiler-libs" {= "v0.12.4"}
+  "ocaml-compiler-libs" {= "v0.12.0"}
   "ocaml-config" {= "3"}
   "ocaml-options-vanilla" {= "1"}
-  "ocaml-syntax-shims" {= "1.0.0"}
-  "ocamlbuild" {= "0.14.2"}
-  "ocamlfind" {= "1.9.6"}
+  "ocamlbuild" {= "0.14.1"}
+  "ocamlfind" {= "1.9.5"}
   "ocamlgraph" {= "2.0.0"}
   "ppx_derivers" {= "1.2.1"}
-  "ppx_deriving" {= "5.2.1"}
+  "ppx_deriving" {= "5.2"}
   "ppxlib" {= "0.30.0"}
-  "ptime" {= "1.1.0"}
-  "re" {= "1.10.4"}
+  "ptime" {= "0.8.6"}
   "result" {= "1.5"}
-  "seq" {= "base"}
   "sexplib0" {= "v0.16.0"}
-  "stdlib-shims" {= "0.3.0"}
-  "topkg" {= "1.0.7"}
-  "uutf" {= "1.0.3"}
+  "stdlib-shims" {= "0.1.0"}
+  "topkg" {= "1.0.6"}
   "xmlm" {= "1.4.0"}
-  "yojson" {= "2.1.0"}
   "yuujinchou" {= "5.0.1"}
 ]
 build: [
@@ -65,4 +56,4 @@ build: [
     "@doc" {with-doc}
   ]
 ]
-dev-repo: "git+https://github.com/jonsterling/ocaml-forester.git"
+dev-repo: "git+https://git.sr.ht/~jonsterling/ocaml-forester"
