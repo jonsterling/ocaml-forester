@@ -112,24 +112,24 @@ struct
         match query with
         | Query.Author [Sem.Text addr] ->
           List.mem addr doc.authors
-        | Query.Tag [Sem.Text addr] -> 
+        | Query.Tag [Sem.Text addr] ->
           List.mem addr doc.tags
-        | Query.Meta (key, value) -> 
+        | Query.Meta (key, value) ->
           List.mem (key, value) doc.metas
-        | Query.Taxon [Sem.Text taxon] -> 
+        | Query.Taxon [Sem.Text taxon] ->
           doc.taxon = Some taxon
-        | Query.Or qs -> 
+        | Query.Or qs ->
           qs |> List.exists @@ fun q -> test_query q doc
-        | Query.And qs -> 
+        | Query.And qs ->
           qs |> List.for_all @@ fun q -> test_query q doc
-        | Query.Not q -> 
+        | Query.Not q ->
           not @@ test_query q doc
-        | Query.True -> 
+        | Query.True ->
           true
         | _ -> false
 
-      let run_query query = 
-        get_sorted_trees @@ S.of_seq @@ Seq.map fst @@ M.to_seq @@ 
+      let run_query query =
+        get_sorted_trees @@ S.of_seq @@ Seq.map fst @@ M.to_seq @@
         M.filter (fun _ doc -> test_query query doc) docs
     end
     in
@@ -184,17 +184,17 @@ struct
     | Sem.Query (opts, _) ->
       analyze_transclusion_opts scope opts
 
-  and analyze_transclusion_opts scope : Sem.transclusion_opts -> unit = 
-    function Sem.{title_override; _} -> 
+  and analyze_transclusion_opts scope : Sem.transclusion_opts -> unit =
+    function Sem.{title_override; _} ->
       title_override |> Option.iter @@ analyze_nodes scope
 
   let rec process_decl scope =
     function
     | Code.Tag tag ->
       Gph.add_edge tag_graph tag scope
-    | Code.Author author -> 
+    | Code.Author author ->
       Tbl.add author_pages author scope
-    | Code.Import (_, dep) -> 
+    | Code.Import (_, dep) ->
       Gph.add_edge import_graph dep scope
     | _ -> ()
 
@@ -204,7 +204,7 @@ struct
 
   let plant_tree ~(sourcePath : string option) scope (doc : Code.doc) : unit =
     assert (not !frozen);
-    if Tbl.mem unexpanded_trees scope then 
+    if Tbl.mem unexpanded_trees scope then
       failwith @@ Format.asprintf "Duplicate tree %s" scope;
     sourcePath |> Option.iter @@ Tbl.add sourcePaths scope;
     Gph.add_vertex transclusion_graph scope;
@@ -249,8 +249,8 @@ struct
     let module E = RenderEff.Perform in
     begin
       let bib_ch = open_out @@ "latex/forest.bib" in
-      Fun.protect ~finally:(fun _ -> close_out bib_ch) @@ fun () -> 
-      let bib_fmt = Format.formatter_of_out_channel bib_ch in 
+      Fun.protect ~finally:(fun _ -> close_out bib_ch) @@ fun () ->
+      let bib_fmt = Format.formatter_of_out_channel bib_ch in
       docs |> M.iter @@ fun _ doc ->
       RenderBibTeX.render_bibtex ~base_url:I.base_url doc bib_fmt;
       doc.addr |> Option.iter @@ fun addr ->
@@ -260,8 +260,8 @@ struct
         let out = Xmlm.make_output @@ `Channel ch in
         RenderXml.render_doc_page ~trail:(Some Emp) doc out
       end;
-      begin 
-        let ch = open_out @@ "latex/" ^ addr ^ ".tex" in 
+      begin
+        let ch = open_out @@ "latex/" ^ addr ^ ".tex" in
         Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
         let fmt = Format.formatter_of_out_channel ch in
         RenderLaTeX.render_doc_page ~base_url:I.base_url doc fmt
@@ -295,8 +295,8 @@ struct
       Sys.readdir "build" |> Array.iter @@ fun basename ->
       let ext = Filename.extension basename in
       let fp = Format.sprintf "build/%s" basename in
-      match ext with 
-      | ".svg" ->           
+      match ext with
+      | ".svg" ->
         Shell.copy_file_to_dir ~source:fp ~dest_dir:"output/resources/";
       | ".pdf" ->
         Shell.copy_file_to_dir ~source:fp ~dest_dir:"latex/resources/"

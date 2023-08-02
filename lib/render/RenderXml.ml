@@ -51,9 +51,9 @@ let rec render_node ~cfg : Sem.node -> printer =
   | Sem.Text txt ->
     Printer.text txt
   | Sem.Math (mode, bdy) ->
-    let attrs = 
+    let attrs =
       match mode with
-      | Inline -> [] 
+      | Inline -> []
       | Display -> ["display", "block"]
     in
     let module TP = RenderMathMode.Printer in
@@ -72,7 +72,7 @@ let rec render_node ~cfg : Sem.node -> printer =
     end
   | Sem.Tag (name, xs) ->
     Xml.tag name [] [render ~cfg xs]
-  | Sem.Transclude (opts, addr) -> 
+  | Sem.Transclude (opts, addr) ->
     begin
       match E.get_doc addr with
       | None ->
@@ -83,16 +83,16 @@ let rec render_node ~cfg : Sem.node -> printer =
   | Sem.Query (opts, query) ->
     let docs = E.run_query query in
     begin
-      match docs with 
-      | [] -> Printer.nil 
+      match docs with
+      | [] -> Printer.nil
       | _ ->
-        let body = 
-          docs |> List.filter_map @@ fun (doc : Sem.doc) -> 
+        let body =
+          docs |> List.filter_map @@ fun (doc : Sem.doc) ->
           doc.addr |> Option.map @@ fun addr ->
           let opts = Sem.{expanded = false; show_heading = true; title_override = None; toc = false; numbered = false; show_metadata = true} in
           Sem.Transclude (opts, addr)
         in
-        let doc : Sem.doc = 
+        let doc : Sem.doc =
           {addr = None;
            taxon = None;
            title = None;
@@ -119,18 +119,18 @@ let rec render_node ~cfg : Sem.node -> printer =
     [Xml.tag "headline" [] [render ~cfg title];
      render ~cfg body]
 
-and render_transclusion ~cfg ~opts doc = 
+and render_transclusion ~cfg ~opts doc =
   let cfg =
     let ctr = cfg.counter in
     let ix = if opts.numbered then !ctr + 1 else !ctr in
     ctr := ix;
-    let trail = 
-      match opts.numbered with 
+    let trail =
+      match opts.numbered with
       | true -> cfg.trail |> Option.map @@ fun tr -> Snoc (tr, ix)
       | false -> None
-    in 
+    in
     let counter = ref 0 in
-    {cfg with trail; counter} 
+    {cfg with trail; counter}
   in
   render_doc ~cfg ~opts doc
 
@@ -177,11 +177,11 @@ and render_author (author : string) =
   (* If the author string is an address to a biographical page, then link to it *)
   match E.get_doc author with
   | Some bio ->
-    begin 
-      match bio.addr with 
-      | None -> 
+    begin
+      match bio.addr with
+      | None ->
         Printer.text author
-      | Some addr -> 
+      | Some addr ->
         let url = E.route addr in
         Xml.tag "link"
           ["href", url; "type", "local"]
@@ -200,11 +200,11 @@ and render_date (doc : Sem.doc) =
     Xml.tag "date" [] [Printer.text str]
 
 and render_authors (doc : Sem.doc) =
-  let contributors = 
-    match doc.addr with 
+  let contributors =
+    match doc.addr with
     | Some addr -> E.contributors addr
-    | None -> [] 
-  in 
+    | None -> []
+  in
   match doc.authors, contributors with
   | [], [] -> Printer.nil
   | authors, contributors ->
@@ -219,10 +219,10 @@ and render_authors (doc : Sem.doc) =
       end
     ]
 
-and with_addr (doc : Sem.doc) k = 
-  match doc.addr with 
-  | Some addr -> k addr 
-  | None -> Printer.nil 
+and with_addr (doc : Sem.doc) k =
+  match doc.addr with
+  | Some addr -> k addr
+  | None -> Printer.nil
 
 and render_frontmatter ~cfg ?(toc = true) (doc : Sem.doc) =
   let anchor = string_of_int @@ Oo.id (object end) in
@@ -230,7 +230,7 @@ and render_frontmatter ~cfg ?(toc = true) (doc : Sem.doc) =
     if toc then render_trail cfg.trail else Printer.nil;
     Xml.tag "anchor" [] [Printer.text anchor];
     with_addr doc (fun addr -> Xml.tag "addr" [] [Printer.text addr]);
-    with_addr doc begin fun addr -> 
+    with_addr doc begin fun addr ->
       match E.abs_path addr with
       | Some sourcePath ->
         Xml.tag "sourcePath" [] [Printer.text sourcePath]
@@ -286,12 +286,12 @@ and render_backmatter ~cfg (doc : Sem.doc) =
   ]
 
 and render_trail trail =
-  match trail with 
-  | None -> Printer.nil 
+  match trail with
+  | None -> Printer.nil
   | Some trail ->
     let render_crumb i = Xml.tag "crumb" [] [Printer.text @@ string_of_int i] in
     Xml.tag "trail" [] @@
-    List.map render_crumb @@ 
+    List.map render_crumb @@
     Bwd.to_list trail
 
 and mode_to_string =
@@ -307,21 +307,21 @@ and bool_to_string =
 
 
 and trail_to_string =
-  function 
+  function
   | Emp -> ""
-  | Snoc (trail, i) -> 
+  | Snoc (trail, i) ->
     Format.sprintf "%s.%i" (trail_to_string trail) i
 
 
 and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
-  let doc = 
-    match opts.title_override with 
+  let doc =
+    match opts.title_override with
     | Some _ as title -> {doc with title}
     | None -> doc
   in
   let module S = Algaeff.Sequencer.Make (struct type elt = string * string end) in
-  let attrs = 
-    List.of_seq @@ S.run @@ fun () -> 
+  let attrs =
+    List.of_seq @@ S.run @@ fun () ->
     S.yield ("expanded", string_of_bool opts.expanded);
     S.yield ("show_heading", string_of_bool opts.show_heading);
     S.yield ("show_metadata", string_of_bool opts.show_metadata);
@@ -337,6 +337,6 @@ and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
      | _ -> Printer.nil]
 
 let render_doc_page ~trail (doc : Sem.doc) : printer =
-  let cfg = {trail; part = Top; counter = ref 0} in 
+  let cfg = {trail; part = Top; counter = ref 0} in
   let opts = Sem.{title_override = None; toc = false; show_heading = true; expanded = true; numbered = true; show_metadata = true} in
   Xml.with_xsl "forest.xsl" @@ render_doc ~cfg ~opts doc

@@ -43,9 +43,9 @@ let escape =
   fun _ -> {|\"|}
 
 let render_doc (doc : Sem.doc) : Printer.t =
-  match doc.addr with 
-  | None -> Printer.nil 
-  | Some addr -> 
+  match doc.addr with
+  | None -> Printer.nil
+  | Some addr ->
     render_key addr @@ braces @@
     Printer.iter ~sep:comma (fun (k, x) -> render_key k x)
       ["title",
@@ -60,9 +60,9 @@ let render_doc (doc : Sem.doc) : Printer.t =
          | None -> Printer.text "null"
          | Some taxon -> render_string_literal @@ Printer.text @@ StringUtil.sentence_case taxon
        end;
-       "tags", 
-       begin 
-         squares @@ 
+       "tags",
+       begin
+         squares @@
          Printer.iter ~sep:comma (fun tag -> render_string_literal @@ Printer.text tag) doc.tags
        end;
        "route",

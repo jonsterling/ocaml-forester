@@ -5,7 +5,7 @@ module UnitMap : Map.S with type key = string
 
 val expand_doc : exports UnitMap.t -> addr -> Code.doc -> exports UnitMap.t * Syn.doc
 
-module Builtins : 
+module Builtins :
 sig
   module Transclude :
   sig
@@ -15,5 +15,5 @@ sig
     val show_metadata_sym : Symbol.t
     val toc_sym : Symbol.t
     val numbered_sym : Symbol.t
-  end 
+  end
 end

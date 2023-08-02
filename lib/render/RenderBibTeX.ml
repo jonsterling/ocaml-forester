@@ -18,42 +18,42 @@ end
 
 module Metas = Map.Make (String)
 
-let render_author author = 
-  match E.get_doc author with 
+let render_author author =
+  match E.get_doc author with
   | None ->
     Printer.text author
-  | Some doc -> 
-    match doc.title with 
-    | None -> 
+  | Some doc ->
+    match doc.title with
+    | None ->
       Printer.text author
     | Some title ->
       RenderLaTeX.render title
 
-let render_authors : string list -> Printer.t = 
-  function 
+let render_authors : string list -> Printer.t =
+  function
   | [] -> Printer.text "Anonymous"
-  | authors -> 
+  | authors ->
     Printer.iter ~sep:(Printer.text " and ") render_author authors
 
 let render_title ~taxon title =
-  match taxon with 
+  match taxon with
   | Some taxon ->
     Format.dprintf "%s: %a"
       (StringUtil.sentence_case taxon)
       (Fun.flip RenderLaTeX.render) title
-  | None -> 
+  | None ->
     RenderLaTeX.render @@ Sem.sentence_case title
 
 let render_auto_bibtex ~base_url (doc : Sem.doc) : Printer.t =
-  match doc.addr with 
-  | None -> Printer.nil 
-  | Some addr -> 
+  match doc.addr with
+  | None -> Printer.nil
+  | Some addr ->
     let contributors = E.contributors addr in
     Printer.seq ~sep:Printer.newline [
       Printer.nil;
       Format.dprintf "@misc{%s," addr;
-      begin 
-        doc.title |> Printer.option @@ fun title -> 
+      begin
+        doc.title |> Printer.option @@ fun title ->
         Format.dprintf "title = {%a}," (Fun.flip @@ render_title ~taxon:doc.taxon) title
       end;
       Format.dprintf "author = {%a}," (Fun.flip render_authors) doc.authors;
@@ -61,19 +61,19 @@ let render_auto_bibtex ~base_url (doc : Sem.doc) : Printer.t =
         base_url |> Printer.option @@ fun url ->
         Format.dprintf "url = {%s/%s}," url @@ E.route addr
       end;
-      begin 
-        match contributors with 
-        | [] -> Printer.nil 
-        | _ -> 
+      begin
+        match contributors with
+        | [] -> Printer.nil
+        | _ ->
           let pp_sep fmt () = Format.fprintf fmt ", " in
-          Format.dprintf "note = {With contributions from %a.}," 
+          Format.dprintf "note = {With contributions from %a.},"
             (Format.pp_print_list ~pp_sep (Fun.flip render_author)) contributors
       end;
       Format.dprintf "}";
       Printer.nil
     ]
 
-let render_bibtex ~base_url (doc : Sem.doc) : Printer.t = 
+let render_bibtex ~base_url (doc : Sem.doc) : Printer.t =
   let metas = Metas.of_seq @@ List.to_seq doc.metas in
   match Metas.find_opt "bibtex" metas with
   | None ->

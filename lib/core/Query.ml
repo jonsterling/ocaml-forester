@@ -1,4 +1,4 @@
-type 'a t = 
+type 'a t =
   | Author of 'a
   | Tag of 'a
   | Taxon of 'a
@@ -9,8 +9,8 @@ type 'a t =
   | True
 [@@deriving show]
 
-let rec map f = 
-  function 
+let rec map f =
+  function
   | Author x -> Author (f x)
   | Tag x -> Tag (f x)
   | Taxon x -> Taxon (f x )

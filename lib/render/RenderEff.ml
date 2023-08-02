@@ -79,7 +79,7 @@ struct
            resume @@ fun () -> H.enqueue_latex ~name ~packages ~source
          | GetDoc addr ->
            resume @@ fun () -> H.get_doc addr
-         | RunQuery query -> 
+         | RunQuery query ->
            resume @@ fun () -> H.run_query query
          | _ ->
            None}

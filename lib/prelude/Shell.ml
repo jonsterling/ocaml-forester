@@ -1,42 +1,42 @@
 let within_dir dir kont =
-  let cwd = Sys.getcwd () in 
-  Fun.protect ~finally:(fun _ -> Unix.chdir cwd) @@ fun _ -> 
+  let cwd = Sys.getcwd () in
+  Fun.protect ~finally:(fun _ -> Unix.chdir cwd) @@ fun _ ->
   Unix.chdir dir;
-  kont () 
+  kont ()
 
 let ensure_dir dir =
-  try Unix.mkdir dir 0o755 with 
-  | Unix.Unix_error (Unix.EEXIST, _, _) -> 
+  try Unix.mkdir dir 0o755 with
+  | Unix.Unix_error (Unix.EEXIST, _, _) ->
     ()
 
-let ensure_dir_path dirs = 
+let ensure_dir_path dirs =
   let rec loop prefix =
-    function 
-    | [] -> () 
-    | dir :: dirs -> 
+    function
+    | [] -> ()
+    | dir :: dirs ->
       let dir' = Format.sprintf "%s/%s" prefix dir in
       ensure_dir dir';
       loop dir' dirs
-  in 
+  in
   loop "." dirs
 
-let ensure_remove_file fp = 
-  try Unix.unlink fp with 
+let ensure_remove_file fp =
+  try Unix.unlink fp with
   | Unix.Unix_error (Unix.ENOENT, _, _) ->
     ()
 
-module Chan = 
-struct 
+module Chan =
+struct
   let dump ~inp ~out =
     try
       while true do
         output_char out (input_char inp)
       done
-    with End_of_file -> 
+    with End_of_file ->
       flush out
 end
 
-module Proc = 
+module Proc =
 struct
   let popen = Unix.open_process_args_full
   let pclose = Unix.close_process_full
@@ -63,24 +63,24 @@ struct
   let run ?(quiet = false) cmd args =
     let cmd' = String.concat " " @@ cmd :: args in
     let ic, oc, ec as proc =
-      begin 
-        if not quiet then 
+      begin
+        if not quiet then
           Format.eprintf "Running %s@." cmd';
       end;
       Unix.open_process_full cmd' (Unix.environment ())
     in
 
-    let out_buf = Buffer.create 32 in 
+    let out_buf = Buffer.create 32 in
     let err_buf = Buffer.create 32 in
 
     read_to_EOF out_buf ic;
     read_to_EOF err_buf ec;
 
     let s = Unix.close_process_full proc in
-    match status_code s with 
-    | 0 -> () 
-    | code -> 
-      failwith @@ 
+    match status_code s with
+    | 0 -> ()
+    | code ->
+      failwith @@
       Format.sprintf "ERROR RUNNING [%s]: %s" cmd' (Buffer.contents err_buf);
 end
 

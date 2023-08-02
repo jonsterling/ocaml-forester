@@ -42,18 +42,18 @@ let render_svg_file ~name ~source =
   ensure_remove_file dvi_fp
 
 let build_latex ~name ~packages ~source =
-  let web_name = name ^ "-web" in 
+  let web_name = name ^ "-web" in
   let print_name = name ^ "-print" in
-  begin 
-    if not @@ Sys.file_exists @@ web_name ^ ".svg" then 
+  begin
+    if not @@ Sys.file_exists @@ web_name ^ ".svg" then
       begin
         write_tex_file ~name:web_name ~packages ~source;
         render_dvi_file ~name:web_name ~source;
         render_svg_file ~name:web_name ~source
       end
   end;
-  begin 
-    if not @@ Sys.file_exists @@ print_name ^ ".pdf" then 
+  begin
+    if not @@ Sys.file_exists @@ print_name ^ ".pdf" then
       begin
         write_tex_file ~name:print_name ~packages:(packages @ ["newpxtext"; "newpxmath"]) ~source;
         render_pdf_file ~name:print_name ~source

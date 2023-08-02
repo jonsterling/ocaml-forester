@@ -17,63 +17,63 @@ end
 
 
 let rec add_qedhere xs =
-  match Bwd.of_list xs with 
+  match Bwd.of_list xs with
   | Emp -> xs
   | Snoc (xs', last) ->
     let qedhere = Sem.Tag ("qedhere", []) in
-    match last with 
-    | Sem.Tag ("ol", ys) -> 
+    match last with
+    | Sem.Tag ("ol", ys) ->
       Bwd.to_list @@ Bwd.Snoc (xs', Sem.Tag ("ol", add_qedhere ys))
     | Sem.Tag ("ul", ys) ->
       Bwd.to_list @@ Bwd.Snoc (xs', Sem.Tag ("ul", add_qedhere ys))
     | Sem.Tag ("li", ys) ->
       Bwd.to_list @@ Bwd.Snoc (xs', Sem.Tag ("li", add_qedhere ys))
-    | Sem.Math (Display, ys) -> 
+    | Sem.Math (Display, ys) ->
       Bwd.to_list @@ Bwd.Snoc (xs', Sem.Math (Display, add_qedhere ys))
-    | _ -> 
+    | _ ->
       Bwd.to_list @@ Bwd.Snoc (Bwd.Snoc (xs', last), qedhere)
 
 
 let render_date =
   Format.dprintf {|\date{%a}@.|} Date.pp_human
 
-let rec render  (nodes : Sem.t) : Printer.t = 
+let rec render  (nodes : Sem.t) : Printer.t =
   Printer.iter render_node  nodes
 
-and render_node : Sem.node -> Printer.t = 
-  function 
+and render_node : Sem.node -> Printer.t =
+  function
   | Text txt -> Printer.text txt
-  | Transclude (_, addr) -> 
-    begin 
+  | Transclude (_, addr) ->
+    begin
       match E.get_doc addr with
       | None ->
         failwith @@ Format.sprintf "Failed to transclude non-existent tree with address '%s'" addr
-      | Some doc -> 
+      | Some doc ->
         render_doc_section doc
     end
   | Tag (name, body) ->
     render_tag name body
-  | Link {title; dest} -> 
+  | Link {title; dest} ->
     begin
       match E.get_doc dest with
       | None ->
         Format.dprintf {|\href{%s}{%a}|} dest (Fun.flip render) title
       | Some doc ->
-        begin 
-          match doc.taxon with 
+        begin
+          match doc.taxon with
           | Some "reference" ->
             Format.dprintf {|%a~\cite{%s}|} (Fun.flip render) title dest
-          | Some "person" -> 
+          | Some "person" ->
             render title
           | _ ->
             Format.dprintf {|\ForesterRef{%s}{%a}|} dest (Fun.flip render) title
         end
-    end   
+    end
   | Math (Inline, body) ->
     Format.dprintf {|\(%a\)|} (Fun.flip RenderMathMode.render) body
-  | Math (Display, body) -> 
+  | Math (Display, body) ->
     Format.dprintf {|\[%a\]|} (Fun.flip RenderMathMode.render) body
-  | EmbedTeX {source; packages} -> 
+  | EmbedTeX {source; packages} ->
     let code =
       RenderMathMode.Printer.contents @@
       RenderMathMode.render source
@@ -82,7 +82,7 @@ and render_node : Sem.node -> Printer.t =
     E.enqueue_latex ~name:hash ~packages ~source:code;
     let path = Format.sprintf "resources/%s-print.pdf" hash in
     Format.dprintf {|\[\includegraphics{%s}\]%s|} path "\n"
-  | Block (title, body) -> 
+  | Block (title, body) ->
     Printer.seq [
       Format.dprintf {|\begin{proof}[{%a}]%s|} (Fun.flip render) title "\n";
       render @@ add_qedhere body;
@@ -91,11 +91,11 @@ and render_node : Sem.node -> Printer.t =
   | Query _ ->
     Printer.nil
 
-and render_title title = 
+and render_title title =
   Format.dprintf {|\title{%a}%s|} (Fun.flip render) (Sem.sentence_case title) "\n"
 
 and render_tag name body =
-  match name with 
+  match name with
   | "ol" ->
     Printer.seq ~sep:(Printer.text "\n") [
       Format.dprintf {|\begin{enumerate}|};
@@ -114,23 +114,23 @@ and render_tag name body =
       render body;
       Format.dprintf {|\end{quotation}|};
     ]
-  | _ -> 
-    let name = 
+  | _ ->
+    let name =
       match name with
       | "p" -> "par"
       | "b" | "strong" -> "textbf"
       | "em" -> "emph"
       | "li" -> "item"
       | _ -> name
-    in 
+    in
     Format.dprintf {|\%s{%a}|} name (Fun.flip render) body
 
 
-and render_author author = 
+and render_author author =
   match E.get_doc author with
   | Some bio ->
-    begin 
-      match bio.title with 
+    begin
+      match bio.title with
       | Some title -> render title
       | None -> Printer.text author
     end
@@ -138,8 +138,8 @@ and render_author author =
     Printer.text author
 
 and render_authors =
-  function 
-  | [], [] -> Printer.nil 
+  function
+  | [], [] -> Printer.nil
   | authors, contributors ->
     let pp_sep fmt () = Format.fprintf fmt {| \and |} in
     Format.dprintf {|\author{%a%a}%s|}
@@ -148,17 +148,17 @@ and render_authors =
       (Fun.flip render_contributors) contributors
       "\n"
 
-and render_contributors = 
-  function 
-  | [] -> Printer.nil 
-  | contributors -> 
+and render_contributors =
+  function
+  | [] -> Printer.nil
+  | contributors ->
     let pp_sep fmt () = Format.fprintf fmt {|, |} in
     Format.dprintf {|\thanks{With contributions from %a.}|}
       (Format.pp_print_list ~pp_sep (Fun.flip render_author))
       contributors
 
-and strip_first_paragraph xs = 
-  match xs with 
+and strip_first_paragraph xs =
+  match xs with
   | Sem.Tag ("p", body) :: rest -> body @ rest
   | _ -> xs
 
@@ -168,7 +168,7 @@ and render_doc_section (doc : Sem.doc) : Printer.t =
   let addr = Option.value doc.addr ~default:(string_of_int @@ Oo.id (object end)) in
   Printer.seq ~sep:(Printer.text "\n") [
     Printer.nil;
-    Format.dprintf 
+    Format.dprintf
       {|\begin{tree}{title={%a}, taxon={%s}, slug={%s}}|}
       (Fun.flip render) title
       taxon
@@ -178,12 +178,12 @@ and render_doc_section (doc : Sem.doc) : Printer.t =
     Printer.nil;
   ]
 
-let render_base_url url = 
+let render_base_url url =
   Format.dprintf {|\ForesterSetup{forestSite = {%s}}|} url
 
-let render_doc_page ~base_url (doc : Sem.doc) : Printer.t = 
-  let contributors = 
-    match doc.addr with 
+let render_doc_page ~base_url (doc : Sem.doc) : Printer.t =
+  let contributors =
+    match doc.addr with
     | Some addr -> E.contributors addr
     | None -> []
   in

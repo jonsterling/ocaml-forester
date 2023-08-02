@@ -38,8 +38,8 @@ and render xs =
   Printer.iter ~sep:Printer.space render_node xs
 
 and render_arg delim (arg : Sem.t) : Printer.t =
-  match arg with 
-  | [] -> Printer.nil 
+  match arg with
+  | [] -> Printer.nil
   | _ ->
     let l, r =
       match delim with

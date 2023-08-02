@@ -3,7 +3,7 @@ module Topo = Graph.Topological.Make (G)
 
 let gph = G.create ()
 
-let _ = 
+let _ =
   G.add_vertex gph "Hello";
   G.add_vertex gph "World";
   G.add_vertex gph "Foo";

@@ -3,18 +3,18 @@ open Base
 module LexEnv = Algaeff.Reader.Make (struct type env = Sem.t Env.t end)
 module DynEnv = Algaeff.Reader.Make (struct type env = Sem.t Env.t end)
 
-let get_transclusion_opts () = 
+let get_transclusion_opts () =
   let dynenv = DynEnv.read () in
   let title_override = Env.find_opt Expand.Builtins.Transclude.title_sym dynenv in
-  let get_bool key default = 
-    match Env.find_opt key dynenv with 
-    | Some [Sem.Text "true"] -> true 
+  let get_bool key default =
+    match Env.find_opt key dynenv with
+    | Some [Sem.Text "true"] -> true
     | Some [Sem.Text "false"] -> false
     | _ -> default
   in
-  let expanded = get_bool Expand.Builtins.Transclude.expanded_sym true in 
-  let show_heading = get_bool Expand.Builtins.Transclude.show_heading_sym true in 
-  let toc = get_bool Expand.Builtins.Transclude.toc_sym true in 
+  let expanded = get_bool Expand.Builtins.Transclude.expanded_sym true in
+  let show_heading = get_bool Expand.Builtins.Transclude.show_heading_sym true in
+  let toc = get_bool Expand.Builtins.Transclude.toc_sym true in
   let numbered = get_bool Expand.Builtins.Transclude.numbered_sym true in
   let show_metadata = get_bool Expand.Builtins.Transclude.show_metadata_sym false in
   Sem.{title_override; toc; show_heading; expanded; numbered; show_metadata}
@@ -36,10 +36,10 @@ let rec eval : Syn.t -> Sem.t =
   | Query query :: rest ->
     let opts = get_transclusion_opts () in
     let opts =
-      match opts.title_override with 
+      match opts.title_override with
       | None -> {opts with show_heading = false; toc = false}
       | Some _ -> opts
-    in 
+    in
     let query = Query.map eval query in
     Sem.Query (opts, query) :: eval rest
   | EmbedTeX {packages; source} :: rest ->

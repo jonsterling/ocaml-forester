@@ -1,4 +1,4 @@
-module type S0 = 
+module type S0 =
 sig
   type out
   val text : string -> out -> unit
@@ -19,34 +19,34 @@ sig
 end
 
 module Kit (P : S0) : S with type out = P.out =
-struct 
+struct
   include P
 
   type t = out -> unit
-  let nil : t = fun _ -> () 
+  let nil : t = fun _ -> ()
 
   let iter ?(sep = nil) printer xs : t =
-    fun fmt -> 
+    fun fmt ->
     let n = List.length xs in
-    xs |> List.iteri @@ fun i x -> 
-    if not (i = 0 || i = n) then 
+    xs |> List.iteri @@ fun i x ->
+    if not (i = 0 || i = n) then
       sep fmt;
     printer x fmt
 
   let option printer =
     function
-    | None -> nil 
+    | None -> nil
     | Some x -> printer x
 
-  let seq ?(sep = nil) ps : t = 
+  let seq ?(sep = nil) ps : t =
     iter ~sep Fun.id ps
 
 
   let trimmedText (txt : string) : t =
-    let txt = String.trim txt in 
-    if String.length txt > 0 then 
-      text @@ txt 
-    else 
+    let txt = String.trim txt in
+    if String.length txt > 0 then
+      text @@ txt
+    else
       nil
 
   let space = text " "

@@ -16,12 +16,12 @@ type node =
   | Block of t * t
 [@@deriving show]
 
-and transclusion_opts = 
+and transclusion_opts =
   {toc : bool;
    show_heading : bool;
    show_metadata : bool;
    title_override : t option;
-   expanded : bool; 
+   expanded : bool;
    numbered : bool}
 [@@deriving show]
 
@@ -31,7 +31,7 @@ and env = t Env.t
 [@@deriving show]
 
 let sentence_case =
-  function 
+  function
   | Text str :: xs -> Text (StringUtil.sentence_case str) :: xs
   | xs -> xs
 
@@ -46,8 +46,8 @@ type doc =
    body : t}
 [@@deriving show]
 
-module Doc = 
-struct 
+module Doc =
+struct
   let peek_title (doc : doc) =
     match doc.title with
     | Some (Text txt :: _) -> Some txt
@@ -70,7 +70,7 @@ struct
       | EmbedTeX {source; _} -> Some (render source)
       | Transclude _ | Query _ | Block _ -> None
     in
-    doc.title |> Option.map @@ fun title -> 
+    doc.title |> Option.map @@ fun title ->
     StringUtil.sentence_case @@ render title
 
   let sort =

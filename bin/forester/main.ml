@@ -1,13 +1,13 @@
-open Forester 
+open Forester
 open Cmdliner
 
-let version = 
+let version =
   Format.asprintf "%s" @@
   match Build_info.V1.version () with
   | None -> "n/a"
   | Some v -> Build_info.V1.Version.to_string v
 
-let run input_dirs root base_url dev = 
+let run input_dirs root base_url dev =
   let module I =
   struct
     let size = 100
@@ -26,21 +26,21 @@ let run input_dirs root base_url dev =
 
   F.render_trees ()
 
-let arg_input_dirs = 
-  Arg.non_empty @@ Arg.pos_all Arg.file [] @@ 
+let arg_input_dirs =
+  Arg.non_empty @@ Arg.pos_all Arg.file [] @@
   Arg.info [] ~docv:"INPUT_DIR"
 
-let arg_root = 
+let arg_root =
   let doc = "The address of the root tree, e.g. $(i,jms-0001); if this option is supplied, the tree $(i,jms-0001) will be rendered to $(i,output/index.xml)." in
-  Arg.value @@ Arg.opt (Arg.some Arg.string) None @@ 
+  Arg.value @@ Arg.opt (Arg.some Arg.string) None @@
   Arg.info ["root"] ~docv:"ADDR" ~doc
 
 let arg_dev =
   let doc = "Run forester in development mode; this will attach source file locations to the generated json." in
   Arg.value @@ Arg.flag @@ Arg.info ["dev"] ~doc
 
-let arg_base_url = 
-  let doc = "Set the base URL for local hyperlinks." in 
+let arg_base_url =
+  let doc = "Set the base URL for local hyperlinks." in
   Arg.value @@ Arg.opt (Arg.some Arg.string) None @@
   Arg.info ["base-url"] ~docv:"URL" ~doc
 
@@ -59,5 +59,5 @@ let cmd =
   let info = Cmd.info "forester" ~version ~doc ~man in
   Cmd.v info Term.(const run $ arg_input_dirs $ arg_root $ arg_base_url $ arg_dev)
 
-let () = 
+let () =
   exit @@ Cmd.eval cmd

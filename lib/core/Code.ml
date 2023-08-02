@@ -12,7 +12,7 @@ type node =
   | Open of Trie.path
   | Block of t * t
   | Scope of t
-  | Put of Trie.path * t 
+  | Put of Trie.path * t
   | Default of Trie.path * t
   | Get of Trie.path
 
@@ -21,11 +21,11 @@ type node =
   | Import of visibility * addr
   | Def of Trie.path * Trie.path list * t
   | Alloc of Trie.path
-  | Title of t 
+  | Title of t
   | Taxon of string
-  | Meta of string * t 
-  | Author of string 
-  | Tag of string 
+  | Meta of string * t
+  | Author of string
+  | Tag of string
   | TeXPackage of string
   | Date of string
   | Namespace of Trie.path * t
