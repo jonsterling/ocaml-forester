@@ -62,7 +62,7 @@ struct
       rendered at all, [s] is the empty string. *)
   let title_as_string (doc : doc) : string option =
     let rec render nodes =
-      String.concat "" (List.filter_map render_node nodes)
+      String.concat "" @@ List.filter_map render_node nodes
     and render_node = function
       | Text s -> Some s
       | Link {title; _} -> Some (render title)
@@ -70,7 +70,8 @@ struct
       | EmbedTeX {source; _} -> Some (render source)
       | Transclude _ | Query _ | Block _ -> None
     in
-    Option.map (fun title -> StringUtil.sentence_case (render title)) doc.title
+    doc.title |> Option.map @@ fun title -> 
+    StringUtil.sentence_case @@ render title
 
   let sort =
     let by_date = Fun.flip @@ Compare.under (fun x -> x.date) @@ Compare.option Date.compare in
