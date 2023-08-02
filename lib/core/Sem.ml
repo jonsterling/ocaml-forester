@@ -30,9 +30,6 @@ and t = node list
 and env = t Env.t
 [@@deriving show]
 
-and clo = Clo of env   * string list * Syn.t
-[@@deriving show]
-
 let sentence_case =
   function 
   | Text str :: xs -> Text (StringUtil.sentence_case str) :: xs
