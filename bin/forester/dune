@@ -1,7 +1,7 @@
 (executable
  (public_name forester)
  (name main)
- (libraries forester.frontend cmdliner dune-build-info))
+ (libraries forester.frontend cmdliner dune-build-info eio_main))
 
 (env
  (dev

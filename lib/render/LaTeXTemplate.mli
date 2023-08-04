@@ -1,1 +1,1 @@
-val write : out_channel -> packages:string list -> source:string -> unit
+val write : Format.formatter -> packages:string list -> source:string -> unit

@@ -1,3 +1,4 @@
+open Eio.Std
 open Prelude
 open Core
 open Render
@@ -20,27 +21,30 @@ end
 
 module type I =
 sig
-  val size : int
+  val env : Eio_unix.Stdenv.base
   val root : addr option
   val base_url : string option
+  val ignore_tex_cache : bool
+  val max_fibers : int
 end
 
 module Make (I : I) : S =
 struct
   module LaTeXQueue = LaTeXQueue.Make (I)
+  let size = 100
 
   let frozen = ref false
-  let unexpanded_trees : Code.doc Tbl.t = Tbl.create I.size
+  let unexpanded_trees : Code.doc Tbl.t = Tbl.create size
 
-  let sourcePaths : string Tbl.t = Tbl.create I.size
+  let sourcePaths : string Tbl.t = Tbl.create size
   let import_graph : Gph.t = Gph.create ()
 
   let transclusion_graph : Gph.t = Gph.create ()
   let link_graph : Gph.t = Gph.create ()
   let tag_graph : Gph.t = Gph.create ()
   let author_pages : addr Tbl.t = Tbl.create 10
-  let contributors : addr Tbl.t = Tbl.create I.size
-  let bibliography : addr Tbl.t = Tbl.create I.size
+  let contributors : addr Tbl.t = Tbl.create size
+  let bibliography : addr Tbl.t = Tbl.create size
 
   let run_renderer (docs : Sem.doc M.t) (body : unit -> 'a) : 'a =
     let module S = Set.Make (String) in
@@ -215,8 +219,7 @@ struct
     Tbl.add unexpanded_trees scope doc
 
 
-  let render_trees () : unit =
-    let open Sem in
+  let prepare_forest ()  =
     frozen := true;
 
     let docs =
@@ -240,67 +243,84 @@ struct
     end;
 
     expand_transitive_contributors_and_bibliography docs;
+    docs
 
-    Shell.ensure_dir "build";
-    Shell.ensure_dir_path ["output"; "resources"];
-    Shell.ensure_dir_path ["latex"; "resources"];
 
-    run_renderer docs @@ fun () ->
-    let module E = RenderEff.Perform in
+  module E = RenderEff.Perform
+
+  let render_doc ~cwd ~docs ~bib_fmt doc =
+    RenderBibTeX.render_bibtex ~base_url:I.base_url doc bib_fmt;
+    Format.fprintf bib_fmt "\n";
+
+    doc.addr |> Option.iter @@ fun addr ->
+    let create = `Or_truncate 0o644 in
     begin
-      let bib_ch = open_out @@ "latex/forest.bib" in
-      Fun.protect ~finally:(fun _ -> close_out bib_ch) @@ fun () ->
-      let bib_fmt = Format.formatter_of_out_channel bib_ch in
+      let path = Eio.Path.(cwd / "output" / E.route addr) in
+      Eio.Path.with_open_out ~create path @@ fun flow ->
+      Eio.Buf_write.with_flow flow @@ fun w ->
+      let out = Xmlm.make_output @@ Eio_util.xmlm_dest_of_writer w in
+      RenderXml.render_doc_page ~trail:(Some Emp) doc out
+    end;
+    begin
+      let path = Eio.Path.(cwd / "latex" / (addr ^ ".tex")) in
+      Eio.Path.with_open_out ~create path @@ fun flow ->
+      Eio.Buf_write.with_flow flow @@ fun w ->
+      RenderLaTeX.render_doc_page ~base_url:I.base_url doc @@ Eio_util.formatter_of_writer w
+    end
+
+  let render_trees () : unit =
+    let docs = prepare_forest () in
+
+    let env = I.env in
+    let cwd = Eio.Stdenv.cwd env in
+
+    Eio_util.ensure_dir @@ Eio.Path.(cwd / "build");
+    Eio_util.ensure_dir_path cwd ["output"; "resources"];
+    Eio_util.ensure_dir_path cwd ["latex"; "resources"];
+
+    let create = `Or_truncate 0o644 in
+    let module E = RenderEff.Perform in
+    run_renderer docs @@ fun () ->
+
+    begin
+      let bib_path = Eio.Path.(cwd / "latex" / "forest.bib") in
+      Eio.Path.with_open_out ~append:true ~create bib_path @@ fun bib_sink ->
+      Eio.Buf_write.with_flow bib_sink @@ fun bib_w ->
+      let bib_fmt = Eio_util.formatter_of_writer bib_w in
       docs |> M.iter @@ fun _ doc ->
-      RenderBibTeX.render_bibtex ~base_url:I.base_url doc bib_fmt;
-      doc.addr |> Option.iter @@ fun addr ->
-      begin
-        let ch = open_out @@ "output/" ^ E.route addr in
-        Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
-        let out = Xmlm.make_output @@ `Channel ch in
-        RenderXml.render_doc_page ~trail:(Some Emp) doc out
-      end;
-      begin
-        let ch = open_out @@ "latex/" ^ addr ^ ".tex" in
-        Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
-        let fmt = Format.formatter_of_out_channel ch in
-        RenderLaTeX.render_doc_page ~base_url:I.base_url doc fmt
-      end;
+      render_doc ~cwd ~docs ~bib_fmt doc;
     end;
 
     begin
-      let ch = open_out @@ "output/forest.json" in
-      Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
-      let fmt = Format.formatter_of_out_channel ch in
+      let json_path = Eio.Path.(cwd / "output" / "forest.json") in
+      Eio.Path.with_open_out ~create json_path @@ fun json_sink ->
+      Eio.Buf_write.with_flow json_sink @@ fun w ->
+      let fmt = Eio_util.formatter_of_writer w in
       let docs = Sem.Doc.sort @@ List.of_seq @@ Seq.map snd @@ M.to_seq docs in
       RenderJson.render_docs docs fmt
     end;
 
+    LaTeXQueue.process ~env;
+
     begin
-      Sys.readdir "assets" |> Array.iter @@ fun basename ->
-      let fp = Format.sprintf "assets/%s" basename in
-      begin
-        Shell.copy_file_to_dir ~source:fp ~dest_dir:"build";
-        Shell.copy_file_to_dir ~source:fp ~dest_dir:"output";
-        Shell.copy_file_to_dir ~source:fp ~dest_dir:"latex"
-      end
+      Eio.Path.with_open_dir Eio.Path.(cwd / "assets") @@ fun assets ->
+      Eio.Path.read_dir assets |> List.iter @@ fun fname ->
+      let source = "assets/" ^ fname in
+      Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"build";
+      Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"output";
+      Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"latex"
     end;
 
     begin
-      Shell.within_dir "build" @@ fun _ ->
-      LaTeXQueue.process ()
-    end;
-
-    begin
-      Sys.readdir "build" |> Array.iter @@ fun basename ->
-      let ext = Filename.extension basename in
-      let fp = Format.sprintf "build/%s" basename in
+      Eio.Path.with_open_dir Eio.Path.(cwd / "build") @@ fun build ->
+      Eio.Path.read_dir build |> List.iter @@ fun fname ->
+      let ext = Filename.extension fname in
+      let fp = Format.sprintf "build/%s" fname in
       match ext with
       | ".svg" ->
-        Shell.copy_file_to_dir ~source:fp ~dest_dir:"output/resources/";
+        Eio_util.copy_to_dir ~cwd ~env ~source:fp ~dest_dir:"output/resources";
       | ".pdf" ->
-        Shell.copy_file_to_dir ~source:fp ~dest_dir:"latex/resources/"
+        Eio_util.copy_to_dir ~cwd ~env ~source:fp ~dest_dir:"latex/resources"
       | _ -> ()
-
-    end;
+    end
 end

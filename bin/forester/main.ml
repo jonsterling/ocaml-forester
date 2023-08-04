@@ -1,3 +1,4 @@
+open Eio.Std
 open Forester
 open Cmdliner
 
@@ -7,12 +8,14 @@ let version =
   | None -> "n/a"
   | Some v -> Build_info.V1.Version.to_string v
 
-let run input_dirs root base_url dev =
+let run ~env input_dirs root base_url dev max_fibers ignore_tex_cache =
   let module I =
   struct
-    let size = 100
+    let env = env
     let root = root
     let base_url = base_url
+    let max_fibers = max_fibers
+    let ignore_tex_cache = ignore_tex_cache
   end
   in
 
@@ -44,8 +47,16 @@ let arg_base_url =
   Arg.value @@ Arg.opt (Arg.some Arg.string) None @@
   Arg.info ["base-url"] ~docv:"URL" ~doc
 
+let arg_max_fibers =
+  let doc = "Maximum number of fibers with which to build LaTeX assets concurrently." in
+  Arg.value @@ Arg.opt Arg.int 20 @@
+  Arg.info ["max-fibers"] ~docv:"NUM" ~doc
 
-let cmd =
+let arg_ignore_tex_cache =
+  let doc = "Ignore the SVG/PDF cache when building LaTeX assets." in
+  Arg.value @@ Arg.flag @@ Arg.info ["ignore-tex-cache"] ~doc
+
+let cmd ~env =
   let doc = "a tool for tending mathematical forests" in
   let man = [
     `S Manpage.s_description;
@@ -57,7 +68,8 @@ let cmd =
   ]
   in
   let info = Cmd.info "forester" ~version ~doc ~man in
-  Cmd.v info Term.(const run $ arg_input_dirs $ arg_root $ arg_base_url $ arg_dev)
+  Cmd.v info Term.(const (run ~env) $ arg_input_dirs $ arg_root $ arg_base_url $ arg_dev $ arg_max_fibers $ arg_ignore_tex_cache)
 
 let () =
-  exit @@ Cmd.eval cmd
+  Eio_main.run @@ fun env ->
+  exit @@ Cmd.eval @@ cmd ~env

@@ -15,6 +15,7 @@
   ocamlgraph
   xmlm
   domainslib
+  eio_main
   str
   yuujinchou))
 

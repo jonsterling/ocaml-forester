@@ -35,6 +35,8 @@
   dune-build-info
   (domainslib
    (>= 0.5.0))
+  (eio_main
+   (>= 0.11))
   ptime
   (yuujinchou
    (>= 5.0.1))

@@ -8,9 +8,12 @@ end
 
 module type I =
 sig
-  val size : int
+  val env : Eio_unix.Stdenv.base
+
   val root : addr option
   val base_url : string option
+  val ignore_tex_cache : bool
+  val max_fibers : int
 end
 
 module Make (_ : I) : S
