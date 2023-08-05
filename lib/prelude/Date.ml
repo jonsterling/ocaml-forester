@@ -1,5 +1,9 @@
 type t = {yyyy : int; mm : int option; dd : int option}
 
+let now () =
+  let t = Unix.localtime (Unix.time ()) in
+  {yyyy = 1900 + t.tm_year; mm = Some (1 + t.tm_mon); dd = Some t.tm_mday}
+
 (* approximate, only for sorting *)
 let to_ptime (date : t) : Ptime.t =
   let dd = Option.value ~default:1 date.dd in

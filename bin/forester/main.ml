@@ -8,7 +8,8 @@ let version =
   | None -> "n/a"
   | Some v -> Build_info.V1.Version.to_string v
 
-let run ~env input_dirs root base_url dev max_fibers ignore_tex_cache =
+
+let build ~env input_dirs root base_url dev max_fibers ignore_tex_cache =
   let module I =
   struct
     let env = env
@@ -29,46 +30,96 @@ let run ~env input_dirs root base_url dev max_fibers ignore_tex_cache =
 
   F.render_trees ()
 
-let arg_input_dirs =
-  Arg.non_empty @@ Arg.pos_all Arg.file [] @@
-  Arg.info [] ~docv:"INPUT_DIR"
+let new_tree ~env input_dir prefix =
+  let module I =
+  struct
+    let env = env
+    let root = None
+    let base_url = None
+    let max_fibers = 20
+    let ignore_tex_cache = true
+  end
+  in
+  let module F = Forest.Make (I) in
+  let module P = Process.Make (F) in
+  P.process_dir ~dev:true input_dir;
+  let addr = F.create_tree ~dir:input_dir ~prefix in
+  Eio.traceln "Created tree %s" addr
 
-let arg_root =
-  let doc = "The address of the root tree, e.g. $(i,jms-0001); if this option is supplied, the tree $(i,jms-0001) will be rendered to $(i,output/index.xml)." in
-  Arg.value @@ Arg.opt (Arg.some Arg.string) None @@
-  Arg.info ["root"] ~docv:"ADDR" ~doc
 
-let arg_dev =
-  let doc = "Run forester in development mode; this will attach source file locations to the generated json." in
-  Arg.value @@ Arg.flag @@ Arg.info ["dev"] ~doc
 
-let arg_base_url =
-  let doc = "Set the base URL for local hyperlinks." in
-  Arg.value @@ Arg.opt (Arg.some Arg.string) None @@
-  Arg.info ["base-url"] ~docv:"URL" ~doc
 
-let arg_max_fibers =
-  let doc = "Maximum number of fibers with which to build LaTeX assets concurrently." in
-  Arg.value @@ Arg.opt Arg.int 20 @@
-  Arg.info ["max-fibers"] ~docv:"NUM" ~doc
+let build_cmd ~env =
 
-let arg_ignore_tex_cache =
-  let doc = "Ignore the SVG/PDF cache when building LaTeX assets." in
-  Arg.value @@ Arg.flag @@ Arg.info ["ignore-tex-cache"] ~doc
+  let arg_input_dirs =
+    Arg.non_empty @@ Arg.pos_all Arg.file [] @@
+    Arg.info [] ~docv:"INPUT_DIR"
+  in
+
+  let arg_root =
+    let doc = "The address of the root tree, e.g. $(i,jms-0001); if this option is supplied, the tree $(i,jms-0001) will be rendered to $(i,output/index.xml)." in
+    Arg.value @@ Arg.opt (Arg.some Arg.string) None @@
+    Arg.info ["root"] ~docv:"ADDR" ~doc
+  in
+
+  let arg_dev =
+    let doc = "Run forester in development mode; this will attach source file locations to the generated json." in
+    Arg.value @@ Arg.flag @@ Arg.info ["dev"] ~doc
+  in
+
+  let arg_base_url =
+    let doc = "Set the base URL for local hyperlinks." in
+    Arg.value @@ Arg.opt (Arg.some Arg.string) None @@
+    Arg.info ["base-url"] ~docv:"URL" ~doc
+  in
+
+  let arg_max_fibers =
+    let doc = "Maximum number of fibers with which to build LaTeX assets concurrently." in
+    Arg.value @@ Arg.opt Arg.int 20 @@
+    Arg.info ["max-fibers"] ~docv:"NUM" ~doc
+  in
+
+  let arg_ignore_tex_cache =
+    let doc = "Ignore the SVG/PDF cache when building LaTeX assets." in
+    Arg.value @@ Arg.flag @@ Arg.info ["ignore-tex-cache"] ~doc
+  in
+
+  let doc = "Build the forest" in
+  let man = [
+    `S Manpage.s_description;
+    `P "The $(tname) command builds a hypertext $(b,forest) from trees stored in each $(i,INPUT_DIR) or any of its subdirectories; tree files are expected to be of the form $(i,addr.tree) where $(i,addr) is the global address of the tree. Note that the physical location of a tree is not taken into account, and two trees with the same address are not permitted.";
+  ]
+  in
+  let info = Cmd.info "build" ~version ~doc ~man in
+  Cmd.v info Term.(const (build ~env) $ arg_input_dirs $ arg_root $ arg_base_url $ arg_dev $ arg_max_fibers $ arg_ignore_tex_cache)
+
+let new_tree_cmd ~env =
+  let arg_prefix =
+    let doc = "The namespace prefix for the created tree." in
+    Arg.value @@ Arg.opt Arg.string "xxx" @@
+    Arg.info ["prefix"] ~docv:"XXX" ~doc
+  in
+  let arg_input_dir =
+    let doc = "The directory in which to create the tree." in
+    Arg.value @@ Arg.opt Arg.file "." @@
+    Arg.info ["dir"] ~docv:"DIR"
+  in
+  let doc = "Create a new tree." in
+  let info = Cmd.info "new" ~version ~doc in
+  Cmd.v info Term.(const (new_tree ~env) $ arg_input_dir $ arg_prefix)
 
 let cmd ~env =
   let doc = "a tool for tending mathematical forests" in
   let man = [
-    `S Manpage.s_description;
-    `P "The $(tname) command builds a hypertext $(b,forest) from trees stored in each $(i,INPUT_DIR) or any of its subdirectories; tree files are expected to be of the form $(i,addr.tree) where $(i,addr) is the global address of the tree. Note that the physical location of a tree is not taken into account, and two trees with the same address are not permitted.";
     `S Manpage.s_bugs;
     `P "Email bug reports to <~jonsterling/forester-discuss@lists.sr.ht>." ;
     `S Manpage.s_authors;
     `P "Jonathan Sterling"
   ]
   in
+
   let info = Cmd.info "forester" ~version ~doc ~man in
-  Cmd.v info Term.(const (run ~env) $ arg_input_dirs $ arg_root $ arg_base_url $ arg_dev $ arg_max_fibers $ arg_ignore_tex_cache)
+  Cmd.group info [build_cmd ~env; new_tree_cmd ~env]
 
 let () =
   Eio_main.run @@ fun env ->

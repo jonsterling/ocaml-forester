@@ -16,6 +16,7 @@ module M = Map.Make (String)
 module type S =
 sig
   val plant_tree : sourcePath:string option -> addr -> Code.doc -> unit
+  val create_tree : dir:string -> prefix:string -> addr
   val render_trees : unit -> unit
 end
 
@@ -245,6 +246,27 @@ struct
     expand_transitive_contributors_and_bibliography docs;
     docs
 
+  let next_addr ~prefix docs =
+    let keys =
+      M.to_seq docs |> Seq.map fst |> Seq.filter_map @@ fun addr ->
+      match String.split_on_char '-' addr with
+      | [prefix'; str] when prefix' = prefix ->
+        BaseN.Base36.int_of_string str
+      | _ -> None
+    in
+    let next = 1 + Seq.fold_left max 0 keys in
+    prefix ^ "-" ^ BaseN.Base36.string_of_int next
+
+  let create_tree ~dir ~prefix =
+    let docs = prepare_forest () in
+    let next = next_addr docs ~prefix in
+    let fname = next ^ ".tree" in
+    let now = Date.now () in
+    let body = Format.asprintf "\\date{%a}\n" Date.pp now in
+    let create = `Exclusive 0o644 in
+    let path = Eio.Path.(Eio.Stdenv.cwd I.env / dir / fname) in
+    Eio.Path.save ~create path body;
+    next
 
   module E = RenderEff.Perform
 

@@ -8,3 +8,4 @@ module Resolver = Resolver
 module Expand = Expand
 module Eval = Eval
 module Query = Query
+module BaseN = BaseN
