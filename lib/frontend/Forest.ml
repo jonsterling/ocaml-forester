@@ -17,6 +17,7 @@ module type S =
 sig
   val plant_tree : sourcePath:string option -> addr -> Code.doc -> unit
   val create_tree : dir:string -> prefix:string -> addr
+  val complete : string -> (addr * string) Seq.t
   val render_trees : unit -> unit
 end
 
@@ -267,6 +268,15 @@ struct
     let path = Eio.Path.(Eio.Stdenv.cwd I.env / dir / fname) in
     Eio.Path.save ~create path body;
     next
+
+  let complete title_prefix =
+    let docs = prepare_forest () in
+
+    docs |> M.filter_map @@ (fun _ doc ->
+      Sem.Doc.peek_title doc
+    ) |> M.filter (fun _ title ->
+      String.starts_with title_prefix title
+    ) |> M.to_seq
 
   module E = RenderEff.Perform
 

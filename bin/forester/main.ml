@@ -46,8 +46,27 @@ let new_tree ~env input_dir prefix =
   let addr = F.create_tree ~dir:input_dir ~prefix in
   Eio.traceln "Created tree %s" addr
 
+let complete ~env input_dirs title =
+  let module I =
+  struct
+    let env = env
+    let root = None
+    let base_url = None
+    let max_fibers = 20
+    let ignore_tex_cache = false
+  end
+  in
+  let module F = Forest.Make (I) in
+  let module P = Process.Make (F) in
 
+  begin
+    input_dirs |> List.iter @@
+    P.process_dir ~dev:true
+  end;
 
+  let completions = F.complete title in
+  completions |> Seq.iter @@ fun (addr, title) ->
+  Format.printf "%s, %s\n" addr title
 
 let build_cmd ~env =
 
@@ -108,6 +127,20 @@ let new_tree_cmd ~env =
   let info = Cmd.info "new" ~version ~doc in
   Cmd.v info Term.(const (new_tree ~env) $ arg_input_dir $ arg_prefix)
 
+let complete_cmd ~env =
+  let arg_title =
+    let doc = "The tree title prefix to complete." in
+    Arg.value @@ Arg.opt Arg.string "" @@
+    Arg.info ["title"] ~docv:"title" ~doc
+  in
+  let arg_input_dirs =
+    Arg.non_empty @@ Arg.pos_all Arg.file [] @@
+    Arg.info [] ~docv:"INPUT_DIR"
+  in
+  let doc = "Complete a tree title." in
+  let info = Cmd.info "complete" ~version ~doc in
+  Cmd.v info Term.(const (complete ~env) $ arg_input_dirs $ arg_title)
+
 let cmd ~env =
   let doc = "a tool for tending mathematical forests" in
   let man = [
@@ -119,7 +152,7 @@ let cmd ~env =
   in
 
   let info = Cmd.info "forester" ~version ~doc ~man in
-  Cmd.group info [build_cmd ~env; new_tree_cmd ~env]
+  Cmd.group info [build_cmd ~env; new_tree_cmd ~env; complete_cmd ~env]
 
 let () =
   Eio_main.run @@ fun env ->
