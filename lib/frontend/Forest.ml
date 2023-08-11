@@ -269,14 +269,11 @@ struct
     Eio.Path.save ~create path body;
     next
 
-  let complete title_prefix =
-    let docs = prepare_forest () in
-
-    docs |> M.filter_map @@ (fun _ doc ->
-      Sem.Doc.peek_title doc
-    ) |> M.filter (fun _ title ->
-      String.starts_with title_prefix title
-    ) |> M.to_seq
+  let complete prefix =
+    prepare_forest ()
+    |> M.filter_map (fun _ -> Sem.Doc.peek_title)
+    |> M.filter (fun _ -> String.starts_with ~prefix)
+    |> M.to_seq
 
   module E = RenderEff.Perform
 
