@@ -329,7 +329,6 @@ struct
       RenderJson.render_docs docs fmt
     end;
 
-    LaTeXQueue.process ~env;
 
     begin
       Eio.Path.with_open_dir Eio.Path.(cwd / "assets") @@ fun assets ->
@@ -339,6 +338,8 @@ struct
       Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"output";
       Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"latex"
     end;
+
+    LaTeXQueue.process ~env;
 
     begin
       Eio.Path.with_open_dir Eio.Path.(cwd / "build") @@ fun build ->
