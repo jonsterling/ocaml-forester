@@ -297,6 +297,45 @@ struct
       RenderLaTeX.render_doc_page ~base_url:I.base_url doc @@ Eio_util.formatter_of_writer w
     end
 
+  let render_json ~cwd docs =
+    let create = `Or_truncate 0o644 in
+    let json_path = Eio.Path.(cwd / "output" / "forest.json") in
+    Eio.Path.with_open_out ~create json_path @@ fun json_sink ->
+    Eio.Buf_write.with_flow json_sink @@ fun w ->
+    let fmt = Eio_util.formatter_of_writer w in
+    let docs = Sem.Doc.sort @@ List.of_seq @@ Seq.map snd @@ M.to_seq docs in
+    RenderJson.render_docs docs fmt
+
+  let copy_assets ~env =
+    let cwd = Eio.Stdenv.cwd env in
+    Eio.Path.with_open_dir Eio.Path.(cwd / "assets") @@ fun assets ->
+    Eio.Path.read_dir assets |> List.iter @@ fun fname ->
+    let source = "assets/" ^ fname in
+    Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"build";
+    Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"output";
+    Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"latex"
+
+  let copy_resources ~env =
+    let cwd = Eio.Stdenv.cwd env in
+    Eio.Path.with_open_dir Eio.Path.(cwd / "build") @@ fun build ->
+    Eio.Path.read_dir build |> List.iter @@ fun fname ->
+    let ext = Filename.extension fname in
+    let fp = Format.sprintf "build/%s" fname in
+    begin
+      match ext with
+      | ".svg" -> Some "output/resources";
+      | ".pdf" -> Some "latex/resources"
+      | _ -> None
+    end |> Option.iter @@ fun dest_dir ->
+    Eio_util.copy_to_dir ~cwd ~env ~source:fp ~dest_dir
+
+  let with_bib_fmt ~cwd kont =
+    let create = `Or_truncate 0o644 in
+    let bib_path = Eio.Path.(cwd / "latex" / "forest.bib") in
+    Eio.Path.with_open_out ~append:true ~create bib_path @@ fun bib_sink ->
+    Eio.Buf_write.with_flow bib_sink @@ fun bib_w ->
+    kont @@ Eio_util.formatter_of_writer bib_w
+
   let render_trees () : unit =
     let docs = prepare_forest () in
 
@@ -307,50 +346,11 @@ struct
     Eio_util.ensure_dir_path cwd ["output"; "resources"];
     Eio_util.ensure_dir_path cwd ["latex"; "resources"];
 
-    let create = `Or_truncate 0o644 in
-    let module E = RenderEff.Perform in
     run_renderer docs @@ fun () ->
-
-    begin
-      let bib_path = Eio.Path.(cwd / "latex" / "forest.bib") in
-      Eio.Path.with_open_out ~append:true ~create bib_path @@ fun bib_sink ->
-      Eio.Buf_write.with_flow bib_sink @@ fun bib_w ->
-      let bib_fmt = Eio_util.formatter_of_writer bib_w in
-      docs |> M.iter @@ fun _ doc ->
-      render_doc ~cwd ~docs ~bib_fmt doc;
-    end;
-
-    begin
-      let json_path = Eio.Path.(cwd / "output" / "forest.json") in
-      Eio.Path.with_open_out ~create json_path @@ fun json_sink ->
-      Eio.Buf_write.with_flow json_sink @@ fun w ->
-      let fmt = Eio_util.formatter_of_writer w in
-      let docs = Sem.Doc.sort @@ List.of_seq @@ Seq.map snd @@ M.to_seq docs in
-      RenderJson.render_docs docs fmt
-    end;
-
-
-    begin
-      Eio.Path.with_open_dir Eio.Path.(cwd / "assets") @@ fun assets ->
-      Eio.Path.read_dir assets |> List.iter @@ fun fname ->
-      let source = "assets/" ^ fname in
-      Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"build";
-      Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"output";
-      Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"latex"
-    end;
-
+    with_bib_fmt ~cwd @@ fun bib_fmt ->
+    docs |> M.iter (fun _ -> render_doc ~cwd ~docs ~bib_fmt);
+    render_json ~cwd docs;
+    copy_assets ~env;
     LaTeXQueue.process ~env;
-
-    begin
-      Eio.Path.with_open_dir Eio.Path.(cwd / "build") @@ fun build ->
-      Eio.Path.read_dir build |> List.iter @@ fun fname ->
-      let ext = Filename.extension fname in
-      let fp = Format.sprintf "build/%s" fname in
-      match ext with
-      | ".svg" ->
-        Eio_util.copy_to_dir ~cwd ~env ~source:fp ~dest_dir:"output/resources";
-      | ".pdf" ->
-        Eio_util.copy_to_dir ~cwd ~env ~source:fp ~dest_dir:"latex/resources"
-      | _ -> ()
-    end
+    copy_resources ~env
 end
