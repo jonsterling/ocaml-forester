@@ -4,13 +4,12 @@ open Prelude
 type attr = string * string
 [@@deriving show]
 
-
 type node =
   | Text of string
   | Transclude of transclusion_opts * addr
   | Query of transclusion_opts * t Query.t
   | Link of {dest : string; title : t}
-  | Tag of string * t
+  | Tag of string * attr list * t
   | Math of math_mode * t
   | EmbedTeX of {packages : string list; source : t}
   | Block of t * t
@@ -66,7 +65,7 @@ struct
     and render_node = function
       | Text s -> Some s
       | Link {title; _} -> Some (render title)
-      | Tag (_, bdy) | Math (_, bdy) -> Some (render bdy)
+      | Tag (_, _, bdy) | Math (_, bdy) -> Some (render bdy)
       | EmbedTeX {source; _} -> Some (render source)
       | Transclude _ | Query _ | Block _ -> None
     in

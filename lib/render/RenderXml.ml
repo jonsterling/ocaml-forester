@@ -70,8 +70,8 @@ let rec render_node ~cfg : Sem.node -> printer =
       | None ->
         render_external_link ~cfg ~title ~url:dest
     end
-  | Sem.Tag (name, xs) ->
-    Xml.tag name [] [render ~cfg xs]
+  | Sem.Tag (name, attrs, xs) ->
+    Xml.tag name attrs [render ~cfg xs]
   | Sem.Transclude (opts, addr) ->
     begin
       match E.get_doc addr with
@@ -160,7 +160,7 @@ and stringify nodes =
 and stringify_node = function
   | Sem.Text s -> Some s
   | Sem.Link {title; _} -> stringify title
-  | Sem.Tag (_, bdy) | Sem.Math (_, bdy) -> stringify bdy
+  | Sem.Tag (_, _, bdy) | Sem.Math (_, bdy) -> stringify bdy
   | Sem.EmbedTeX {source; _} -> stringify source
   | Sem.Transclude _ | Sem.Query _ | Sem.Block _ -> None
 

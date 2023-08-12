@@ -20,14 +20,14 @@ let rec add_qedhere xs =
   match Bwd.of_list xs with
   | Emp -> xs
   | Snoc (xs', last) ->
-    let qedhere = Sem.Tag ("qedhere", []) in
+    let qedhere = Sem.Tag ("qedhere", [], []) in
     match last with
-    | Sem.Tag ("ol", ys) ->
-      Bwd.to_list @@ Bwd.Snoc (xs', Sem.Tag ("ol", add_qedhere ys))
-    | Sem.Tag ("ul", ys) ->
-      Bwd.to_list @@ Bwd.Snoc (xs', Sem.Tag ("ul", add_qedhere ys))
-    | Sem.Tag ("li", ys) ->
-      Bwd.to_list @@ Bwd.Snoc (xs', Sem.Tag ("li", add_qedhere ys))
+    | Sem.Tag ("ol", _, ys) ->
+      Bwd.to_list @@ Bwd.Snoc (xs', Sem.Tag ("ol", [], add_qedhere ys))
+    | Sem.Tag ("ul", _, ys) ->
+      Bwd.to_list @@ Bwd.Snoc (xs', Sem.Tag ("ul", [], add_qedhere ys))
+    | Sem.Tag ("li", _, ys) ->
+      Bwd.to_list @@ Bwd.Snoc (xs', Sem.Tag ("li", [], add_qedhere ys))
     | Sem.Math (Display, ys) ->
       Bwd.to_list @@ Bwd.Snoc (xs', Sem.Math (Display, add_qedhere ys))
     | _ ->
@@ -51,7 +51,7 @@ and render_node : Sem.node -> Printer.t =
       | Some doc ->
         render_doc_section doc
     end
-  | Tag (name, body) ->
+  | Tag (name, _, body) ->
     render_tag name body
   | Link {title; dest} ->
     begin
@@ -159,7 +159,7 @@ and render_contributors =
 
 and strip_first_paragraph xs =
   match xs with
-  | Sem.Tag ("p", body) :: rest -> body @ rest
+  | Sem.Tag ("p", _, body) :: rest -> body @ rest
   | _ -> xs
 
 and render_doc_section (doc : Sem.doc) : Printer.t =

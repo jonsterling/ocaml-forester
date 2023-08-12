@@ -22,7 +22,7 @@ let rec render_node : Sem.node -> Printer.t =
     Printer.text txt
   | Sem.Math(_, xs) ->
     render xs
-  | Sem.Tag (name, body) ->
+  | Sem.Tag (name, _, body) ->
     render_tag name body
   | node ->
     Format.eprintf "missing case: %a@." Sem.pp_node node;

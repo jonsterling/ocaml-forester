@@ -178,7 +178,7 @@ struct
     | Sem.Link {title; dest} ->
       analyze_nodes scope title;
       Gph.add_edge link_graph dest scope
-    | Sem.Tag (_, xs) ->
+    | Sem.Tag (_, _, xs) ->
       analyze_nodes scope xs
     | Sem.Math (_, x) ->
       analyze_nodes scope x

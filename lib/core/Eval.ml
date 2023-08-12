@@ -1,4 +1,5 @@
 open Base
+open Bwd
 
 module LexEnv = Algaeff.Reader.Make (struct type env = Sem.t Env.t end)
 module DynEnv = Algaeff.Reader.Make (struct type env = Sem.t Env.t end)
@@ -83,7 +84,7 @@ let rec eval : Syn.t -> Sem.t =
       | None -> failwith @@ Format.asprintf "Could not find fluid binding named %a" Symbol.pp key
       | Some v -> v @ eval rest
     end
-  | (Group _ :: _ | Text _ :: _) as rest->
+  | (Group _ :: _ | Text _ :: _) as rest ->
     eval_textual [] rest
 
 and eval_textual prefix : Syn.t -> Sem.t =
@@ -104,14 +105,20 @@ and eval_textual prefix : Syn.t -> Sem.t =
 
 
 (* Just take only one argument, I guess *)
-and eval_tag  name =
-  function
-  | Syn.Group (Braces, u) :: rest ->
-    let u' = eval u in
-    Sem.Tag (name, u') :: eval rest
-  | rest ->
-    Sem.Tag (name, []) :: eval rest
-
+and eval_tag tag =
+  let rec parse_attrs tag attrs =
+    function
+    | Syn.Group (Braces, [Text key]) :: Group (Braces, [Text value]) :: rest ->
+      let attrs = Bwd.Snoc (attrs, (key, value)) in
+      parse_attrs tag attrs rest
+    | Syn.Group (Braces, body) :: rest ->
+      let attrs = Bwd.to_list attrs in
+      Sem.Tag (tag, attrs, eval body) :: eval rest
+    | rest ->
+      let attrs = Bwd.to_list attrs in
+      Sem.Tag (tag, attrs, []) :: eval rest
+  in
+  parse_attrs tag Bwd.Emp
 
 let eval_doc (doc : Syn.doc) : Sem.doc =
   let fm, tree = doc in
