@@ -8,7 +8,7 @@
 
 (maintainers "Jonathan Sterling")
 
-(version 2.2.1)
+(version 2.3)
 
 (generate_opam_files true)
 
@@ -31,7 +31,8 @@
   dune
   xmlm
   ppx_deriving
-  cmdliner
+  (cmdliner
+   (>= 1.2.0))
   dune-build-info
   (domainslib
    (>= 0.5.0))
