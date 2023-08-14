@@ -32,7 +32,7 @@ end
 
 module Make (I : I) : S =
 struct
-  module LaTeXQueue = LaTeXQueue.Make (I)
+  module LaTeX_queue = LaTeX_queue.Make (I)
   let size = 100
 
   let frozen = ref false
@@ -50,7 +50,7 @@ struct
 
   let run_renderer (docs : Sem.doc M.t) (body : unit -> 'a) : 'a =
     let module S = Set.Make (String) in
-    let module H : RenderEff.Handler =
+    let module H : Render_effect.Handler =
     struct
       let is_root addr =
         I.root = Some addr
@@ -67,7 +67,7 @@ struct
         M.find_opt addr docs
 
       let enqueue_latex ~name ~packages ~source =
-        LaTeXQueue.enqueue ~name ~packages ~source
+        LaTeX_queue.enqueue ~name ~packages ~source
 
       let addr_peek_title scope =
         match M.find_opt scope docs with
@@ -139,7 +139,7 @@ struct
         M.filter (fun _ doc -> test_query query doc) docs
     end
     in
-    let module Run = RenderEff.Run (H) in
+    let module Run = Render_effect.Run (H) in
     Run.run body
 
   let expand_transitive_contributors_and_bibliography (trees : Sem.doc M.t) : unit =
@@ -275,10 +275,10 @@ struct
     |> M.filter (fun _ -> String.starts_with ~prefix)
     |> M.to_seq
 
-  module E = RenderEff.Perform
+  module E = Render_effect.Perform
 
   let render_doc ~cwd ~docs ~bib_fmt doc =
-    RenderBibTeX.render_bibtex ~base_url:I.base_url doc bib_fmt;
+    Render_BibTeX.render_bibtex ~base_url:I.base_url doc bib_fmt;
     Format.fprintf bib_fmt "\n";
 
     doc.addr |> Option.iter @@ fun addr ->
@@ -288,13 +288,13 @@ struct
       Eio.Path.with_open_out ~create path @@ fun flow ->
       Eio.Buf_write.with_flow flow @@ fun w ->
       let out = Xmlm.make_output @@ Eio_util.xmlm_dest_of_writer w in
-      RenderXml.render_doc_page ~trail:(Some Emp) doc out
+      Render_xml.render_doc_page ~trail:(Some Emp) doc out
     end;
     begin
       let path = Eio.Path.(cwd / "latex" / (addr ^ ".tex")) in
       Eio.Path.with_open_out ~create path @@ fun flow ->
       Eio.Buf_write.with_flow flow @@ fun w ->
-      RenderLaTeX.render_doc_page ~base_url:I.base_url doc @@ Eio_util.formatter_of_writer w
+      Render_LaTeX.render_doc_page ~base_url:I.base_url doc @@ Eio_util.formatter_of_writer w
     end
 
   let render_json ~cwd docs =
@@ -304,7 +304,7 @@ struct
     Eio.Buf_write.with_flow json_sink @@ fun w ->
     let fmt = Eio_util.formatter_of_writer w in
     let docs = Sem.Doc.sort @@ List.of_seq @@ Seq.map snd @@ M.to_seq docs in
-    RenderJson.render_docs docs fmt
+    Render_json.render_docs docs fmt
 
   let copy_assets ~env =
     let cwd = Eio.Stdenv.cwd env in
@@ -351,6 +351,6 @@ struct
     docs |> M.iter (fun _ -> render_doc ~cwd ~docs ~bib_fmt);
     render_json ~cwd docs;
     copy_assets ~env;
-    LaTeXQueue.process ~env;
+    LaTeX_queue.process ~env;
     copy_resources ~env
 end

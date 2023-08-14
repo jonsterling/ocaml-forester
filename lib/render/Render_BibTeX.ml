@@ -1,7 +1,7 @@
 open Prelude
 open Core
 
-module E = RenderEff.Perform
+module E = Render_effect.Perform
 
 module Printer =
 struct
@@ -12,7 +12,7 @@ struct
       Format.fprintf fmt "%s" txt
   end
 
-  include PrinterKit.Kit (P0)
+  include Printer_kit.Kit (P0)
   let newline = text "\n"
 end
 
@@ -27,7 +27,7 @@ let render_author author =
     | None ->
       Printer.text author
     | Some title ->
-      RenderLaTeX.render title
+      Render_LaTeX.render title
 
 let render_authors : string list -> Printer.t =
   function
@@ -39,10 +39,10 @@ let render_title ~taxon title =
   match taxon with
   | Some taxon ->
     Format.dprintf "%s: %a"
-      (StringUtil.sentence_case taxon)
-      (Fun.flip RenderLaTeX.render) title
+      (String_util.sentence_case taxon)
+      (Fun.flip Render_LaTeX.render) title
   | None ->
-    RenderLaTeX.render @@ Sem.sentence_case title
+    Render_LaTeX.render @@ Sem.sentence_case title
 
 let render_auto_bibtex ~base_url (doc : Sem.doc) : Printer.t =
   match doc.addr with

@@ -1,7 +1,7 @@
 open Prelude
 open Core
 
-module E = RenderEff.Perform
+module E = Render_effect.Perform
 
 module Printer =
 struct
@@ -12,7 +12,7 @@ struct
       Format.fprintf fmt "%s" txt
   end
 
-  include PrinterKit.Kit (P0)
+  include Printer_kit.Kit (P0)
 
   let contents (printer : t) : string =
     Format.asprintf "%a" (fun fmt _ -> printer fmt) ()
@@ -58,7 +58,7 @@ let render_doc (doc : Sem.doc) : Printer.t =
        begin
          match doc.taxon with
          | None -> Printer.text "null"
-         | Some taxon -> render_string_literal @@ Printer.text @@ StringUtil.sentence_case taxon
+         | Some taxon -> render_string_literal @@ Printer.text @@ String_util.sentence_case taxon
        end;
        "tags",
        begin

@@ -2,7 +2,7 @@ open Bwd
 open Prelude
 open Core
 
-module E = RenderEff.Perform
+module E = Render_effect.Perform
 
 module Printer =
 struct
@@ -12,7 +12,7 @@ struct
     let text = Format.dprintf "%s"
   end
 
-  include PrinterKit.Kit (P0)
+  include Printer_kit.Kit (P0)
 end
 
 
@@ -70,13 +70,13 @@ and render_node : Sem.node -> Printer.t =
         end
     end
   | Math (Inline, body) ->
-    Format.dprintf {|\(%a\)|} (Fun.flip RenderMathMode.render) body
+    Format.dprintf {|\(%a\)|} (Fun.flip Render_math_mode.render) body
   | Math (Display, body) ->
-    Format.dprintf {|\[%a\]|} (Fun.flip RenderMathMode.render) body
+    Format.dprintf {|\[%a\]|} (Fun.flip Render_math_mode.render) body
   | EmbedTeX {source; packages} ->
     let code =
-      RenderMathMode.Printer.contents @@
-      RenderMathMode.render source
+      Render_math_mode.Printer.contents @@
+      Render_math_mode.render source
     in
     let hash = Digest.to_hex @@ Digest.string code in
     E.enqueue_latex ~name:hash ~packages ~source:code;

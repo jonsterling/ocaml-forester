@@ -10,7 +10,7 @@ struct
       Format.fprintf fmt "%s" txt
   end
 
-  include PrinterKit.Kit (P0)
+  include Printer_kit.Kit (P0)
 
   let contents (printer : t) : string =
     Format.asprintf "%a" (fun fmt _ -> printer fmt) ()
@@ -26,7 +26,7 @@ let rec render_node : Sem.node -> Printer.t =
     render_tag name body
   | node ->
     Format.eprintf "missing case: %a@." Sem.pp_node node;
-    failwith "RenderMathMode.render_node"
+    failwith "Render_math_mode.render_node"
 
 and render_tag name body =
   Printer.seq

@@ -31,7 +31,7 @@ and env = t Env.t
 
 let sentence_case =
   function
-  | Text str :: xs -> Text (StringUtil.sentence_case str) :: xs
+  | Text str :: xs -> Text (String_util.sentence_case str) :: xs
   | xs -> xs
 
 type doc =
@@ -70,7 +70,7 @@ struct
       | Transclude _ | Query _ | Block _ -> None
     in
     doc.title |> Option.map @@ fun title ->
-    StringUtil.sentence_case @@ render title
+    String_util.sentence_case @@ render title
 
   let sort =
     let by_date = Fun.flip @@ Compare.under (fun x -> x.date) @@ Compare.option Date.compare in

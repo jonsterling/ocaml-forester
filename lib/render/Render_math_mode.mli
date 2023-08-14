@@ -3,7 +3,7 @@ open Core
 
 module Printer :
 sig
-  include PrinterKit.S with type out = Format.formatter
+  include Printer_kit.S with type out = Format.formatter
   val text : string -> t
   val contents : t -> string
 end

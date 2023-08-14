@@ -2,7 +2,7 @@ open Prelude
 open Bwd
 open Core
 
-module E = RenderEff.Perform
+module E = Render_effect.Perform
 
 type printer = Xmlm.output -> unit
 
@@ -24,7 +24,7 @@ struct
       Xmlm.output out @@ `Data txt
   end
 
-  include PrinterKit.Kit (P0)
+  include Printer_kit.Kit (P0)
 end
 
 module Xml =
@@ -56,11 +56,11 @@ let rec render_node ~cfg : Sem.node -> printer =
       | Inline -> []
       | Display -> ["display", "block"]
     in
-    let module TP = RenderMathMode.Printer in
+    let module TP = Render_math_mode.Printer in
     Xml.tag "tex" attrs [
       Printer.text @@
       TP.contents @@
-      RenderMathMode.render bdy
+      Render_math_mode.render bdy
     ]
   | Sem.Link {title; dest} ->
     begin
@@ -106,8 +106,8 @@ let rec render_node ~cfg : Sem.node -> printer =
     end
   | Sem.EmbedTeX {packages; source} ->
     let code =
-      RenderMathMode.Printer.contents @@
-      RenderMathMode.render source
+      Render_math_mode.Printer.contents @@
+      Render_math_mode.render source
     in
     let hash = Digest.to_hex @@ Digest.string code in
     E.enqueue_latex ~name:hash ~packages ~source:code;
@@ -327,7 +327,7 @@ and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
     S.yield ("show_metadata", string_of_bool opts.show_metadata);
     S.yield ("toc", string_of_bool opts.toc);
     S.yield ("root", string_of_bool @@ Option.fold doc.addr ~none:false ~some:(fun addr -> E.is_root addr));
-    doc.taxon |> Option.iter (fun taxon -> S.yield ("taxon", StringUtil.sentence_case taxon))
+    doc.taxon |> Option.iter (fun taxon -> S.yield ("taxon", String_util.sentence_case taxon))
   in
   Xml.tag "tree" attrs
     [render_frontmatter ~cfg ~toc:opts.toc doc;

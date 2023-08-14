@@ -33,7 +33,7 @@ let write_tex_file ~env ~name ~packages ~source =
   Eio.Path.with_open_out ~create path @@ fun sink ->
   Eio.Buf_write.with_flow sink @@ fun writer ->
   let fmt = Eio_util.formatter_of_writer writer in
-  LaTeXTemplate.write fmt ~source ~packages
+  LaTeX_template.write fmt ~source ~packages
 
 let render_dvi_file ~env ~name ~source =
   let cwd = build_dir @@ Eio.Stdenv.cwd env in
