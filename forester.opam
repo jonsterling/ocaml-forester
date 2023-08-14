@@ -9,18 +9,18 @@ homepage: "https://sr.ht/~jonsterling/forester/"
 bug-reports: "https://todo.sr.ht/~jonsterling/forester"
 depends: [
   "menhir"
-  "ocamlgraph"
-  "ocaml"
+  "ocamlgraph" {>= "2.0.0"}
+  "ocaml" {>= "0.5.0"}
   "dune" {>= "3.7"}
-  "xmlm"
+  "xmlm" {>= "1.4.0"}
   "ppx_deriving"
   "cmdliner" {>= "1.2.0"}
   "dune-build-info"
   "domainslib" {>= "0.5.0"}
   "eio_main" {>= "0.11"}
-  "ptime"
+  "ptime" {>= "1.1.0"}
   "yuujinchou" {>= "5.0.1"}
-  "algaeff"
+  "algaeff" {>= "0.2.1"}
   "odoc" {with-doc}
 ]
 build: [

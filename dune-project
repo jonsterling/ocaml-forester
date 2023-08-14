@@ -26,10 +26,13 @@
  (synopsis "A tool for tending mathematical forests")
  (depends
   menhir
-  ocamlgraph
-  ocaml
+  (ocamlgraph
+   (>= 2.0.0))
+  (ocaml
+   (>= 0.5.0))
   dune
-  xmlm
+  (xmlm
+   (>= 1.4.0))
   ppx_deriving
   (cmdliner
    (>= 1.2.0))
@@ -38,7 +41,9 @@
    (>= 0.5.0))
   (eio_main
    (>= 0.11))
-  ptime
+  (ptime
+   (>= 1.1.0))
   (yuujinchou
    (>= 5.0.1))
-  algaeff))
+  (algaeff
+   (>= 0.2.1))))
