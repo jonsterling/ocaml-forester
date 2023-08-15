@@ -182,7 +182,7 @@ struct
       analyze_nodes scope xs
     | Sem.Math (_, x) ->
       analyze_nodes scope x
-    | Sem.EmbedTeX {source; _} ->
+    | Sem.Embed_TeX {source; _} ->
       analyze_nodes scope source
     | Sem.Block (title, body) ->
       analyze_nodes scope title;

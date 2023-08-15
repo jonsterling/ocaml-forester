@@ -104,7 +104,7 @@ let rec render_node ~cfg : Sem.node -> printer =
         in
         render_transclusion ~cfg ~opts doc
     end
-  | Sem.EmbedTeX {packages; source} ->
+  | Sem.Embed_TeX {packages; source} ->
     let code =
       Render_math_mode.Printer.contents @@
       Render_math_mode.render source
@@ -161,7 +161,7 @@ and stringify_node = function
   | Sem.Text s -> Some s
   | Sem.Link {title; _} -> stringify title
   | Sem.Tag (_, _, bdy) | Sem.Math (_, bdy) -> stringify bdy
-  | Sem.EmbedTeX {source; _} -> stringify source
+  | Sem.Embed_TeX {source; _} -> stringify source
   | Sem.Transclude _ | Sem.Query _ | Sem.Block _ -> None
 
 and render_external_link ~cfg ~title ~url =

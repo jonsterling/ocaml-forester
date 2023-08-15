@@ -73,10 +73,10 @@ let rec expand (code : Code.t) : Syn.t =
     Mode.set Body;
     let query = Query.map expand query in
     Syn.Query query :: expand rest
-  | EmbedTeX xs :: rest ->
+  | Embed_TeX xs :: rest ->
     Mode.set Body;
     let fm = Fm.get () in
-    Syn.EmbedTeX {packages = fm.tex_packages; source = expand xs} :: expand rest
+    Syn.Embed_TeX {packages = fm.tex_packages; source = expand xs} :: expand rest
   | Block (xs, ys) :: rest ->
     Mode.set Body;
     Syn.Block (expand xs, expand ys) :: expand rest
@@ -177,7 +177,7 @@ let rec expand (code : Code.t) : Syn.t =
     end;
     Mode.set Frontmatter;
     expand rest
-  | TeXPackage pkg :: rest ->
+  | TeX_package pkg :: rest ->
     only_frontmatter code ();
     begin
       Fm.modify @@ fun fm ->

@@ -30,7 +30,7 @@ let node :=
 | TITLE; ~ = arg; <Code.Title>
 | AUTHOR; ~ = txt_arg; <Code.Author>
 | DATE; ~ = txt_arg; <Code.Date>
-| TEX_PACKAGE; ~ = txt_arg; <Code.TeXPackage>
+| TEX_PACKAGE; ~ = txt_arg; <Code.TeX_package>
 | DEF; (~,~,~) = fun_spec; <Code.Def>
 | ALLOC; ~ = IDENT; <Code.Alloc>
 | TAXON; ~ = txt_arg; <Code.Taxon>
@@ -47,7 +47,7 @@ let node :=
 | ~ = delimited(HASH_HASH_LBRACE, expr, RBRACE); <Code.display_math>
 | TRANSCLUDE; ~ = txt_arg; <Code.Transclude>
 | LET; (~,~,~) = fun_spec; <Code.Let>
-| TEX; ~ = arg; <Code.EmbedTeX>
+| TEX; ~ = arg; <Code.Embed_TeX>
 | BLOCK; x = arg; y = arg; <Code.Block>
 | ~ = IDENT; <Code.Ident>
 | ~ = TEXT; <Code.Text>

@@ -11,7 +11,7 @@ type node =
   | Link of {dest : string; title : t}
   | Tag of string * attr list * t
   | Math of math_mode * t
-  | EmbedTeX of {packages : string list; source : t}
+  | Embed_TeX of {packages : string list; source : t}
   | Block of t * t
 [@@deriving show]
 
@@ -66,7 +66,7 @@ struct
       | Text s -> Some s
       | Link {title; _} -> Some (render title)
       | Tag (_, _, bdy) | Math (_, bdy) -> Some (render bdy)
-      | EmbedTeX {source; _} -> Some (render source)
+      | Embed_TeX {source; _} -> Some (render source)
       | Transclude _ | Query _ | Block _ -> None
     in
     doc.title |> Option.map @@ fun title ->

@@ -7,7 +7,7 @@ type node =
   | Math of math_mode * t
   | Ident of Trie.path
   | Transclude of string
-  | EmbedTeX of t
+  | Embed_TeX of t
   | Let of Trie.path * Trie.path list * t
   | Open of Trie.path
   | Block of t * t
@@ -26,7 +26,7 @@ type node =
   | Meta of string * t
   | Author of string
   | Tag of string
-  | TeXPackage of string
+  | TeX_package of string
   | Date of string
   | Namespace of Trie.path * t
 [@@deriving show]

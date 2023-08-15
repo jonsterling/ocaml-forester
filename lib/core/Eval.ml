@@ -43,8 +43,8 @@ let rec eval : Syn.t -> Sem.t =
     in
     let query = Query.map eval query in
     Sem.Query (opts, query) :: eval rest
-  | EmbedTeX {packages; source} :: rest ->
-    Sem.EmbedTeX {packages; source = eval source} :: eval rest
+  | Embed_TeX {packages; source} :: rest ->
+    Sem.Embed_TeX {packages; source = eval source} :: eval rest
   | Block (title, body) :: rest ->
     Sem.Block (eval title, eval body) :: eval rest
   | Lam (xs, body) :: rest ->

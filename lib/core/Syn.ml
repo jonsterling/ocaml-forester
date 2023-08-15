@@ -9,7 +9,7 @@ type node =
   | Link of {dest : string; title : t}
   | Transclude of string
   | Query of t Query.t
-  | EmbedTeX of {packages : string list; source : t}
+  | Embed_TeX of {packages : string list; source : t}
   | Block of t * t
   | Lam of Symbol.t list * t
   | Var of Symbol.t

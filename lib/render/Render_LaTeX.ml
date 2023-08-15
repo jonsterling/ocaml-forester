@@ -73,7 +73,7 @@ and render_node : Sem.node -> Printer.t =
     Format.dprintf {|\(%a\)|} (Fun.flip Render_math_mode.render) body
   | Math (Display, body) ->
     Format.dprintf {|\[%a\]|} (Fun.flip Render_math_mode.render) body
-  | EmbedTeX {source; packages} ->
+  | Embed_TeX {source; packages} ->
     let code =
       Render_math_mode.Printer.contents @@
       Render_math_mode.render source
