@@ -15,7 +15,7 @@ module M = Map.Make (String)
 
 module type S =
 sig
-  val plant_tree : sourcePath:string option -> addr -> Code.doc -> unit
+  val plant_tree : source_path:string option -> addr -> Code.doc -> unit
   val create_tree : dir:string -> prefix:string -> addr
   val complete : string -> (addr * string) Seq.t
   val render_trees : unit -> unit
@@ -38,7 +38,7 @@ struct
   let frozen = ref false
   let unexpanded_trees : Code.doc Tbl.t = Tbl.create size
 
-  let sourcePaths : string Tbl.t = Tbl.create size
+  let source_paths : string Tbl.t = Tbl.create size
   let import_graph : Gph.t = Gph.create ()
 
   let transclusion_graph : Gph.t = Gph.create ()
@@ -61,7 +61,7 @@ struct
         | false -> addr ^ ".xml"
 
       let abs_path addr =
-        Tbl.find_opt sourcePaths addr
+        Tbl.find_opt source_paths addr
 
       let get_doc addr =
         M.find_opt addr docs
@@ -208,11 +208,11 @@ struct
     List.iter @@ process_decl scope
 
 
-  let plant_tree ~(sourcePath : string option) scope (doc : Code.doc) : unit =
+  let plant_tree ~(source_path : string option) scope (doc : Code.doc) : unit =
     assert (not !frozen);
     if Tbl.mem unexpanded_trees scope then
       failwith @@ Format.asprintf "Duplicate tree %s" scope;
-    sourcePath |> Option.iter @@ Tbl.add sourcePaths scope;
+    source_path |> Option.iter @@ Tbl.add source_paths scope;
     Gph.add_vertex transclusion_graph scope;
     Gph.add_vertex link_graph scope;
     Gph.add_vertex import_graph scope;

@@ -2,7 +2,7 @@ open Core
 
 module type S =
 sig
-  val plant_tree : sourcePath:string option -> addr -> Code.doc -> unit
+  val plant_tree : source_path:string option -> addr -> Code.doc -> unit
   val create_tree : dir:string -> prefix:string -> addr
   val complete : string -> (addr * string) Seq.t
   val render_trees : unit -> unit

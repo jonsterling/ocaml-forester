@@ -6,8 +6,8 @@ struct
   let rec process_file ~dev filename =
     if Filename.extension filename = ".tree" then
       let addr = Filename.chop_extension @@ Filename.basename filename in
-      let sourcePath = if dev then Some (Eio_posix.Low_level.realpath filename) else None in
-      F.plant_tree ~sourcePath addr @@ Parse.parse_file filename
+      let source_path = if dev then Some (Eio_posix.Low_level.realpath filename) else None in
+      F.plant_tree ~source_path addr @@ Parse.parse_file filename
     else if Sys.is_directory filename then
       process_dir ~dev filename
 
