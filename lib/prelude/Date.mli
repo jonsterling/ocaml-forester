@@ -6,3 +6,7 @@ val parse : string -> t
 val now : unit -> t
 
 val compare : t -> t -> int
+
+val year : t -> int
+val month : t -> int option
+val day : t -> int option

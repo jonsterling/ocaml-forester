@@ -1,5 +1,9 @@
 type t = {yyyy : int; mm : int option; dd : int option}
 
+let year d = d.yyyy
+let month d = d.mm
+let day d = d.dd
+
 let now () =
   let t = Unix.localtime (Unix.time ()) in
   {yyyy = 1900 + t.tm_year; mm = Some (1 + t.tm_mon); dd = Some t.tm_mday}

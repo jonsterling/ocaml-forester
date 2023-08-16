@@ -197,7 +197,15 @@ and render_date (doc : Sem.doc) =
   | None -> Printer.nil
   | Some date ->
     let str = Format.asprintf "%a" Date.pp_human date in
-    Xml.tag "date" [] [Printer.text str]
+    Xml.tag "date" [] [
+      Xml.tag "year" [] [Printer.text @@ string_of_int @@ Date.year date];
+      Date.month date |> Printer.option begin fun m ->
+        Xml.tag "month" [] [Printer.text @@ string_of_int m]
+      end;
+      Date.day date |> Printer.option begin fun d ->
+        Xml.tag "day" [] [Printer.text @@ string_of_int d]
+      end;
+    ]
 
 and render_authors (doc : Sem.doc) =
   let contributors =
@@ -229,11 +237,14 @@ and render_frontmatter ~cfg ?(toc = true) (doc : Sem.doc) =
   Xml.tag "frontmatter" [] [
     if toc then render_trail cfg.trail else Printer.nil;
     Xml.tag "anchor" [] [Printer.text anchor];
+    doc.taxon |> Printer.option begin fun taxon ->
+      Xml.tag "taxon" [] [Printer.text @@ String_util.sentence_case taxon]
+    end;
     with_addr doc (fun addr -> Xml.tag "addr" [] [Printer.text addr]);
     with_addr doc begin fun addr ->
       match E.abs_path addr with
       | Some source_path ->
-        Xml.tag "sourcePath" [] [Printer.text source_path]
+        Xml.tag "source-path" [] [Printer.text source_path]
       | None ->
         Printer.nil
     end;
@@ -319,15 +330,12 @@ and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
     | Some _ as title -> {doc with title}
     | None -> doc
   in
-  let module S = Algaeff.Sequencer.Make (struct type elt = string * string end) in
   let attrs =
-    List.of_seq @@ S.run @@ fun () ->
-    S.yield ("expanded", string_of_bool opts.expanded);
-    S.yield ("show_heading", string_of_bool opts.show_heading);
-    S.yield ("show_metadata", string_of_bool opts.show_metadata);
-    S.yield ("toc", string_of_bool opts.toc);
-    S.yield ("root", string_of_bool @@ Option.fold doc.addr ~none:false ~some:(fun addr -> E.is_root addr));
-    doc.taxon |> Option.iter (fun taxon -> S.yield ("taxon", String_util.sentence_case taxon))
+    ["expanded", string_of_bool opts.expanded;
+     "show-heading", string_of_bool opts.show_heading;
+     "show-metadata", string_of_bool opts.show_metadata;
+     "toc", string_of_bool opts.toc;
+     "root", string_of_bool @@ Option.fold doc.addr ~none:false ~some:(fun addr -> E.is_root addr)]
   in
   Xml.tag "tree" attrs
     [render_frontmatter ~cfg ~toc:opts.toc doc;
