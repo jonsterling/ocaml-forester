@@ -45,6 +45,21 @@ type doc =
    body : t}
 [@@deriving show]
 
+(** Best-effort rendering of a nodes as a string, to use in text-only contexts.*)
+let string_of_nodes =
+  let rec render nodes =
+    String.concat "" @@
+    List.filter_map render_node nodes
+  and
+    render_node = function
+    | Text s -> Some s
+    | Link {title; _} -> Some (render title)
+    | Tag (_, _, bdy) | Math (_, bdy) -> Some (render bdy)
+    | Embed_TeX {source; _} -> Some (render source)
+    | Transclude _ | Query _ | Block _ -> None
+  in
+  render
+
 module Doc =
 struct
   let peek_title (doc : doc) =
@@ -60,17 +75,8 @@ struct
       be rendered are dropped. Consequently, when the title could not be
       rendered at all, [s] is the empty string. *)
   let title_as_string (doc : doc) : string option =
-    let rec render nodes =
-      String.concat "" @@ List.filter_map render_node nodes
-    and render_node = function
-      | Text s -> Some s
-      | Link {title; _} -> Some (render title)
-      | Tag (_, _, bdy) | Math (_, bdy) -> Some (render bdy)
-      | Embed_TeX {source; _} -> Some (render source)
-      | Transclude _ | Query _ | Block _ -> None
-    in
     doc.title |> Option.map @@ fun title ->
-    String_util.sentence_case @@ render title
+    String_util.sentence_case @@ string_of_nodes title
 
   let sort =
     let by_date = Fun.flip @@ Compare.under (fun x -> x.date) @@ Compare.option Date.compare in
