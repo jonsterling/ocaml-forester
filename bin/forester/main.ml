@@ -121,7 +121,7 @@ let new_tree_cmd ~env =
   let arg_input_dir =
     let doc = "The directory in which to create the tree." in
     Arg.value @@ Arg.opt Arg.file "." @@
-    Arg.info ["dir"] ~docv:"DIR"
+    Arg.info ["dir"] ~docv:"DIR" ~doc
   in
   let doc = "Create a new tree." in
   let info = Cmd.info "new" ~version ~doc in
