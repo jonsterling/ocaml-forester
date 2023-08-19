@@ -305,12 +305,6 @@ and render_trail trail =
     List.map render_crumb @@
     Bwd.to_list trail
 
-and mode_to_string =
-  function
-  | Full -> "full"
-  | Spliced -> "spliced"
-  | Collapsed -> "collapsed"
-
 and bool_to_string =
   function
   | true -> "true"

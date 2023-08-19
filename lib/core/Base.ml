@@ -7,8 +7,5 @@ type delim = Braces | Squares | Parens
 type math_mode = Inline | Display
 [@@deriving show]
 
-type transclusion_mode = Full | Collapsed | Spliced
-[@@deriving show]
-
 type visibility = Private | Public
 [@@deriving show]
