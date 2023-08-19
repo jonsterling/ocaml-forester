@@ -59,7 +59,7 @@ let render_auto_bibtex ~base_url (doc : Sem.doc) : Printer.t =
       Format.dprintf "author = {%a}," (Fun.flip render_authors) doc.authors;
       begin
         base_url |> Printer.option @@ fun url ->
-        Format.dprintf "url = {%s/%s}," url @@ E.route addr
+        Format.dprintf "url = {%s/%s}," url @@ E.route Xml addr
       end;
       begin
         match contributors with

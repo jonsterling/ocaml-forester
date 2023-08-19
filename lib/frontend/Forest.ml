@@ -55,12 +55,20 @@ struct
       let is_root addr =
         I.root = Some addr
 
-      let route addr =
-        match is_root addr with
-        | true -> "index.xml"
-        | false -> addr ^ ".xml"
+      let route target addr =
+        let ext =
+          match target with
+          | Render_effect.Xml -> "xml"
+          | Render_effect.Rss -> "rss.xml"
+        in
+        let base =
+          match is_root addr with
+          | true -> "index"
+          | false -> addr
+        in
+        Format.asprintf "%s.%s" base ext
 
-      let abs_path addr =
+      let source_path addr =
         Tbl.find_opt source_paths addr
 
       let get_doc addr =
@@ -98,6 +106,9 @@ struct
 
       let parents scope =
         get_sorted_trees @@ S.of_list @@ Gph.succ transclusion_graph scope
+
+      let children scope =
+        get_sorted_trees @@ S.of_list @@ Gph.pred transclusion_graph scope
 
       let contributions scope =
         get_sorted_trees @@ S.of_list @@ Tbl.find_all author_pages scope
@@ -283,18 +294,27 @@ struct
 
     doc.addr |> Option.iter @@ fun addr ->
     let create = `Or_truncate 0o644 in
+    let base_url = I.base_url in
     begin
-      let path = Eio.Path.(cwd / "output" / E.route addr) in
+      let path = Eio.Path.(cwd / "output" / E.route Xml addr) in
       Eio.Path.with_open_out ~create path @@ fun flow ->
       Eio.Buf_write.with_flow flow @@ fun w ->
       let out = Xmlm.make_output @@ Eio_util.xmlm_dest_of_writer w in
       Render_xml.render_doc_page ~trail:(Some Emp) doc out
     end;
     begin
+      base_url |> Option.iter @@ fun base_url ->
+      let path = Eio.Path.(cwd / "output" / E.route Rss addr) in
+      Eio.Path.with_open_out ~create path @@ fun flow ->
+      Eio.Buf_write.with_flow flow @@ fun w ->
+      let out = Xmlm.make_output @@ Eio_util.xmlm_dest_of_writer w in
+      Render_rss.render_doc_page ~base_url doc out
+    end;
+    begin
       let path = Eio.Path.(cwd / "latex" / (addr ^ ".tex")) in
       Eio.Path.with_open_out ~create path @@ fun flow ->
       Eio.Buf_write.with_flow flow @@ fun w ->
-      Render_latex.render_doc_page ~base_url:I.base_url doc @@ Eio_util.formatter_of_writer w
+      Render_latex.render_doc_page ~base_url doc @@ Eio_util.formatter_of_writer w
     end
 
   let render_json ~cwd docs =

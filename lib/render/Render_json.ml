@@ -67,7 +67,7 @@ let render_doc (doc : Sem.doc) : Printer.t =
        end;
        "route",
        render_string_literal @@ Printer.text @@
-       E.route addr]
+       E.route Xml addr]
 
 let render_docs (docs : Sem.doc list) : Printer.t =
   braces @@ Printer.iter ~sep:comma render_doc docs

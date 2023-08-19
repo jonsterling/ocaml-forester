@@ -1,14 +1,19 @@
 open Core
 
+type target =
+  | Xml
+  | Rss
+
 module type Handler =
 sig
-  val route : addr -> string
-  val abs_path : addr -> string option
+  val route : target -> addr -> string
+  val source_path : addr -> string option
   val is_root : addr -> bool
   val backlinks : addr -> Sem.doc list
   val related : addr -> Sem.doc list
   val bibliography : addr -> Sem.doc list
   val parents : addr -> Sem.doc list
+  val children : addr -> Sem.doc list
   val contributors : addr -> string list
   val contributions : addr -> Sem.doc list
   val enqueue_latex : name:string -> packages:string list -> source:string -> unit
@@ -17,13 +22,14 @@ sig
 end
 
 type _ Effect.t +=
-  | Route : addr -> string Effect.t
+  | Route : target * addr -> string Effect.t
   | Abs_path : addr -> string option Effect.t
   | Is_root : addr -> bool Effect.t
   | Backlinks : addr -> Sem.doc list Effect.t
   | Related : addr -> Sem.doc list Effect.t
   | Bibliography : addr -> Sem.doc list Effect.t
   | Parents : addr -> Sem.doc list Effect.t
+  | Children : addr -> Sem.doc list Effect.t
   | Contributions : addr -> Sem.doc list Effect.t
   | Contributors : addr -> string list Effect.t
   | Enqueue_LaTeX : {name : string; packages : string list; source : string} -> unit Effect.t
@@ -32,14 +38,15 @@ type _ Effect.t +=
 
 module Perform : Handler =
 struct
-  let route addr = Effect.perform @@ Route addr
-  let abs_path addr = Effect.perform @@ Abs_path addr
+  let route target addr = Effect.perform @@ Route (target, addr)
+  let source_path addr = Effect.perform @@ Abs_path addr
   let is_root addr = Effect.perform @@ Is_root addr
   let backlinks addr = Effect.perform @@ Backlinks addr
   let related addr = Effect.perform @@ Related addr
   let bibliography addr = Effect.perform @@ Bibliography addr
   let contributions addr = Effect.perform @@ Contributions addr
   let parents addr = Effect.perform @@ Parents addr
+  let children addr = Effect.perform @@ Children addr
   let contributors addr = Effect.perform @@ Contributors addr
   let enqueue_latex ~name ~packages ~source = Effect.perform @@ Enqueue_LaTeX {name; packages; source}
   let get_doc addr = Effect.perform @@ Get_doc addr
@@ -57,10 +64,10 @@ struct
            Algaeff.Fun.Deep.finally k @@ fun () -> x ()
          in
          match eff with
-         | Route addr ->
-           resume @@ fun () -> H.route addr
+         | Route (target, addr) ->
+           resume @@ fun () -> H.route target addr
          | Abs_path addr ->
-           resume @@ fun () -> H.abs_path addr
+           resume @@ fun () -> H.source_path addr
          | Is_root addr ->
            resume @@ fun () -> H.is_root addr
          | Backlinks addr ->
@@ -71,6 +78,8 @@ struct
            resume @@ fun () -> H.bibliography addr
          | Parents addr ->
            resume @@ fun () -> H.parents addr
+         | Children addr ->
+           resume @@ fun () -> H.children addr
          | Contributors addr ->
            resume @@ fun () -> H.contributors addr
          | Contributions addr ->

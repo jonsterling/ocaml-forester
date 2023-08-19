@@ -107,7 +107,7 @@ and render_transclusion ~cfg ~opts doc =
   render_doc ~cfg ~opts doc
 
 and render_internal_link ~cfg ~title ~addr =
-  let url = E.route addr in
+  let url = E.route Xml addr in
   let target_title_attr =
     match Option.bind (E.get_doc addr) Sem.Doc.title_as_string with
     | Some s -> ["title", s]
@@ -116,25 +116,6 @@ and render_internal_link ~cfg ~title ~addr =
   Printer.tag "link"
     (["href", url; "type", "local"] @ target_title_attr)
     [render ~cfg title]
-
-(* Best-effort rendering of a Sem.t as a string. This is used to render document
-   titles into the title of a link target, which the browser shows up as a
-   overlay when hovering the link. *)
-and stringify nodes =
-  let rec go = function
-    | [] -> Some []
-    | node :: nodes ->
-      let*? s = stringify_node node in
-      let*? ns = go nodes in
-      Some (s :: ns) in
-  Option.map (String.concat " ") (go nodes)
-
-and stringify_node = function
-  | Sem.Text s -> Some s
-  | Sem.Link {title; _} -> stringify title
-  | Sem.Tag (_, _, bdy) | Sem.Math (_, bdy) -> stringify bdy
-  | Sem.Embed_TeX {source; _} -> stringify source
-  | Sem.Transclude _ | Sem.Query _ | Sem.Block _ -> None
 
 and render_external_link ~cfg ~title ~url =
   Printer.tag "link"
@@ -154,7 +135,7 @@ and render_author (author : string) =
       | None ->
         Printer.text author
       | Some addr ->
-        let url = E.route addr in
+        let url = E.route Xml addr in
         Printer.tag "link"
           ["href", url; "type", "local"]
           [match bio.title with
@@ -209,18 +190,19 @@ and render_frontmatter ~cfg ?(toc = true) (doc : Sem.doc) =
   Printer.tag "frontmatter" [] [
     if toc then render_trail cfg.trail else Printer.nil;
     Printer.tag "anchor" [] [Printer.text anchor];
+    with_addr doc (fun addr -> Printer.tag "rss" [] [Printer.text (E.route Rss addr)]);
     doc.taxon |> Printer.option begin fun taxon ->
       Printer.tag "taxon" [] [Printer.text @@ String_util.sentence_case taxon]
     end;
     with_addr doc (fun addr -> Printer.tag "addr" [] [Printer.text addr]);
     with_addr doc begin fun addr ->
-      match E.abs_path addr with
+      match E.source_path addr with
       | Some source_path ->
         Printer.tag "source-path" [] [Printer.text source_path]
       | None ->
         Printer.nil
     end;
-    with_addr doc (fun addr -> Printer.tag "route" [] [Printer.text @@ E.route addr]);
+    with_addr doc (fun addr -> Printer.tag "route" [] [Printer.text @@ E.route Xml addr]);
     render_date doc;
     render_authors doc;
     begin
