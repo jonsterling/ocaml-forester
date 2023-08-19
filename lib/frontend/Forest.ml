@@ -278,7 +278,7 @@ struct
   module E = Render_effect.Perform
 
   let render_doc ~cwd ~docs ~bib_fmt doc =
-    Render_BibTeX.render_bibtex ~base_url:I.base_url doc bib_fmt;
+    Render_bibtex.render_bibtex ~base_url:I.base_url doc bib_fmt;
     Format.fprintf bib_fmt "\n";
 
     doc.addr |> Option.iter @@ fun addr ->
@@ -294,7 +294,7 @@ struct
       let path = Eio.Path.(cwd / "latex" / (addr ^ ".tex")) in
       Eio.Path.with_open_out ~create path @@ fun flow ->
       Eio.Buf_write.with_flow flow @@ fun w ->
-      Render_LaTeX.render_doc_page ~base_url:I.base_url doc @@ Eio_util.formatter_of_writer w
+      Render_latex.render_doc_page ~base_url:I.base_url doc @@ Eio_util.formatter_of_writer w
     end
 
   let render_json ~cwd docs =

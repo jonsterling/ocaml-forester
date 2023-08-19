@@ -27,7 +27,7 @@ let render_author author =
     | None ->
       Printer.text author
     | Some title ->
-      Render_LaTeX.render title
+      Render_latex.render title
 
 let render_authors : string list -> Printer.t =
   function
@@ -40,9 +40,9 @@ let render_title ~taxon title =
   | Some taxon ->
     Format.dprintf "%s: %a"
       (String_util.sentence_case taxon)
-      (Fun.flip Render_LaTeX.render) title
+      (Fun.flip Render_latex.render) title
   | None ->
-    Render_LaTeX.render @@ Sem.sentence_case title
+    Render_latex.render @@ Sem.sentence_case title
 
 let render_auto_bibtex ~base_url (doc : Sem.doc) : Printer.t =
   match doc.addr with

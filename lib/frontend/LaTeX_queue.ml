@@ -3,7 +3,7 @@ module T = Domainslib.Task
 module type S =
 sig
   val enqueue : name:string -> packages:string list -> source:string -> unit
-  val process : env:_ Build_LaTeX.env -> unit
+  val process : env:_ Build_latex.env -> unit
 end
 
 module Make (I : sig val max_fibers : int val ignore_tex_cache : bool end) : S =
@@ -17,5 +17,5 @@ struct
   let process ~env : unit =
     Hashtbl.to_seq svg_queue |> List.of_seq |>
     Eio.Fiber.List.iter ~max_fibers:I.max_fibers @@ fun (name, (packages, source)) ->
-    Build_LaTeX.build_latex ~ignore_tex_cache:I.ignore_tex_cache ~env ~name ~source ~packages
+    Build_latex.build_latex ~ignore_tex_cache:I.ignore_tex_cache ~env ~name ~source ~packages
 end
