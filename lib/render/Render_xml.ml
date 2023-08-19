@@ -13,7 +13,7 @@ type part =
   | Mainmatter
   | Backmatter
 
-type cfg = {part : part; trail : int bwd option; counter : int ref}
+type cfg = {base_url : string option; part : part; trail : int bwd option; counter : int ref}
 
 
 let (let*?) = Option.bind
@@ -126,7 +126,7 @@ and render ~cfg : Sem.t -> printer =
   Printer.iter (render_node ~cfg)
 
 and render_author (author : string) =
-  let cfg = {part = Frontmatter; trail = Some Emp; counter = ref 0} in
+  let cfg = {base_url = None; part = Frontmatter; trail = Some Emp; counter = ref 0} in
   (* If the author string is an address to a biographical page, then link to it *)
   match E.get_doc author with
   | Some bio ->
@@ -185,12 +185,18 @@ and with_addr (doc : Sem.doc) k =
   | Some addr -> k addr
   | None -> Printer.nil
 
+and render_rss_link ~cfg doc =
+  (* Only link to RSS if there is a base url, because RSS cannot be generated in the first place without one. *)
+  cfg.base_url |> Printer.option @@ fun _ ->
+  with_addr doc @@ fun addr ->
+  Printer.tag "rss" [] [Printer.text (E.route Rss addr)]
+
 and render_frontmatter ~cfg ?(toc = true) (doc : Sem.doc) =
   let anchor = string_of_int @@ Oo.id (object end) in
   Printer.tag "frontmatter" [] [
     if toc then render_trail cfg.trail else Printer.nil;
     Printer.tag "anchor" [] [Printer.text anchor];
-    with_addr doc (fun addr -> Printer.tag "rss" [] [Printer.text (E.route Rss addr)]);
+    render_rss_link ~cfg doc;
     doc.taxon |> Printer.option begin fun taxon ->
       Printer.tag "taxon" [] [Printer.text @@ String_util.sentence_case taxon]
     end;
@@ -292,7 +298,7 @@ and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
      | Top -> render_backmatter ~cfg doc
      | _ -> Printer.nil]
 
-let render_doc_page ~trail (doc : Sem.doc) : printer =
-  let cfg = {trail; part = Top; counter = ref 0} in
+let render_doc_page ~base_url ~trail (doc : Sem.doc) : printer =
+  let cfg = {base_url; trail; part = Top; counter = ref 0} in
   let opts = Sem.{title_override = None; toc = false; show_heading = true; expanded = true; numbered = true; show_metadata = true} in
   Printer.with_xsl "forest.xsl" @@ render_doc ~cfg ~opts doc

@@ -300,7 +300,7 @@ struct
       Eio.Path.with_open_out ~create path @@ fun flow ->
       Eio.Buf_write.with_flow flow @@ fun w ->
       let out = Xmlm.make_output @@ Eio_util.xmlm_dest_of_writer w in
-      Render_xml.render_doc_page ~trail:(Some Emp) doc out
+      Render_xml.render_doc_page ~base_url ~trail:(Some Emp) doc out
     end;
     begin
       base_url |> Option.iter @@ fun base_url ->
