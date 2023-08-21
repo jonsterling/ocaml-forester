@@ -59,8 +59,9 @@ let rec expand (code : Code.t) : Syn.t =
       Resolver.Lang.renaming path []
     ];
     expand rest
-  | Group (Squares, title) :: Group (Parens, [Text dest]) :: rest ->
+  | Group (Squares, title) :: Group (Parens, dest) :: rest ->
     Mode.set Body;
+    let dest = expand dest in
     let title = expand title in
     Syn.Link {dest; title} :: expand rest
   | Group (d, xs) :: rest ->

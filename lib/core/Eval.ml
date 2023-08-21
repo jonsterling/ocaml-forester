@@ -25,6 +25,7 @@ let rec eval : Syn.t -> Sem.t =
   | [] -> []
   | Link {title; dest} :: rest ->
     let title = eval title in
+    let dest = Sem.string_of_nodes @@ eval_textual [] dest in
     let link = Sem.Link {dest; title} in
     link :: eval rest
   | Math (mmode, e) :: rest ->
