@@ -1,9 +1,9 @@
 open Eio.Std
 
 type 'a env = <
-  cwd : #Eio.Fs.dir Eio.Path.t;
-  process_mgr : #Eio.Process.mgr;
-  stdout : #Eio.Flow.sink;
+  cwd : Eio.Fs.dir_ty Eio.Path.t;
+  process_mgr : [>] Eio.Process.mgr;
+  stdout : [>] Eio.Flow.sink;
   ..
 > as 'a
 

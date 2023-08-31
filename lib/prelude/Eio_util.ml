@@ -11,11 +11,16 @@ let xmlm_dest_of_writer w =
   let write_byte b = Eio.Buf_write.char w @@ Char.chr b in
   `Fun write_byte
 
-let null_sink () : Eio.Flow.sink =
-  object
-    inherit Eio.Flow.sink
-    method copy _ = ()
-  end
+module NullSink : Flow.Pi.SINK with type t = unit =
+struct
+  type t = unit
+  let single_write _ _ = 0
+  let copy _ ~src = ()
+end
+
+let null_sink () : Flow.sink_ty Resource.t =
+  let ops = Eio.Flow.Pi.sink (module NullSink) in
+  Eio.Resource.T ((), ops)
 
 let ensure_dir path =
   try Eio.Path.mkdir ~perm:0o755 path with

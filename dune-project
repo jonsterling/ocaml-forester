@@ -40,7 +40,7 @@
   (domainslib
    (>= 0.5.0))
   (eio_main
-   (>= 0.11))
+   (>= 0.12))
   (ptime
    (>= 1.1.0))
   (yuujinchou
