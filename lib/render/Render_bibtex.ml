@@ -77,8 +77,7 @@ let render_bibtex ~base_url (doc : Sem.doc) : Printer.t =
   let metas = Metas.of_seq @@ List.to_seq doc.metas in
   match Metas.find_opt "bibtex" metas with
   | None ->
-    if doc.taxon = Some "reference" then Printer.nil else
-      render_auto_bibtex ~base_url doc
+    render_auto_bibtex ~base_url doc
   | Some [Text txt] ->
     let lines = String.split_on_char '\n' txt in
     lines |> Printer.iter ~sep:Printer.newline @@ fun line ->
