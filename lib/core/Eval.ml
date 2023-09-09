@@ -109,7 +109,7 @@ and eval_textual prefix : Syn.t -> Sem.t =
 and eval_tag tag =
   let rec parse_attrs tag attrs =
     function
-    | Syn.Group (Braces, [Text key]) :: Group (Braces, [Text value]) :: rest ->
+    | Syn.Group (Squares, [Text key]) :: Group (Braces, [Text value]) :: rest ->
       let attrs = Bwd.Snoc (attrs, (key, value)) in
       parse_attrs tag attrs rest
     | Syn.Group (Braces, body) :: rest ->
