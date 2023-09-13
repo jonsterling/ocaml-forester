@@ -53,7 +53,8 @@ let string_of_nodes =
   and
     render_node = function
     | Text s -> Some s
-    | Link {title; _} -> Option.map render title
+    | Link {title = Some title; _} -> Some (render title)
+    | Link {title = None; dest} -> Some dest
     | Tag (_, _, bdy) | Math (_, bdy) -> Some (render bdy)
     | Embed_TeX {source; _} -> Some (render source)
     | Transclude _ | Query _ | Block _ -> None
