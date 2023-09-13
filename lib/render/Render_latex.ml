@@ -57,8 +57,14 @@ and render_node : Sem.node -> Printer.t =
     begin
       match E.get_doc dest with
       | None ->
+        let title = Option.value ~default:[Sem.Text dest] title in
         Format.dprintf {|\href{%s}{%a}|} dest (Fun.flip render) title
       | Some doc ->
+        let title =
+          match title with
+          | Some t -> t
+          | None -> Option.value ~default:[Sem.Text dest] title
+        in
         begin
           match doc.taxon with
           | Some "reference" ->

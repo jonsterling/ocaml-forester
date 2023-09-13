@@ -6,7 +6,7 @@ type node =
   | Group of delim * t
   | Math of math_mode * t
   | Tag of string
-  | Link of {dest : t; title : t}
+  | Link of {dest : t; title : t option}
   | Transclude of string
   | Query of t Query.t
   | Embed_TeX of {packages : string list; source : t}

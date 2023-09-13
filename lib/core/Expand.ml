@@ -62,8 +62,11 @@ let rec expand (code : Code.t) : Syn.t =
   | Group (Squares, title) :: Group (Parens, dest) :: rest ->
     Mode.set Body;
     let dest = expand dest in
-    let title = expand title in
+    let title = Option.some @@ expand title in
     Syn.Link {dest; title} :: expand rest
+  | Group (Squares, [Group (Squares, dest)]) :: rest ->
+    let dest = expand dest in
+    Syn.Link {dest; title = None} :: expand rest
   | Group (d, xs) :: rest ->
     Mode.set Body;
     Syn.Group (d, expand xs) :: expand rest

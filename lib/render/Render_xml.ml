@@ -108,16 +108,25 @@ and render_transclusion ~cfg ~opts doc =
 
 and render_internal_link ~cfg ~title ~addr =
   let url = E.route Xml addr in
+  let doc = E.get_doc addr in
   let target_title_attr =
-    match Option.bind (E.get_doc addr) Sem.Doc.title_as_string with
+    match Option.bind doc Sem.Doc.title_as_string with
     | Some s -> ["title", s]
     | None -> []
+  in
+  let title =
+    match title with
+    | Some t -> t
+    | None ->
+      Option.value ~default:[Sem.Text addr] @@
+      Option.bind doc (fun d -> d.title)
   in
   Printer.tag "link"
     (["href", url; "type", "local"] @ target_title_attr)
     [render ~cfg title]
 
 and render_external_link ~cfg ~title ~url =
+  let title = Option.value ~default:[Sem.Text url] title in
   Printer.tag "link"
     ["href", url; "type", "external"]
     [render ~cfg title]

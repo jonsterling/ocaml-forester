@@ -187,7 +187,7 @@ struct
       analyze_transclusion_opts scope opts;
       Gph.add_edge transclusion_graph addr scope
     | Sem.Link {title; dest} ->
-      analyze_nodes scope title;
+      Option.iter (analyze_nodes scope) title;
       Gph.add_edge link_graph dest scope
     | Sem.Tag (_, _, xs) ->
       analyze_nodes scope xs

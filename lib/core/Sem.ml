@@ -8,7 +8,7 @@ type node =
   | Text of string
   | Transclude of transclusion_opts * addr
   | Query of transclusion_opts * t Query.t
-  | Link of {dest : string; title : t}
+  | Link of {dest : string; title : t option}
   | Tag of string * attr list * t
   | Math of math_mode * t
   | Embed_TeX of {packages : string list; source : t}
@@ -53,7 +53,7 @@ let string_of_nodes =
   and
     render_node = function
     | Text s -> Some s
-    | Link {title; _} -> Some (render title)
+    | Link {title; _} -> Option.map render title
     | Tag (_, _, bdy) | Math (_, bdy) -> Some (render bdy)
     | Embed_TeX {source; _} -> Some (render source)
     | Transclude _ | Query _ | Block _ -> None
