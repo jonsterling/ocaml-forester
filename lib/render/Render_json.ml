@@ -50,9 +50,15 @@ let render_doc (doc : Sem.doc) : Printer.t =
     Printer.iter ~sep:comma (fun (k, x) -> render_key k x)
       ["title",
        begin
-         match Sem.Doc.title_as_string doc with
+         match doc.title with
          | None -> Printer.text "null"
-         | Some title -> render_string_literal @@ Printer.text @@ escape title
+         | Some title ->
+           let title_string =
+             String_util.sentence_case @@
+             Render_text.Printer.contents @@
+             Render_text.render title
+           in
+           render_string_literal @@ Printer.text @@ escape title_string
        end;
        "taxon",
        begin

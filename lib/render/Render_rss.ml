@@ -30,7 +30,13 @@ let render_rfc_822 date =
 let render_tree_info ~base_url ~addr (doc : Sem.doc) : printer =
   Printer.seq [
     Printer.tag "title" [] [
-      Printer.text @@ Option.value ~default:"Untitled" @@ Sem.Doc.title_as_string doc
+      Printer.text @@ Option.value ~default:"Untitled" @@
+      begin
+        doc.title |> Option.map @@ fun title ->
+        String_util.sentence_case @@
+        Render_text.Printer.contents @@
+        Render_text.render title
+      end
     ];
     Printer.tag "link" [] [
       Printer.text @@ Format.asprintf "%s/%s" base_url @@ E.route Xml addr
