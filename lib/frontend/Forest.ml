@@ -153,18 +153,18 @@ struct
     let module Run = Render_effect.Run (H) in
     Run.run body
 
-  let expand_transitive_contributors_and_bibliography (trees : Sem.doc M.t) : unit =
-    begin
-      trees |> M.iter @@ fun addr _ ->
-      let task ref =
-        match M.find_opt ref trees with
-        | None -> ()
-        | Some (doc : Sem.doc) ->
-          if doc.taxon = Some "reference" then
-            Tbl.add bibliography addr ref
-      in
-      Gph.iter_pred task link_graph addr
-    end;
+  let expand_transitive_bibliography (trees : Sem.doc M.t) : unit =
+    trees |> M.iter @@ fun addr _ ->
+    let task ref =
+      match M.find_opt ref trees with
+      | None -> ()
+      | Some (doc : Sem.doc) ->
+        if doc.taxon = Some "reference" then
+          Tbl.add bibliography addr ref
+    in
+    Gph.iter_pred task link_graph addr
+
+  let expand_transitive_contributors (trees : Sem.doc M.t) : unit =
     transclusion_graph |> Topo.iter @@ fun addr ->
     let task addr' =
       let doc = M.find addr trees in
@@ -255,7 +255,8 @@ struct
       analyze_nodes scope meta
     end;
 
-    expand_transitive_contributors_and_bibliography docs;
+    expand_transitive_contributors docs;
+    expand_transitive_bibliography docs;
     docs
 
   let next_addr ~prefix docs =
