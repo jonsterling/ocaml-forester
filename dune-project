@@ -27,7 +27,7 @@
  (depends
   menhir
   (ocamlgraph
-   (>= 2.0.0))
+   (>= 2.1.0))
   (ocaml
    (>= 0.5.0))
   dune
@@ -46,4 +46,4 @@
   (yuujinchou
    (>= 5.0.1))
   (algaeff
-   (>= 0.2.1))))
+   (>= 1.0.0))))

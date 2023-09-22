@@ -8,7 +8,7 @@ license: "GPL-3.0-or-later"
 homepage: "https://sr.ht/~jonsterling/forester/"
 bug-reports: "https://todo.sr.ht/~jonsterling/forester"
 depends: [
-  "algaeff" {= "0.2.1"}
+  "algaeff" {= "1.0.0"}
   "base-bigarray" {= "base"}
   "base-domains" {= "base"}
   "base-nnp" {= "base"}
@@ -44,7 +44,7 @@ depends: [
   "ocaml-options-vanilla" {= "1"}
   "ocamlbuild" {= "0.14.2"}
   "ocamlfind" {= "1.9.6"}
-  "ocamlgraph" {= "2.0.0"}
+  "ocamlgraph" {= "2.1.0"}
   "optint" {= "0.3.0"}
   "ppx_derivers" {= "1.2.1"}
   "ppx_deriving" {= "5.2.1"}
