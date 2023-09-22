@@ -30,7 +30,7 @@ let build ~env input_dirs root base_url dev max_fibers ignore_tex_cache =
 
   F.render_trees ()
 
-let new_tree ~env input_dir prefix =
+let new_tree ~env input_dir dest_dir prefix =
   let module I =
   struct
     let env = env
@@ -43,7 +43,8 @@ let new_tree ~env input_dir prefix =
   let module F = Forest.Make (I) in
   let module P = Process.Make (F) in
   P.process_dir ~dev:true input_dir;
-  let addr = F.create_tree ~dir:input_dir ~prefix in
+  let dest_dir = Option.value ~default:input_dir dest_dir in
+  let addr = F.create_tree ~dir:input_dir ~dest:dest_dir ~prefix in
   Eio.traceln "Created tree %s" addr
 
 let complete ~env input_dirs title =
@@ -115,17 +116,22 @@ let build_cmd ~env =
 let new_tree_cmd ~env =
   let arg_prefix =
     let doc = "The namespace prefix for the created tree." in
-    Arg.value @@ Arg.opt Arg.string "xxx" @@
+    Arg.required @@ Arg.opt (Arg.some Arg.string) None @@
     Arg.info ["prefix"] ~docv:"XXX" ~doc
   in
   let arg_input_dir =
-    let doc = "The directory in which to create the tree." in
+    let doc = "The directory in which to scan tree identifiers." in
     Arg.value @@ Arg.opt Arg.file "." @@
     Arg.info ["dir"] ~docv:"DIR" ~doc
   in
+  let arg_dest_dir =
+    let doc = "The directory in which to deposit created tree." in
+    Arg.value @@ Arg.opt (Arg.some Arg.file) None @@
+    Arg.info ["dest"] ~docv:"DEST" ~doc
+  in
   let doc = "Create a new tree." in
   let info = Cmd.info "new" ~version ~doc in
-  Cmd.v info Term.(const (new_tree ~env) $ arg_input_dir $ arg_prefix)
+  Cmd.v info Term.(const (new_tree ~env) $ arg_input_dir $ arg_dest_dir $ arg_prefix)
 
 let complete_cmd ~env =
   let arg_title =

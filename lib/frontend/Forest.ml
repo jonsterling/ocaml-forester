@@ -16,7 +16,7 @@ module M = Map.Make (String)
 module type S =
 sig
   val plant_tree : source_path:string option -> addr -> Code.doc -> unit
-  val create_tree : dir:string -> prefix:string -> addr
+  val create_tree : dir:string -> dest:string -> prefix:string -> addr
   val complete : string -> (addr * string) Seq.t
   val render_trees : unit -> unit
 end
@@ -270,14 +270,14 @@ struct
     let next = 1 + Seq.fold_left max 0 keys in
     prefix ^ "-" ^ BaseN.Base36.string_of_int next
 
-  let create_tree ~dir ~prefix =
+  let create_tree ~dir ~dest ~prefix =
     let docs = prepare_forest () in
     let next = next_addr docs ~prefix in
     let fname = next ^ ".tree" in
     let now = Date.now () in
     let body = Format.asprintf "\\date{%a}\n" Date.pp now in
     let create = `Exclusive 0o644 in
-    let path = Eio.Path.(Eio.Stdenv.cwd I.env / dir / fname) in
+    let path = Eio.Path.(Eio.Stdenv.cwd I.env / dest / fname) in
     Eio.Path.save ~create path body;
     next
 
