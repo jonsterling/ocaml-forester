@@ -153,7 +153,7 @@ struct
     let module Run = Render_effect.Run (H) in
     Run.run body
 
-  let expand_transitive_bibliography (trees : Sem.doc M.t) : unit =
+  let perform_transitive_analysis (trees : Sem.doc M.t) : unit =
     trees |> M.iter @@ fun addr _ ->
     let task ref =
       match M.find_opt ref trees with
@@ -162,9 +162,7 @@ struct
         if doc.taxon = Some "reference" then
           Tbl.add bibliography addr ref
     in
-    Gph.iter_pred task link_graph addr
-
-  let expand_transitive_contributors (trees : Sem.doc M.t) : unit =
+    Gph.iter_pred task link_graph addr;
     transclusion_graph |> Topo.iter @@ fun addr ->
     let task addr' =
       let doc = M.find addr trees in
@@ -255,8 +253,7 @@ struct
       analyze_nodes scope meta
     end;
 
-    expand_transitive_bibliography docs;
-    expand_transitive_contributors docs;
+    perform_transitive_analysis docs;
     docs
 
   let next_addr ~prefix docs =
