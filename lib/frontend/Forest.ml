@@ -168,14 +168,19 @@ struct
     transclusion_graph |> Topo.iter @@ fun addr ->
     let task addr' =
       let doc = M.find addr trees in
-      begin
-        doc.authors @ Tbl.find_all contributors addr |> List.iter @@ fun contributor ->
-        Tbl.add contributors addr' contributor
-      end;
-      begin
-        Tbl.find_all bibliography addr |> List.iter @@ fun ref ->
-        Tbl.add bibliography addr' ref
-      end
+      match doc.taxon with
+      | Some "reference" -> ()
+      | _ ->
+        begin
+          begin
+            doc.authors @ Tbl.find_all contributors addr |> List.iter @@ fun contributor ->
+            Tbl.add contributors addr' contributor
+          end;
+          begin
+            Tbl.find_all bibliography addr |> List.iter @@ fun ref ->
+            Tbl.add bibliography addr' ref
+          end
+        end
     in
     Gph.iter_succ task transclusion_graph addr
 
