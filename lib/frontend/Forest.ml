@@ -154,15 +154,17 @@ struct
     Run.run body
 
   let perform_transitive_analysis (trees : Sem.doc M.t) : unit =
-    trees |> M.iter @@ fun addr _ ->
-    let task ref =
-      match M.find_opt ref trees with
-      | None -> ()
-      | Some (doc : Sem.doc) ->
-        if doc.taxon = Some "reference" then
-          Tbl.add bibliography addr ref
-    in
-    Gph.iter_pred task link_graph addr;
+    begin
+      trees |> M.iter @@ fun addr _ ->
+      let task ref =
+        match M.find_opt ref trees with
+        | None -> ()
+        | Some (doc : Sem.doc) ->
+          if doc.taxon = Some "reference" then
+            Tbl.add bibliography addr ref
+      in
+      Gph.iter_pred task link_graph addr;
+    end;
     transclusion_graph |> Topo.iter @@ fun addr ->
     let task addr' =
       let doc = M.find addr trees in
