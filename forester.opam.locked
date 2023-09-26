@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "forester"
-version: "2.4"
+version: "2.4.1"
 synopsis: "A tool for tending mathematical forests"
 maintainer: "Jonathan Sterling"
 authors: "Jonathan Sterling"
@@ -60,7 +60,7 @@ depends: [
   "thread-table" {= "1.0.0"}
   "topkg" {= "1.0.7"}
   "xmlm" {= "1.4.0"}
-  "yuujinchou" {= "5.0.2"}
+  "yuujinchou" {= "5.1.0"}
 ]
 build: [
   ["dune" "subst"] {dev}
