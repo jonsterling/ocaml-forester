@@ -2,6 +2,7 @@ open Eio.Std
 open Forester
 open Cmdliner
 
+
 let version =
   Format.asprintf "%s" @@
   match Build_info.V1.version () with
@@ -162,4 +163,5 @@ let cmd ~env =
 
 let () =
   Eio_main.run @@ fun env ->
+  Printexc.record_backtrace true;
   exit @@ Cmd.eval @@ cmd ~env
