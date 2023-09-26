@@ -255,8 +255,8 @@ struct
       analyze_nodes scope meta
     end;
 
-    expand_transitive_contributors docs;
     expand_transitive_bibliography docs;
+    expand_transitive_contributors docs;
     docs
 
   let next_addr ~prefix docs =
