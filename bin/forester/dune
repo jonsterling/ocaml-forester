@@ -1,6 +1,8 @@
 (executable
  (public_name forester)
  (name main)
+ (flags (-g))
+ (link_flags (-g))
  (libraries forester.frontend cmdliner dune-build-info eio_main))
 
 (env
