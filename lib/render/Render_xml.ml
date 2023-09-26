@@ -7,13 +7,7 @@ module E = Render_effect.Perform
 module Printer = Xml_printer
 type printer = Printer.printer
 
-type part =
-  | Top
-  | Frontmatter
-  | Mainmatter
-  | Backmatter
-
-type cfg = {base_url : string option; part : part; trail : int bwd option; counter : int ref}
+type cfg = {base_url : string option; trail : int bwd option; counter : int ref; in_backmatter : bool; top : bool}
 
 
 let (let*?) = Option.bind
@@ -53,8 +47,8 @@ let rec render_node ~cfg : Sem.node -> printer =
         render_transclusion ~cfg ~opts doc
     end
   | Sem.Query (opts, query) ->
-    let docs = E.run_query query in
-    begin
+    if not cfg.in_backmatter then
+      let docs = E.run_query query in
       match docs with
       | [] -> Printer.nil
       | _ ->
@@ -75,7 +69,8 @@ let rec render_node ~cfg : Sem.node -> printer =
            body = body}
         in
         render_transclusion ~cfg ~opts doc
-    end
+    else
+      Printer.nil
   | Sem.Embed_TeX {packages; source} ->
     let code =
       Render_math_mode.Printer.contents @@
@@ -102,7 +97,7 @@ and render_transclusion ~cfg ~opts doc =
       | false -> None
     in
     let counter = ref 0 in
-    {cfg with trail; counter}
+    {cfg with trail; counter; top = false}
   in
   render_doc ~cfg ~opts doc
 
@@ -140,7 +135,7 @@ and render ~cfg : Sem.t -> printer =
   Printer.iter (render_node ~cfg)
 
 and render_author (author : string) =
-  let cfg = {base_url = None; part = Frontmatter; trail = Some Emp; counter = ref 0} in
+  let cfg = {base_url = None; top = false; trail = Some Emp; counter = ref 0; in_backmatter = false} in
   (* If the author string is an address to a biographical page, then link to it *)
   match E.get_doc author with
   | Some bio ->
@@ -228,23 +223,23 @@ and render_frontmatter ~cfg ?(toc = true) (doc : Sem.doc) =
     begin
       doc.title |> Printer.option @@ fun title ->
       Printer.tag "title" [] [
-        render ~cfg:{cfg with part = Frontmatter} @@
+        render ~cfg @@
         Sem.sentence_case title
       ]
     end;
     begin
       doc.metas |> Printer.iter @@ fun (key, body) ->
-      Printer.tag "meta" ["name", key] [render ~cfg:{cfg with part = Frontmatter} body]
+      Printer.tag "meta" ["name", key] [render ~cfg body]
     end
   ]
 
 and render_mainmatter ~cfg (doc : Sem.doc) =
   Printer.tag "mainmatter" [] [
-    render ~cfg:{cfg with part = Mainmatter} doc.body
+    render ~cfg doc.body
   ]
 
 and render_backmatter ~cfg (doc : Sem.doc) =
-  let cfg = {cfg with part = Backmatter} in
+  let cfg = {cfg with in_backmatter = true; top = false} in
   let opts = Sem.{title_override = None; toc = false; show_heading = true; expanded = false; numbered = false; show_metadata = true} in
   with_addr doc @@ fun addr ->
   Printer.tag "backmatter" [] [
@@ -308,11 +303,12 @@ and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
   Printer.tag "tree" attrs
     [render_frontmatter ~cfg ~toc:opts.toc doc;
      render_mainmatter ~cfg doc;
-     match cfg.part with
-     | Top -> render_backmatter ~cfg doc
-     | _ -> Printer.nil]
+     match cfg.top with
+     | true -> render_backmatter ~cfg doc
+     | _ -> Printer.nil
+    ]
 
 let render_doc_page ~base_url ~trail (doc : Sem.doc) : printer =
-  let cfg = {base_url; trail; part = Top; counter = ref 0} in
+  let cfg = {base_url; trail; top = true; counter = ref 0; in_backmatter = false} in
   let opts = Sem.{title_override = None; toc = false; show_heading = true; expanded = true; numbered = true; show_metadata = true} in
   Printer.with_xsl "forest.xsl" @@ render_doc ~cfg ~opts doc
