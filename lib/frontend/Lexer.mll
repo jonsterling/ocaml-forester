@@ -67,6 +67,7 @@ rule token =
   | "\\let" { return lexbuf @@ Parser.LET }
   | "\\tex" { return lexbuf @@ Parser.TEX }
   | "\\block" { return lexbuf @@ Parser.BLOCK }
+  | "\\iftex" { return lexbuf @@ Parser.IF_TEX }
   | "\\texpackage" { return lexbuf @@ Parser.TEX_PACKAGE }
   | "\\transclude" { return lexbuf @@ Parser.TRANSCLUDE }
   | "\\query/and" {return lexbuf @@ Parser.QUERY_AND }

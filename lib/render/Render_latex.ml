@@ -76,18 +76,20 @@ and render_node : Sem.node -> Printer.t =
         end
     end
   | Math (Inline, body) ->
-    Format.dprintf {|\(%a\)|} (Fun.flip Render_math_mode.render) body
+    Format.dprintf {|\(%a\)|} (Fun.flip (Render_verbatim.render ~cfg:{tex = true})) body
   | Math (Display, body) ->
-    Format.dprintf {|\[%a\]|} (Fun.flip Render_math_mode.render) body
-  | Embed_TeX {source; packages} ->
+    Format.dprintf {|\[%a\]|} (Fun.flip (Render_verbatim.render ~cfg:{tex = true})) body
+  | Embed_tex {source; packages} ->
     let code =
-      Render_math_mode.Printer.contents @@
-      Render_math_mode.render source
+      Render_verbatim.Printer.contents @@
+      Render_verbatim.render ~cfg:{tex = true} source
     in
     let hash = Digest.to_hex @@ Digest.string code in
     E.enqueue_latex ~name:hash ~packages ~source:code;
     let path = Format.sprintf "resources/%s-print.pdf" hash in
     Format.dprintf {|\[\includegraphics{%s}\]%s|} path "\n"
+  | If_tex (x, _) ->
+    render x
   | Block (title, body) ->
     Printer.seq [
       Format.dprintf {|\begin{proof}[{%a}]%s|} (Fun.flip render) title "\n";

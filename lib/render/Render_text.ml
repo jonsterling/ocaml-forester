@@ -38,6 +38,8 @@ let rec render_node : Sem.node -> Printer.t =
       [Printer.text "\\transclude{";
        Printer.text addr;
        Printer.text "}"]
+  | Sem.If_tex (_, y) ->
+    render y
   | node ->
     Format.eprintf "missing case: %a@." Sem.pp_node node;
     failwith "Render_text.render_node"

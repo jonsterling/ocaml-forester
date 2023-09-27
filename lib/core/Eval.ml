@@ -34,7 +34,11 @@ let rec eval : Syn.t -> Sem.t =
     eval_tag name rest
   | Transclude addr :: rest ->
     let opts = get_transclusion_opts () in
-    Sem.Transclude (opts, addr):: eval rest
+    Sem.Transclude (opts, addr) :: eval rest
+  | If_tex (x , y) :: rest ->
+    let x = eval x in
+    let y = eval y in
+    Sem.If_tex (x, y) :: eval rest
   | Query query :: rest ->
     let opts = get_transclusion_opts () in
     let opts =
@@ -44,8 +48,8 @@ let rec eval : Syn.t -> Sem.t =
     in
     let query = Query.map eval query in
     Sem.Query (opts, query) :: eval rest
-  | Embed_TeX {packages; source} :: rest ->
-    Sem.Embed_TeX {packages; source = eval source} :: eval rest
+  | Embed_tex {packages; source} :: rest ->
+    Sem.Embed_tex {packages; source = eval source} :: eval rest
   | Block (title, body) :: rest ->
     Sem.Block (eval title, eval body) :: eval rest
   | Lam (xs, body) :: rest ->

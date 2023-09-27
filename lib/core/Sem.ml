@@ -11,8 +11,9 @@ type node =
   | Link of {dest : string; title : t option}
   | Tag of string * attr list * t
   | Math of math_mode * t
-  | Embed_TeX of {packages : string list; source : t}
+  | Embed_tex of {packages : string list; source : t}
   | Block of t * t
+  | If_tex of t * t
 [@@deriving show]
 
 and transclusion_opts =
@@ -56,7 +57,8 @@ let string_of_nodes =
     | Link {title = Some title; _} -> Some (render title)
     | Link {title = None; dest} -> Some dest
     | Tag (_, _, bdy) | Math (_, bdy) -> Some (render bdy)
-    | Embed_TeX {source; _} -> Some (render source)
+    | Embed_tex {source; _} -> Some (render source)
+    | If_tex (_, x) -> Some (render x)
     | Transclude _ | Query _ | Block _ -> None
   in
   render

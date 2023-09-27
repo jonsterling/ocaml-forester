@@ -77,10 +77,10 @@ let rec expand (code : Code.t) : Syn.t =
     Mode.set Body;
     let query = Query.map expand query in
     Syn.Query query :: expand rest
-  | Embed_TeX xs :: rest ->
+  | Embed_tex xs :: rest ->
     Mode.set Body;
     let fm = Fm.get () in
-    Syn.Embed_TeX {packages = fm.tex_packages; source = expand xs} :: expand rest
+    Syn.Embed_tex {packages = fm.tex_packages; source = expand xs} :: expand rest
   | Block (xs, ys) :: rest ->
     Mode.set Body;
     Syn.Block (expand xs, expand ys) :: expand rest
@@ -110,6 +110,11 @@ let rec expand (code : Code.t) : Syn.t =
     Mode.set Body;
     let k = expand_sym k in
     Syn.Get k :: expand rest
+  | If_tex (x, y) :: rest ->
+    Mode.set Body;
+    let x = expand x in
+    let y = expand y in
+    Syn.If_tex (x, y) :: expand rest
   | Import (vis, dep) :: rest ->
     only_frontmatter code ();
     let import = UnitMap.find dep @@ U.read () in
@@ -189,6 +194,7 @@ let rec expand (code : Code.t) : Syn.t =
     end;
     Mode.set Frontmatter;
     expand rest
+
 
 
 and expand_lambda : Trie.path list * Code.t -> Syn.t =

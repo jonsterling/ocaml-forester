@@ -9,13 +9,14 @@ type node =
   | Link of {dest : t; title : t option}
   | Transclude of string
   | Query of t Query.t
-  | Embed_TeX of {packages : string list; source : t}
+  | Embed_tex of {packages : string list; source : t}
   | Block of t * t
   | Lam of Symbol.t list * t
   | Var of Symbol.t
   | Put of Symbol.t * t * t
   | Default of Symbol.t * t * t
   | Get of Symbol.t
+  | If_tex of t * t
 [@@deriving show]
 
 and t = node list

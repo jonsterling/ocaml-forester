@@ -32,7 +32,7 @@ type _ Effect.t +=
   | Children : addr -> Sem.doc list Effect.t
   | Contributions : addr -> Sem.doc list Effect.t
   | Contributors : addr -> string list Effect.t
-  | Enqueue_LaTeX : {name : string; packages : string list; source : string} -> unit Effect.t
+  | Enqueue_latex : {name : string; packages : string list; source : string} -> unit Effect.t
   | Get_doc : addr -> Sem.doc option Effect.t
   | Run_query : Sem.t Query.t -> Sem.doc list Effect.t
 
@@ -48,7 +48,7 @@ struct
   let parents addr = Effect.perform @@ Parents addr
   let children addr = Effect.perform @@ Children addr
   let contributors addr = Effect.perform @@ Contributors addr
-  let enqueue_latex ~name ~packages ~source = Effect.perform @@ Enqueue_LaTeX {name; packages; source}
+  let enqueue_latex ~name ~packages ~source = Effect.perform @@ Enqueue_latex {name; packages; source}
   let get_doc addr = Effect.perform @@ Get_doc addr
   let run_query query = Effect.perform @@ Run_query query
 end
@@ -84,7 +84,7 @@ struct
            resume @@ fun () -> H.contributors addr
          | Contributions addr ->
            resume @@ fun () -> H.contributions addr
-         | Enqueue_LaTeX {name; packages; source} ->
+         | Enqueue_latex {name; packages; source} ->
            resume @@ fun () -> H.enqueue_latex ~name ~packages ~source
          | Get_doc addr ->
            resume @@ fun () -> H.get_doc addr

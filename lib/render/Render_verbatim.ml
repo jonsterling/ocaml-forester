@@ -16,28 +16,32 @@ struct
     Format.asprintf "%a" (fun fmt _ -> printer fmt) ()
 end
 
-let rec render_node : Sem.node -> Printer.t =
+type cfg = {tex : bool}
+
+let rec render_node ~cfg : Sem.node -> Printer.t =
   function
   | Sem.Text txt ->
     Printer.text txt
-  | Sem.Math(_, xs) ->
-    render xs
+  | Sem.Math (_, xs) ->
+    render ~cfg xs
   | Sem.Tag (name, _, body) ->
-    render_tag name body
+    render_tag ~cfg name body
+  | Sem.If_tex (x , y) ->
+    if cfg.tex then render ~cfg x else render ~cfg y
   | node ->
     Format.eprintf "missing case: %a@." Sem.pp_node node;
-    failwith "Render_math_mode.render_node"
+    failwith "Render_verbatim.render_node"
 
-and render_tag name body =
+and render_tag ~cfg name body =
   Printer.seq
     [Printer.text "\\";
      Printer.text name;
-     render_arg Braces body]
+     render_arg ~cfg Braces body]
 
-and render xs =
-  Printer.iter ~sep:Printer.space render_node xs
+and render ~cfg xs =
+  Printer.iter ~sep:Printer.space (render_node ~cfg) xs
 
-and render_arg delim (arg : Sem.t) : Printer.t =
+and render_arg ~cfg delim (arg : Sem.t) : Printer.t =
   match arg with
   | [] -> Printer.nil
   | _ ->
@@ -49,5 +53,5 @@ and render_arg delim (arg : Sem.t) : Printer.t =
     in
     Printer.seq
       [Printer.text l;
-       render arg;
+       render ~cfg arg;
        Printer.text r]

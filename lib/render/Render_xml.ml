@@ -22,11 +22,11 @@ let rec render_node ~cfg : Sem.node -> printer =
       | Inline -> []
       | Display -> ["display", "block"]
     in
-    let module TP = Render_math_mode.Printer in
+    let module TP = Render_verbatim.Printer in
     Printer.tag "tex" attrs [
       Printer.text @@
       TP.contents @@
-      Render_math_mode.render bdy
+      Render_verbatim.render ~cfg:{tex = false} bdy
     ]
   | Sem.Link {title; dest} ->
     begin
@@ -71,10 +71,10 @@ let rec render_node ~cfg : Sem.node -> printer =
         render_transclusion ~cfg ~opts doc
     else
       Printer.nil
-  | Sem.Embed_TeX {packages; source} ->
+  | Sem.Embed_tex {packages; source} ->
     let code =
-      Render_math_mode.Printer.contents @@
-      Render_math_mode.render source
+      Render_verbatim.Printer.contents @@
+      Render_verbatim.render ~cfg:{tex = true} source
     in
     let hash = Digest.to_hex @@ Digest.string code in
     E.enqueue_latex ~name:hash ~packages ~source:code;
@@ -85,6 +85,8 @@ let rec render_node ~cfg : Sem.node -> printer =
     Printer.tag "block" ["open", "open"] @@
     [Printer.tag "headline" [] [render ~cfg title];
      render ~cfg body]
+  | Sem.If_tex (_, x) ->
+    render ~cfg x
 
 and render_transclusion ~cfg ~opts doc =
   let cfg =

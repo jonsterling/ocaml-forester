@@ -6,7 +6,7 @@
 %token <string> TEXT
 %token <string list> IDENT
 %token TITLE IMPORT EXPORT DEF TAXON AUTHOR TEX_PACKAGE TAG DATE NAMESPACE LET TEX BLOCK META OPEN
-%token TRANSCLUDE SCOPE PUT GET DEFAULT ALLOC
+%token TRANSCLUDE SCOPE PUT GET DEFAULT ALLOC IF_TEX
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token QUERY_AND QUERY_OR QUERY_AUTHOR QUERY_TAG QUERY_TAXON QUERY_META
 %token QUERY_TREE
@@ -47,7 +47,8 @@ let node :=
 | ~ = delimited(HASH_HASH_LBRACE, expr, RBRACE); <Code.display_math>
 | TRANSCLUDE; ~ = txt_arg; <Code.Transclude>
 | LET; (~,~,~) = fun_spec; <Code.Let>
-| TEX; ~ = arg; <Code.Embed_TeX>
+| TEX; ~ = arg; <Code.Embed_tex>
+| IF_TEX; x = arg; y = arg; <Code.If_tex>
 | BLOCK; x = arg; y = arg; <Code.Block>
 | ~ = IDENT; <Code.Ident>
 | ~ = TEXT; <Code.Text>

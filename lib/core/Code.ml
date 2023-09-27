@@ -7,7 +7,7 @@ type node =
   | Math of math_mode * t
   | Ident of Trie.path
   | Transclude of string
-  | Embed_TeX of t
+  | Embed_tex of t
   | Let of Trie.path * Trie.path list * t
   | Open of Trie.path
   | Block of t * t
@@ -15,6 +15,7 @@ type node =
   | Put of Trie.path * t
   | Default of Trie.path * t
   | Get of Trie.path
+  | If_tex of t * t
 
   | Query of t Query.t
 

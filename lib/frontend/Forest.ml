@@ -198,13 +198,15 @@ struct
       analyze_nodes scope xs
     | Sem.Math (_, x) ->
       analyze_nodes scope x
-    | Sem.Embed_TeX {source; _} ->
+    | Sem.Embed_tex {source; _} ->
       analyze_nodes scope source
     | Sem.Block (title, body) ->
       analyze_nodes scope title;
       analyze_nodes scope body
     | Sem.Query (opts, _) ->
       analyze_transclusion_opts scope opts
+    | Sem.If_tex (_, y) ->
+      analyze_nodes scope y
 
   and analyze_transclusion_opts scope : Sem.transclusion_opts -> unit =
     function Sem.{title_override; _} ->
