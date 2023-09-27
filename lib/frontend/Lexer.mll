@@ -26,7 +26,7 @@ let ident = '\\' (alpha) (alpha|digit|'-'|'/')*
 let addr = (alpha) (alpha|digit|'_'|'-')*
 let whitespace = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
-let text = [^ '%' '#' '\\' '{' '}' '[' ']' '(' ')' '`' '\n']+ newline?
+let text = [^ '%' '#' '\\' '{' '}' '[' ']' '(' ')' '\n']+ newline?
 
 rule token =
   parse
