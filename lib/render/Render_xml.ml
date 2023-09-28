@@ -106,13 +106,10 @@ and render_transclusion ~cfg ~opts doc =
 and render_internal_link ~cfg ~title ~addr =
   let url = E.route Xml addr in
   let doc = E.get_doc addr in
-  let title =
-    match title with
-    | Some t -> Some t
-    | None -> Option.bind doc @@ fun d -> d.title
-  in
+  let doc_title = Option.bind doc @@ fun d -> d.title in
+  let title = Option.fold title ~none:doc_title ~some:Option.some in
   let target_title_attr =
-    match title with
+    match doc_title with
     | None -> []
     | Some t ->
       let title_string =
