@@ -55,7 +55,7 @@ let rec render_node ~cfg : Sem.node -> printer =
         let body =
           docs |> List.filter_map @@ fun (doc : Sem.doc) ->
           doc.addr |> Option.map @@ fun addr ->
-          let opts = Sem.{expanded = false; show_heading = true; title_override = None; toc = false; numbered = false; show_metadata = true} in
+          let opts = Sem.{expanded = false; show_heading = true; title_override = None; taxon_override = None; toc = false; numbered = false; show_metadata = true} in
           Sem.Transclude (opts, addr)
         in
         let doc : Sem.doc =
@@ -239,7 +239,7 @@ and render_mainmatter ~cfg (doc : Sem.doc) =
 
 and render_backmatter ~cfg (doc : Sem.doc) =
   let cfg = {cfg with in_backmatter = true; top = false} in
-  let opts = Sem.{title_override = None; toc = false; show_heading = true; expanded = false; numbered = false; show_metadata = true} in
+  let opts = Sem.{title_override = None; taxon_override = None; toc = false; show_heading = true; expanded = false; numbered = false; show_metadata = true} in
   with_addr doc @@ fun addr ->
   Printer.tag "backmatter" [] [
     Printer.tag "contributions" [] [
@@ -292,6 +292,11 @@ and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
     | Some _ as title -> {doc with title}
     | None -> doc
   in
+  let doc =
+    match opts.taxon_override with
+    | Some _ as taxon -> {doc with taxon}
+    | None -> doc
+  in
   let attrs =
     ["expanded", string_of_bool opts.expanded;
      "show-heading", string_of_bool opts.show_heading;
@@ -309,5 +314,5 @@ and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
 
 let render_doc_page ~base_url ~trail (doc : Sem.doc) : printer =
   let cfg = {base_url; trail; top = true; counter = ref 0; in_backmatter = false} in
-  let opts = Sem.{title_override = None; toc = false; show_heading = true; expanded = true; numbered = true; show_metadata = true} in
+  let opts = Sem.{title_override = None; taxon_override = None; toc = false; show_heading = true; expanded = true; numbered = true; show_metadata = true} in
   Printer.with_xsl "forest.xsl" @@ render_doc ~cfg ~opts doc

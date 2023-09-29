@@ -21,6 +21,7 @@ and transclusion_opts =
    show_heading : bool;
    show_metadata : bool;
    title_override : t option;
+   taxon_override : string option;
    expanded : bool;
    numbered : bool}
 [@@deriving show]

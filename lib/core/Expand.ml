@@ -236,6 +236,7 @@ struct
   module Transclude =
   struct
     let title_sym, alloc_title = create ["transclude"; "title"]
+    let taxon_sym, alloc_taxon = create ["transclude"; "taxon"]
     let expanded_sym, alloc_expanded = create ["transclude"; "expanded"]
     let show_heading_sym, alloc_show_heading = create ["transclude"; "heading"]
     let toc_sym, alloc_toc = create ["transclude"; "toc"]
@@ -248,6 +249,7 @@ let expand_doc (units : exports UnitMap.t) addr (doc : Code.doc) =
   let init = Syn.{addr; title = None; taxon = None; date = None; authors = []; tags = []; metas = []; tex_packages = []} in
   Resolver.Scope.run @@ fun () ->
   Builtins.Transclude.alloc_title ();
+  Builtins.Transclude.alloc_taxon ();
   Builtins.Transclude.alloc_expanded ();
   Builtins.Transclude.alloc_show_heading ();
   Builtins.Transclude.alloc_toc ();

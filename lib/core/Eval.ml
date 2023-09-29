@@ -7,6 +7,10 @@ module DynEnv = Algaeff.Reader.Make (struct type env = Sem.t Env.t end)
 let get_transclusion_opts () =
   let dynenv = DynEnv.read () in
   let title_override = Env.find_opt Expand.Builtins.Transclude.title_sym dynenv in
+  let taxon_override = (match Env.find_opt Expand.Builtins.Transclude.taxon_sym dynenv with
+    | Some [Sem.Text text] -> Some text
+    | _ -> None)
+  in
   let get_bool key default =
     match Env.find_opt key dynenv with
     | Some [Sem.Text "true"] -> true
@@ -18,7 +22,7 @@ let get_transclusion_opts () =
   let toc = get_bool Expand.Builtins.Transclude.toc_sym true in
   let numbered = get_bool Expand.Builtins.Transclude.numbered_sym true in
   let show_metadata = get_bool Expand.Builtins.Transclude.show_metadata_sym false in
-  Sem.{title_override; toc; show_heading; expanded; numbered; show_metadata}
+  Sem.{title_override; taxon_override; toc; show_heading; expanded; numbered; show_metadata}
 
 let rec eval : Syn.t -> Sem.t =
   function
