@@ -333,6 +333,13 @@ struct
     let docs = Sem.Doc.sort @@ List.of_seq @@ Seq.map snd @@ M.to_seq docs in
     Render_json.render_docs docs fmt
 
+  let copy_theme ~env =
+    let cwd = Eio.Stdenv.cwd env in
+    Eio.Path.with_open_dir Eio.Path.(cwd / "theme") @@ fun theme ->
+    Eio.Path.read_dir theme |> List.iter @@ fun fname ->
+    let source = "theme/" ^ fname in
+    Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"output"
+
   let copy_assets ~env =
     let cwd = Eio.Stdenv.cwd env in
     Eio.Path.with_open_dir Eio.Path.(cwd / "assets") @@ fun assets ->
@@ -378,6 +385,7 @@ struct
     docs |> M.iter (fun _ -> render_doc ~cwd ~docs ~bib_fmt);
     render_json ~cwd docs;
     copy_assets ~env;
+    copy_theme ~env;
     LaTeX_queue.process ~env;
     copy_resources ~env
 end
