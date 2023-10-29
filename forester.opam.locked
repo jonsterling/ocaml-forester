@@ -8,14 +8,14 @@ license: "GPL-3.0-or-later"
 homepage: "https://sr.ht/~jonsterling/forester/"
 bug-reports: "https://todo.sr.ht/~jonsterling/forester"
 depends: [
-  "algaeff" {= "1.0.0"}
+  "algaeff" {= "1.1.0"}
   "base-bigarray" {= "base"}
   "base-domains" {= "base"}
   "base-nnp" {= "base"}
   "base-threads" {= "base"}
   "base-unix" {= "base"}
   "bigstringaf" {= "0.9.1"}
-  "bwd" {= "2.2.0"}
+  "bwd" {= "2.3.0"}
   "cmdliner" {= "1.2.0"}
   "cppo" {= "1.6.9"}
   "csexp" {= "1.5.2"}
@@ -23,9 +23,9 @@ depends: [
   "domain-local-await" {= "1.0.0"}
   "domain_shims" {= "0.1.0"}
   "domainslib" {= "0.5.1"}
-  "dune" {= "3.10.0"}
-  "dune-build-info" {= "3.10.0"}
-  "dune-configurator" {= "3.10.0"}
+  "dune" {= "3.11.1"}
+  "dune-build-info" {= "3.11.1"}
+  "dune-configurator" {= "3.11.1"}
   "eio" {= "0.12"}
   "eio_main" {= "0.12"}
   "eio_posix" {= "0.12"}
@@ -48,7 +48,7 @@ depends: [
   "optint" {= "0.3.0"}
   "ppx_derivers" {= "1.2.1"}
   "ppx_deriving" {= "5.2.1"}
-  "ppxlib" {= "0.30.0"}
+  "ppxlib" {= "0.31.0"}
   "psq" {= "0.2.1"}
   "ptime" {= "1.1.0"}
   "result" {= "1.5"}
