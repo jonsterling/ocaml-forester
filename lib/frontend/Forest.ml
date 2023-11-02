@@ -127,13 +127,13 @@ struct
 
       let rec test_query query (doc : Sem.doc) =
         match query with
-        | Query.Author [Sem.Text addr] ->
+        | Query.Author [Range.{value = Sem.Text addr; _}] ->
           List.mem addr doc.authors
-        | Query.Tag [Sem.Text addr] ->
+        | Query.Tag [{value = Sem.Text addr; _}] ->
           List.mem addr doc.tags
         | Query.Meta (key, value) ->
           List.mem (key, value) doc.metas
-        | Query.Taxon [Sem.Text taxon] ->
+        | Query.Taxon [{value = Sem.Text taxon; _}] ->
           doc.taxon = Some taxon
         | Query.Or qs ->
           qs |> List.exists @@ fun q -> test_query q doc
@@ -168,7 +168,8 @@ struct
     transclusion_graph |> Topo.iter @@ fun addr ->
     let task addr' =
       match M.find_opt addr trees with
-      | None -> failwith @@ Format.sprintf "Failed to find tree named %s" addr
+      | None ->
+        ()
       | Some doc ->
         match doc.taxon with
         | Some "reference" -> ()
@@ -187,8 +188,8 @@ struct
     Gph.iter_succ task transclusion_graph addr
 
   let rec analyze_nodes scope : Sem.t -> unit =
-    List.iter @@
-    function
+    List.iter @@ fun located ->
+    match Range.(located.value) with
     | Sem.Text _ -> ()
     | Sem.Transclude (opts, addr) ->
       analyze_transclusion_opts scope opts;
@@ -214,8 +215,8 @@ struct
     function Sem.{title_override; _} ->
       title_override |> Option.iter @@ analyze_nodes scope
 
-  let rec process_decl scope =
-    function
+  let rec process_decl scope decl =
+    match Asai.Range.(decl.value) with
     | Code.Tag tag ->
       Gph.add_edge tag_graph tag scope
     | Code.Author author ->
@@ -231,7 +232,7 @@ struct
   let plant_tree ~(source_path : string option) scope (doc : Code.doc) : unit =
     assert (not !frozen);
     if Tbl.mem unexpanded_trees scope then
-      failwith @@ Format.asprintf "Duplicate tree %s" scope;
+      Reporter.fatalf DuplicateTree "duplicate tree at address `%s`" scope;
     source_path |> Option.iter @@ Tbl.add source_paths scope;
     Gph.add_vertex transclusion_graph scope;
     Gph.add_vertex link_graph scope;

@@ -32,7 +32,7 @@ type node =
   | Namespace of Trie.path * t
 [@@deriving show]
 
-and t = node list
+and t = node Range.located list
 [@@deriving show]
 
 type doc = t

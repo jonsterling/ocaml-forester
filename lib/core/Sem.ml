@@ -26,14 +26,15 @@ and transclusion_opts =
    numbered : bool}
 [@@deriving show]
 
-and t = node list
+and t = node Range.located list
 
 and env = t Env.t
 [@@deriving show]
 
 let sentence_case =
   function
-  | Text str :: xs -> Text (String_util.sentence_case str) :: xs
+  | Range.{value = Text str; loc} :: xs ->
+    Range.{value = Text (String_util.sentence_case str); loc} :: xs
   | xs -> xs
 
 type doc =
@@ -52,8 +53,8 @@ let string_of_nodes =
   let rec render nodes =
     String.concat "" @@
     List.filter_map render_node nodes
-  and
-    render_node = function
+  and render_node located =
+    match Range.(located.value) with
     | Text s -> Some s
     | Link {title = Some title; _} -> Some (render title)
     | Link {title = None; dest} -> Some dest
@@ -68,7 +69,7 @@ module Doc =
 struct
   let peek_title (doc : doc) =
     match doc.title with
-    | Some (Text txt :: _) -> Some txt
+    | Some ({value = Text txt; _} :: _) -> Some txt
     | _ -> None
 
   let sort =

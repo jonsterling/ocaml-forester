@@ -19,7 +19,7 @@ type node =
   | If_tex of t * t
 [@@deriving show]
 
-and t = node list
+and t = node Range.located list
 [@@deriving show]
 
 type frontmatter =

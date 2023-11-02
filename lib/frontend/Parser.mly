@@ -17,6 +17,11 @@
 
 %%
 
+%inline
+locate(X):
+  | e = X
+    { Asai.Range.locate_lex $loc e }
+
 let braces(p) == delimited(LBRACE, p, RBRACE)
 let squares(p) == delimited(LSQUARE, p, RSQUARE)
 let parens(p) == delimited(LPAREN, p, RPAREN)
@@ -75,7 +80,7 @@ let queries :=
 
 let query := _ = eat_text; q = query0; eat_text; {q}
 
-let expr == list(node)
+let expr == list(locate(node))
 
 let arg == braces(expr)
 let txt_arg == braces(TEXT)

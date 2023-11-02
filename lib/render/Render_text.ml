@@ -28,7 +28,7 @@ let rec render_node : Sem.node -> Printer.t =
     render body
   | Sem.Link {title = None; dest} ->
     render @@
-    Option.value ~default:[Sem.Text dest] @@
+    Option.value ~default:[Range.locate_opt None @@ Sem.Text dest] @@
     Option.bind (E.get_doc dest) @@ fun doc ->
     doc.title
   | Sem.Link {title = Some title; dest} ->
@@ -44,8 +44,14 @@ let rec render_node : Sem.node -> Printer.t =
     Format.eprintf "missing case: %a@." Sem.pp_node node;
     failwith "Render_text.render_node"
 
+and render_located_node located =
+  fun fmt ->
+  (* TODO: maybe no need for this *)
+  Reporter.merge_loc Range.(located.loc) @@ fun () ->
+  render_node located.value fmt
+
 and render xs =
-  Printer.iter render_node xs
+  Printer.iter render_located_node xs
 
 and render_arg delim (arg : Sem.t) : Printer.t =
   match arg with

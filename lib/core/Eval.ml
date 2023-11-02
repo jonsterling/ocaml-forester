@@ -9,13 +9,13 @@ let get_transclusion_opts () =
   let title_override = Env.find_opt Expand.Builtins.Transclude.title_sym dynenv in
   let taxon_override =
     match Env.find_opt Expand.Builtins.Transclude.taxon_sym dynenv with
-    | Some [Sem.Text text] -> Some text
+    | Some [{value = Sem.Text text; _}] -> Some text
     | _ -> None
   in
   let get_bool key default =
     match Env.find_opt key dynenv with
-    | Some [Sem.Text "true"] -> true
-    | Some [Sem.Text "false"] -> false
+    | Some [{value = Sem.Text "true"; _}] -> true
+    | Some [{value = Sem.Text "false"; _}] -> false
     | _ -> default
   in
   let expanded = get_bool Expand.Builtins.Transclude.expanded_sym true in
@@ -28,23 +28,29 @@ let get_transclusion_opts () =
 let rec eval : Syn.t -> Sem.t =
   function
   | [] -> []
-  | Link {title; dest} :: rest ->
+  | node :: rest ->
+    eval_node node rest
+
+and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
+  fun node rest ->
+  match node.value with
+  | Link {title; dest} ->
     let title = Option.map eval title in
     let dest = Sem.string_of_nodes @@ eval_textual [] dest in
-    let link = Sem.Link {dest; title} in
+    let link = Range.locate_opt node.loc @@ Sem.Link {dest; title} in
     link :: eval rest
-  | Math (mmode, e) :: rest ->
-    Sem.Math (mmode, eval e) :: eval rest
-  | Tag name :: rest ->
-    eval_tag name rest
-  | Transclude addr :: rest ->
+  | Math (mmode, e) ->
+    Range.locate_opt node.loc (Sem.Math (mmode, eval e)) :: eval rest
+  | Tag name ->
+    eval_tag node.loc name rest
+  | Transclude addr ->
     let opts = get_transclusion_opts () in
-    Sem.Transclude (opts, addr) :: eval rest
-  | If_tex (x , y) :: rest ->
+    Range.locate_opt node.loc (Sem.Transclude (opts, addr)) :: eval rest
+  | If_tex (x , y) ->
     let x = eval x in
     let y = eval y in
-    Sem.If_tex (x, y) :: eval rest
-  | Query query :: rest ->
+    Range.locate_opt node.loc (Sem.If_tex (x, y)) :: eval rest
+  | Query query ->
     let opts = get_transclusion_opts () in
     let opts =
       match opts.title_override with
@@ -52,81 +58,89 @@ let rec eval : Syn.t -> Sem.t =
       | Some _ -> opts
     in
     let query = Query.map eval query in
-    Sem.Query (opts, query) :: eval rest
-  | Embed_tex {packages; source} :: rest ->
-    Sem.Embed_tex {packages; source = eval source} :: eval rest
-  | Block (title, body) :: rest ->
-    Sem.Block (eval title, eval body) :: eval rest
-  | Lam (xs, body) :: rest ->
-    let rec loop xs rest =
+    Range.locate_opt node.loc (Sem.Query (opts, query)) :: eval rest
+  | Embed_tex {packages; source} ->
+    Range.locate_opt node.loc (Sem.Embed_tex {packages; source = eval source}) :: eval rest
+  | Block (title, body) ->
+    Range.locate_opt node.loc (Sem.Block (eval title, eval body)) :: eval rest
+  | Lam (xs, body) ->
+    let rec loop loc xs rest =
       match xs, rest with
       | [], rest -> eval body, rest
-      | x :: xs, Syn.Group (Braces, u) :: rest ->
+      | x :: xs, Range.{value = Syn.Group (Braces, u); loc = loc'} :: rest ->
         LexEnv.scope (Env.add x (eval u)) @@ fun () ->
-        loop xs rest
+        loop (Range.merge_ranges_opt loc loc') xs rest
       | _ ->
-        failwith "eval/Lam"
+        Reporter.fatalf TypeError ?loc
+          "expected function to be applied to `%i` arguments"
+          (List.length xs)
     in
-    let body, rest = loop xs rest in
+    let body, rest = loop node.loc xs rest in
     body @ eval rest
-  | Var x :: rest ->
+  | Var x ->
     begin
       match Env.find_opt x @@ LexEnv.read () with
-      | None -> failwith @@ Format.asprintf "Could not find variable named %a" Symbol.pp x
+      | None ->
+        Reporter.fatalf ?loc:node.loc ResolverError
+          "could not find variable named %a"
+          Symbol.pp x
       | Some v -> v @ eval rest
     end
-  | Put (k, v, body) :: rest ->
+  | Put (k, v, body) ->
     let body =
       DynEnv.scope (Env.add k @@ eval v) @@ fun () ->
       eval body
     in
     body @ eval rest
-  | Default (k, v, body) :: rest ->
+  | Default (k, v, body) ->
     let body =
       let upd flenv = if Env.mem k flenv then flenv else Env.add k (eval v) flenv in
       DynEnv.scope upd @@ fun () ->
       eval body
     in
     body @ eval rest
-  | Get key :: rest ->
+  | Get key ->
     begin
       match Env.find_opt key @@ DynEnv.read () with
-      | None -> failwith @@ Format.asprintf "Could not find fluid binding named %a" Symbol.pp key
+      | None ->
+        Reporter.fatalf ?loc:node.loc ResolverError
+          "could not find fluid binding named %a"
+          Symbol.pp key
       | Some v -> v @ eval rest
     end
-  | (Group _ :: _ | Text _ :: _) as rest ->
-    eval_textual [] rest
+  | Group _ | Text _ ->
+    eval_textual [] @@ node :: rest
 
 and eval_textual prefix : Syn.t -> Sem.t =
   function
-  | Group (d, xs) :: rest ->
+  | {value = Group (d, xs); _} :: rest ->
     let l, r =
       match d with
       | Braces -> "{", "}"
       | Squares -> "[", "]"
       | Parens -> "(", ")"
     in
-    eval_textual (l :: prefix) @@ xs @ Text r :: rest
-  | Text x :: rest ->
+    eval_textual (l :: prefix) @@ xs @ Asai.Range.locate_opt None (Syn.Text r) :: rest
+  | {value = Text x; _} :: rest ->
     eval_textual (x :: prefix) @@ rest
   | rest ->
     let txt = String.concat "" @@ List.rev prefix in
-    Text txt :: eval rest
+    Range.locate_opt None (Sem.Text txt) :: eval rest
 
 
 (* Just take only one argument, I guess *)
-and eval_tag tag =
-  let rec parse_attrs tag attrs =
+and eval_tag loc tag =
+  let rec parse_attrs tag attrs : Syn.t -> _=
     function
-    | Syn.Group (Squares, [Text key]) :: Group (Braces, [Text value]) :: rest ->
+    | {value = Syn.Group (Squares, [{value = Text key; _}]); _} :: {value = Group (Braces, [{value = Text value; _}]); _} :: rest ->
       let attrs = Bwd.Snoc (attrs, (key, value)) in
       parse_attrs tag attrs rest
-    | Syn.Group (Braces, body) :: rest ->
+    | {value = Syn.Group (Braces, body); _} :: rest ->
       let attrs = Bwd.to_list attrs in
-      Sem.Tag (tag, attrs, eval body) :: eval rest
+      Range.locate_opt loc (Sem.Tag (tag, attrs, eval body)) :: eval rest
     | rest ->
       let attrs = Bwd.to_list attrs in
-      Sem.Tag (tag, attrs, []) :: eval rest
+      Range.locate_opt loc (Sem.Tag (tag, attrs, [])) :: eval rest
   in
   parse_attrs tag Bwd.Emp
 

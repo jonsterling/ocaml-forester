@@ -1,6 +1,7 @@
 open Prelude
 open Core
 
+
 module Printer =
 struct
   module P0 =
@@ -18,19 +19,27 @@ end
 
 type cfg = {tex : bool}
 
-let rec render_node ~cfg : Sem.node -> Printer.t =
-  function
-  | Sem.Text txt ->
-    Printer.text txt
-  | Sem.Math (_, xs) ->
-    render ~cfg xs
-  | Sem.Tag (name, _, body) ->
-    render_tag ~cfg name body
-  | Sem.If_tex (x , y) ->
-    if cfg.tex then render ~cfg x else render ~cfg y
-  | node ->
-    Format.eprintf "missing case: %a@." Sem.pp_node node;
-    failwith "Render_verbatim.render_node"
+let rec render_node ~cfg : Sem.node Range.located -> Printer.t =
+  fun located ->
+  let printer =
+    match located.value with
+    | Sem.Text txt ->
+      Printer.text txt
+    | Sem.Math (_, xs) ->
+      render ~cfg xs
+    | Sem.Tag (name, _, body) ->
+      render_tag ~cfg name body
+    | Sem.If_tex (x , y) ->
+      if cfg.tex then render ~cfg x else render ~cfg y
+    | node ->
+      Format.eprintf "missing case: %a@." Sem.pp_node node;
+      failwith "Render_verbatim.render_node"
+  in
+  fun fmt ->
+    (* TODO: maybe no need for this *)
+    Reporter.merge_loc located.loc @@ fun () ->
+    printer fmt
+
 
 and render_tag ~cfg name body =
   Printer.seq

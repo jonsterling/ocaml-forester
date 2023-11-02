@@ -2,7 +2,7 @@
  (name Render)
  (preprocess
   (pps ppx_deriving.show))
- (libraries forester.prelude forester.core xmlm algaeff)
+ (libraries forester.prelude forester.core xmlm asai algaeff)
  (public_name forester.render))
 
 (env

@@ -9,3 +9,6 @@ module Expand = Expand
 module Eval = Eval
 module Query = Query
 module BaseN = BaseN
+
+module Reporter = Reporter
+module Range = Range

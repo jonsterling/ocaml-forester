@@ -2,6 +2,7 @@ open Eio.Std
 open Forester
 open Cmdliner
 
+module Tty = Asai.Tty.Make (Core.Reporter.Message)
 
 let version =
   Format.asprintf "%s" @@
@@ -23,12 +24,10 @@ let build ~env input_dirs root base_url dev max_fibers ignore_tex_cache =
 
   let module F = Forest.Make (I) in
   let module P = Process.Make (F) in
-
   begin
-    input_dirs |> List.iter @@
-    P.process_dir ~dev
+    input_dirs |> List.iter @@ fun dir ->
+    P.process_dir ~dev dir
   end;
-
   F.render_trees ()
 
 let new_tree ~env input_dir dest_dir prefix =
@@ -46,7 +45,7 @@ let new_tree ~env input_dir dest_dir prefix =
   P.process_dir ~dev:true input_dir;
   let dest_dir = Option.value ~default:input_dir dest_dir in
   let addr = F.create_tree ~dir:input_dir ~dest:dest_dir ~prefix in
-  Eio.traceln "Created tree %s" addr
+  Core.Reporter.emitf CreatedTree "created tree `%s` at `%s/%s.tree`" addr dest_dir addr
 
 let complete ~env input_dirs title =
   let module I =
@@ -163,5 +162,5 @@ let cmd ~env =
 
 let () =
   Eio_main.run @@ fun env ->
-  Printexc.record_backtrace true;
-  exit @@ Cmd.eval @@ cmd ~env
+  Core.Reporter.run ~emit:Tty.display ~fatal:Tty.display @@ fun () ->
+  exit @@ Cmd.eval ~catch:false @@ cmd ~env

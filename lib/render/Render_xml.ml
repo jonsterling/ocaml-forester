@@ -12,8 +12,9 @@ type cfg = {base_url : string option; trail : int bwd option; counter : int ref;
 
 let (let*?) = Option.bind
 
-let rec render_node ~cfg : Sem.node -> printer =
-  function
+let rec render_node ~cfg : Sem.node Range.located -> printer =
+  fun located ->
+  match located.value with
   | Sem.Text txt ->
     Printer.text txt
   | Sem.Math (mode, bdy) ->
@@ -42,7 +43,7 @@ let rec render_node ~cfg : Sem.node -> printer =
     begin
       match E.get_doc addr with
       | None ->
-        failwith @@ Format.sprintf "Failed to transclude non-existent tree with address '%s'" addr
+        Reporter.fatalf ?loc:located.loc TreeNotFound "could not find tree at address `%s` for transclusion" addr
       | Some doc ->
         render_transclusion ~cfg ~opts doc
     end
@@ -56,7 +57,7 @@ let rec render_node ~cfg : Sem.node -> printer =
           docs |> List.filter_map @@ fun (doc : Sem.doc) ->
           doc.addr |> Option.map @@ fun addr ->
           let opts = Sem.{expanded = false; show_heading = true; title_override = None; taxon_override = None; toc = false; numbered = false; show_metadata = true} in
-          Sem.Transclude (opts, addr)
+          Range.locate_opt None @@ Sem.Transclude (opts, addr)
         in
         let doc : Sem.doc =
           {addr = None;
@@ -119,16 +120,17 @@ and render_internal_link ~cfg ~title ~addr =
       in
       ["title", title_string]
   in
-  let title = Option.value ~default:[Sem.Text addr] title in
+  let title = Option.value ~default:[Range.locate_opt None @@ Sem.Text addr] title in
   Printer.tag "link"
     (["href", url; "type", "local"] @ target_title_attr)
     [render ~cfg title]
 
 and render_external_link ~cfg ~title ~url =
-  let title = Option.value ~default:[Sem.Text url] title in
+  let title = Option.value ~default:[Range.locate_opt None @@ Sem.Text url] title in
   Printer.tag "link"
     ["href", url; "type", "external"]
     [render ~cfg title]
+
 
 and render ~cfg : Sem.t -> printer =
   Printer.iter (render_node ~cfg)
@@ -315,4 +317,13 @@ and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
 let render_doc_page ~base_url ~trail (doc : Sem.doc) : printer =
   let cfg = {base_url; trail; top = true; counter = ref 0; in_backmatter = false} in
   let opts = Sem.{title_override = None; taxon_override = None; toc = false; show_heading = true; expanded = true; numbered = true; show_metadata = true} in
-  Printer.with_xsl "forest.xsl" @@ render_doc ~cfg ~opts doc
+  let trace k =
+    match doc.addr with
+    | None -> k ()
+    | Some addr ->
+      Reporter.tracef "when rendering tree at address `%s` to XML" addr k
+  in
+  let printer = Printer.with_xsl "forest.xsl" @@ render_doc ~cfg ~opts doc in
+  fun fmt ->
+    trace @@ fun () ->
+    printer fmt

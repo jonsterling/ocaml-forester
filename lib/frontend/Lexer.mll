@@ -2,7 +2,7 @@
   exception SyntaxError of string
   let drop_sigil c str = 1 |> List.nth @@ String.split_on_char c str
   let ident str = Parser.IDENT (String.split_on_char '/' (drop_sigil '\\' str))
-  let illegal str = raise @@ SyntaxError ("Lexer - Illegal character: [" ^ str ^ "].")
+  let illegal str = raise @@ SyntaxError str
 
   let text str = Parser.TEXT str
   let dbg str = Format.printf "%s\n" str; flush stdout

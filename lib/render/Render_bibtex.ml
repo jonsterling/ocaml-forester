@@ -78,7 +78,7 @@ let render_bibtex ~base_url (doc : Sem.doc) : Printer.t =
   match Metas.find_opt "bibtex" metas with
   | None ->
     render_auto_bibtex ~base_url doc
-  | Some [Text txt] ->
+  | Some [{value = Text txt; _}] ->
     let lines = String.split_on_char '\n' txt in
     lines |> Printer.iter ~sep:Printer.newline @@ fun line ->
     Printer.text @@ String.trim line
