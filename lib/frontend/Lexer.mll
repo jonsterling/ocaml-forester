@@ -77,6 +77,16 @@ rule token =
   | "\\query/taxon" {return lexbuf @@ Parser.QUERY_TAXON }
   | "\\query/meta" {return lexbuf @@ Parser.QUERY_META }
   | "\\query" { return lexbuf @@ Parser.QUERY_TREE }
+  | "\\xml" { return lexbuf @@ Parser.XML_TAG }
+  | "\\p" { return lexbuf @@ Parser.PRIM `P }
+  | "\\em" { return lexbuf @@ Parser.PRIM `Em }
+  | "\\strong" { return lexbuf @@ Parser.PRIM `Strong }
+  | "\\li" { return lexbuf @@ Parser.PRIM `Li }
+  | "\\ul" { return lexbuf @@ Parser.PRIM `Ul }
+  | "\\ol" { return lexbuf @@ Parser.PRIM `Ol }
+  | "\\code" { return lexbuf @@ Parser.PRIM `Code }
+  | "\\blockquote" { return lexbuf @@ Parser.PRIM `Code }
+  | "\\pre" { return lexbuf @@ Parser.PRIM `Pre }
   | "#" { return lexbuf @@ Parser.TEXT "#" }
   | ident { return lexbuf @@ ident (Lexing.lexeme lexbuf) }
   | '{' { return lexbuf @@ Parser.LBRACE }

@@ -18,13 +18,14 @@ struct
     Format.asprintf "%a" (fun fmt _ -> printer fmt) ()
 end
 
-let rec render_node : Sem.node -> Printer.t =
-  function
+let rec render_node : Sem.node Range.located -> Printer.t =
+  fun node ->
+  match node.value with
   | Sem.Text txt ->
     Printer.text txt
   | Sem.Math (_, xs) ->
     render xs
-  | Sem.Tag (name, _, body) ->
+  | Sem.Xml_tag (name, _, body) ->
     render body
   | Sem.Link {title = None; dest} ->
     render @@
@@ -40,18 +41,15 @@ let rec render_node : Sem.node -> Printer.t =
        Printer.text "}"]
   | Sem.If_tex (_, y) ->
     render y
-  | node ->
-    Format.eprintf "missing case: %a@." Sem.pp_node node;
-    failwith "Render_text.render_node"
-
-and render_located_node located =
-  fun fmt ->
-  (* TODO: maybe no need for this *)
-  Reporter.merge_loc Range.(located.loc) @@ fun () ->
-  render_node located.value fmt
+  | Sem.Prim (_, x) ->
+    render x
+  | Sem.Unresolved _ ->
+    Printer.nil
+  | _ ->
+    Reporter.fatal ?loc:node.loc Unhandled_case "unhandled case in plain text renderer"
 
 and render xs =
-  Printer.iter render_located_node xs
+  Printer.iter render_node xs
 
 and render_arg delim (arg : Sem.t) : Printer.t =
   match arg with

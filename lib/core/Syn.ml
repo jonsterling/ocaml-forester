@@ -5,7 +5,6 @@ type node =
   | Text of string
   | Group of delim * t
   | Math of math_mode * t
-  | Tag of string
   | Link of {dest : t; title : t option}
   | Transclude of string
   | Query of t Query.t
@@ -17,6 +16,9 @@ type node =
   | Default of Symbol.t * t * t
   | Get of Symbol.t
   | If_tex of t * t
+  | Xml_tag of string * (string * t) list * t
+  | Unresolved of string
+  | Prim of Prim.t * t
 [@@deriving show]
 
 and t = node Range.located list

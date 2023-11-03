@@ -1,19 +1,18 @@
 open Base
 open Prelude
 
-type attr = string * string
-[@@deriving show]
-
 type node =
   | Text of string
   | Transclude of transclusion_opts * addr
   | Query of transclusion_opts * t Query.t
   | Link of {dest : string; title : t option}
-  | Tag of string * attr list * t
+  | Xml_tag of string * (string * t) list * t
+  | Unresolved of string
   | Math of math_mode * t
   | Embed_tex of {packages : string list; source : t}
   | Block of t * t
   | If_tex of t * t
+  | Prim of Prim.t * t
 [@@deriving show]
 
 and transclusion_opts =
@@ -58,10 +57,11 @@ let string_of_nodes =
     | Text s -> Some s
     | Link {title = Some title; _} -> Some (render title)
     | Link {title = None; dest} -> Some dest
-    | Tag (_, _, bdy) | Math (_, bdy) -> Some (render bdy)
+    | Xml_tag (_, _, bdy) | Math (_, bdy) -> Some (render bdy)
     | Embed_tex {source; _} -> Some (render source)
     | If_tex (_, x) -> Some (render x)
-    | Transclude _ | Query _ | Block _ -> None
+    | Prim (_, x) -> Some (render x)
+    | Transclude _ | Query _ | Block _ | Unresolved _ -> None
   in
   render
 

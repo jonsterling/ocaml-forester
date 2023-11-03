@@ -1,28 +1,28 @@
 module Message =
 struct
   type t =
-    | TreeNotFound
-    | DuplicateTree
-    | ParseError
-    | TypeError
-    | ResolverError
-    | ExpansionError
-    | CreatedTree
-    | RanShellCommand
-    | FrontmatterInBody
+    | Tree_not_found
+    | Duplicate_tree
+    | Parse_error
+    | Type_error
+    | Resolution_error
+    | Expansion_error
+    | Created_tree
+    | Frontmatter_in_body
+    | Unhandled_case
   [@@deriving show]
 
   let default_severity : t -> Asai.Diagnostic.severity =
     function
-    | DuplicateTree -> Error
-    | TreeNotFound -> Error
-    | ParseError -> Error
-    | TypeError -> Error
-    | ResolverError -> Error
-    | ExpansionError -> Error
-    | CreatedTree -> Info
-    | RanShellCommand -> Info
-    | FrontmatterInBody -> Error
+    | Duplicate_tree -> Error
+    | Tree_not_found -> Error
+    | Parse_error -> Error
+    | Type_error -> Error
+    | Resolution_error -> Error
+    | Expansion_error -> Error
+    | Created_tree -> Info
+    | Frontmatter_in_body -> Error
+    | Unhandled_case -> Bug
 
   let short_code : t -> string =
     show

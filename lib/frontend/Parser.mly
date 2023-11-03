@@ -5,8 +5,9 @@
 
 %token <string> TEXT
 %token <string list> IDENT
+%token <Core.Prim.t> PRIM
 %token TITLE IMPORT EXPORT DEF TAXON AUTHOR TEX_PACKAGE TAG DATE NAMESPACE LET TEX BLOCK META OPEN
-%token TRANSCLUDE SCOPE PUT GET DEFAULT ALLOC IF_TEX
+%token TRANSCLUDE SCOPE PUT GET DEFAULT ALLOC IF_TEX XML_TAG
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token QUERY_AND QUERY_OR QUERY_AUTHOR QUERY_TAG QUERY_TAXON QUERY_META
 %token QUERY_TREE
@@ -63,6 +64,11 @@ let node :=
 | GET; ~ = IDENT; <Code.Get>
 | OPEN; ~ = IDENT; <Code.Open>
 | QUERY_TREE; ~ = braces(query); <Code.Query>
+| XML_TAG; ~ = txt_arg; ~ = list(xml_attr); ~ = arg; <Code.Xml_tag>
+| ~ = PRIM; ~ = arg; <Code.Prim>
+
+let xml_attr :=
+| k = squares(TEXT); v = arg; { (k, v) }
 
 let eat_text == option(TEXT)
 

@@ -41,8 +41,18 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     link :: eval rest
   | Math (mmode, e) ->
     Range.locate_opt node.loc (Sem.Math (mmode, eval e)) :: eval rest
-  | Tag name ->
-    eval_tag node.loc name rest
+  | Prim (p, body) ->
+    Range.locate_opt node.loc (Sem.Prim (p, eval body)) :: eval rest
+  | Xml_tag (name, attrs, body) ->
+    let attrs =
+      attrs |> List.map @@ fun (k, v) ->
+      k, eval v
+    in
+    let xml = Sem.Xml_tag (name, attrs, eval body) in
+    Range.locate_opt node.loc xml :: eval rest
+  | Unresolved name ->
+    let cmd = Sem.Unresolved name in
+    Range.locate_opt node.loc cmd :: eval rest
   | Transclude addr ->
     let opts = get_transclusion_opts () in
     Range.locate_opt node.loc (Sem.Transclude (opts, addr)) :: eval rest
@@ -71,7 +81,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
         LexEnv.scope (Env.add x (eval u)) @@ fun () ->
         loop (Range.merge_ranges_opt loc loc') xs rest
       | _ ->
-        Reporter.fatalf TypeError ?loc
+        Reporter.fatalf Type_error ?loc
           "expected function to be applied to `%i` arguments"
           (List.length xs)
     in
@@ -81,7 +91,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     begin
       match Env.find_opt x @@ LexEnv.read () with
       | None ->
-        Reporter.fatalf ?loc:node.loc ResolverError
+        Reporter.fatalf ?loc:node.loc Resolution_error
           "could not find variable named %a"
           Symbol.pp x
       | Some v -> v @ eval rest
@@ -103,7 +113,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     begin
       match Env.find_opt key @@ DynEnv.read () with
       | None ->
-        Reporter.fatalf ?loc:node.loc ResolverError
+        Reporter.fatalf ?loc:node.loc Resolution_error
           "could not find fluid binding named %a"
           Symbol.pp key
       | Some v -> v @ eval rest
@@ -127,22 +137,6 @@ and eval_textual prefix : Syn.t -> Sem.t =
     let txt = String.concat "" @@ List.rev prefix in
     Range.locate_opt None (Sem.Text txt) :: eval rest
 
-
-(* Just take only one argument, I guess *)
-and eval_tag loc tag =
-  let rec parse_attrs tag attrs : Syn.t -> _=
-    function
-    | {value = Syn.Group (Squares, [{value = Text key; _}]); _} :: {value = Group (Braces, [{value = Text value; _}]); _} :: rest ->
-      let attrs = Bwd.Snoc (attrs, (key, value)) in
-      parse_attrs tag attrs rest
-    | {value = Syn.Group (Braces, body); _} :: rest ->
-      let attrs = Bwd.to_list attrs in
-      Range.locate_opt loc (Sem.Tag (tag, attrs, eval body)) :: eval rest
-    | rest ->
-      let attrs = Bwd.to_list attrs in
-      Range.locate_opt loc (Sem.Tag (tag, attrs, [])) :: eval rest
-  in
-  parse_attrs tag Bwd.Emp
 
 let eval_doc (doc : Syn.doc) : Sem.doc =
   let fm, tree = doc in

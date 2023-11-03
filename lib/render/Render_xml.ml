@@ -37,13 +37,24 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
       | None ->
         render_external_link ~cfg ~title ~url:dest
     end
-  | Sem.Tag (name, attrs, xs) ->
+  | Sem.Xml_tag (name, attrs, xs) ->
+    let attrs =
+      attrs |> List.map @@ fun (k, v) ->
+      let txt =
+        Render_verbatim.Printer.contents @@
+        Render_verbatim.render ~cfg:{tex = true} v
+      in
+      k, txt
+    in
     Printer.tag name attrs [render ~cfg xs]
+  | Sem.Unresolved name ->
+    Reporter.fatalf ?loc:located.loc Resolution_error
+      "unresolved identifier `\\%s`" name
   | Sem.Transclude (opts, addr) ->
     begin
       match E.get_doc addr with
       | None ->
-        Reporter.fatalf ?loc:located.loc TreeNotFound "could not find tree at address `%s` for transclusion" addr
+        Reporter.fatalf ?loc:located.loc Tree_not_found "could not find tree at address `%s` for transclusion" addr
       | Some doc ->
         render_transclusion ~cfg ~opts doc
     end
@@ -88,6 +99,20 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
      render ~cfg body]
   | Sem.If_tex (_, x) ->
     render ~cfg x
+  | Sem.Prim (p, x) ->
+    let name =
+      match p with
+      | `P -> "p"
+      | `Ul -> "ul"
+      | `Ol -> "ol"
+      | `Li -> "li"
+      | `Em -> "em"
+      | `Strong -> "strong"
+      | `Code -> "code"
+      | `Blockquote -> "blockquote"
+      | `Pre -> "pre"
+    in
+    Printer.tag name [] [render ~cfg x]
 
 and render_transclusion ~cfg ~opts doc =
   let cfg =

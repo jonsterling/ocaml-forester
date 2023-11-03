@@ -197,7 +197,13 @@ struct
     | Sem.Link {title; dest} ->
       Option.iter (analyze_nodes scope) title;
       Gph.add_edge link_graph dest scope
-    | Sem.Tag (_, _, xs) ->
+    | Sem.Unresolved _ ->
+      ()
+    | Sem.Xml_tag (_, attrs, xs) ->
+      begin
+        attrs |> List.iter @@ fun (k, v) ->
+        analyze_nodes scope v
+      end;
       analyze_nodes scope xs
     | Sem.Math (_, x) ->
       analyze_nodes scope x
@@ -210,6 +216,8 @@ struct
       analyze_transclusion_opts scope opts
     | Sem.If_tex (_, y) ->
       analyze_nodes scope y
+    | Sem.Prim (_, x) ->
+      analyze_nodes scope x
 
   and analyze_transclusion_opts scope : Sem.transclusion_opts -> unit =
     function Sem.{title_override; _} ->
@@ -232,7 +240,7 @@ struct
   let plant_tree ~(source_path : string option) scope (doc : Code.doc) : unit =
     assert (not !frozen);
     if Tbl.mem unexpanded_trees scope then
-      Reporter.fatalf DuplicateTree "duplicate tree at address `%s`" scope;
+      Reporter.fatalf Duplicate_tree "duplicate tree at address `%s`" scope;
     source_path |> Option.iter @@ Tbl.add source_paths scope;
     Gph.add_vertex transclusion_graph scope;
     Gph.add_vertex link_graph scope;

@@ -12,3 +12,4 @@ module BaseN = BaseN
 
 module Reporter = Reporter
 module Range = Range
+module Prim = Prim

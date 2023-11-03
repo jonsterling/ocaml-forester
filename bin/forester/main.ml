@@ -45,7 +45,7 @@ let new_tree ~env input_dir dest_dir prefix =
   P.process_dir ~dev:true input_dir;
   let dest_dir = Option.value ~default:input_dir dest_dir in
   let addr = F.create_tree ~dir:input_dir ~dest:dest_dir ~prefix in
-  Core.Reporter.emitf CreatedTree "created tree `%s` at `%s/%s.tree`" addr dest_dir addr
+  Core.Reporter.emitf Created_tree "created tree `%s` at `%s/%s.tree`" addr dest_dir addr
 
 let complete ~env input_dirs title =
   let module I =

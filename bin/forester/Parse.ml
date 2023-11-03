@@ -9,10 +9,10 @@ let parse_channel filename ch =
   try Parser.main Lexer.token lexbuf with
   | Parser.Error ->
     let loc = Asai.Range.of_lexbuf lexbuf in
-    Reporter.fatal ~loc ParseError "failed to parse"
+    Reporter.fatal ~loc Parse_error "failed to parse"
   | Lexer.SyntaxError token ->
     let loc = Asai.Range.of_lexbuf lexbuf in
-    Reporter.fatalf ~loc ParseError "unrecognized token `%s`" @@
+    Reporter.fatalf ~loc Parse_error "unrecognized token `%s`" @@
     String.escaped token
 
 let parse_file filename =

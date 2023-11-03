@@ -6,6 +6,7 @@ type node =
   | Group of delim * t
   | Math of math_mode * t
   | Ident of Trie.path
+  | Xml_tag of string * (string * t) list * t
   | Transclude of string
   | Embed_tex of t
   | Let of Trie.path * Trie.path list * t
@@ -16,6 +17,7 @@ type node =
   | Default of Trie.path * t
   | Get of Trie.path
   | If_tex of t * t
+  | Prim of Prim.t * t
 
   | Query of t Query.t
 

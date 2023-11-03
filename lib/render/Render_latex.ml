@@ -20,16 +20,12 @@ let rec add_qedhere xs =
   match Bwd.of_list xs with
   | Emp -> xs
   | Snoc (xs', last) ->
-    let qedhere = Range.locate_opt None @@ Sem.Tag ("qedhere", [], []) in
+    let qedhere = Range.locate_opt None @@ Sem.Unresolved "qedhere" in
     let locate = Range.locate_opt Range.(last.loc) in
     Bwd.to_list @@
     match Range.(last.value) with
-    | Sem.Tag ("ol", _, ys) ->
-      Bwd.Snoc (xs', locate @@ Sem.Tag ("ol", [], add_qedhere ys))
-    | Sem.Tag ("ul", _, ys) ->
-      Bwd.Snoc (xs', locate @@ Sem.Tag ("ul", [], add_qedhere ys))
-    | Sem.Tag ("li", _, ys) ->
-      Bwd.Snoc (xs', locate @@ Sem.Tag ("li", [], add_qedhere ys))
+    | Sem.Prim ((`Ol | `Ul | `Li | `Blockquote) as prim, ys) ->
+      Bwd.Snoc (xs', locate @@ Sem.Prim (prim, add_qedhere ys))
     | Sem.Math (Display, ys) ->
       Bwd.Snoc (xs', locate @@ Sem.Math (Display, add_qedhere ys))
     | _ ->
@@ -44,102 +40,106 @@ let rec render (nodes : Sem.t) : Printer.t =
 
 and render_node : Sem.node Range.located -> Printer.t =
   fun located ->
-  let printer =
-    match located.value with
-    | Text txt -> Printer.text txt
-    | Transclude (_, addr) ->
-      begin
-        match E.get_doc addr with
-        | None ->
-          Reporter.emitf ?loc:located.loc TreeNotFound "could not find tree at address `%s` for transclusion" addr;
-          Printer.nil
-        | Some doc ->
-          render_doc_section doc
-      end
-    | Tag (name, _, body) ->
-      render_tag name body
-    | Link {title; dest} ->
-      begin
-        match E.get_doc dest with
-        | None ->
-          let title = Option.value ~default:[Range.locate_opt None @@ Sem.Text dest] title in
-          Format.dprintf {|\href{%s}{%a}|} dest (Fun.flip render) title
-        | Some doc ->
-          let title =
-            match title with
-            | Some t -> t
-            | None -> Option.value ~default:[Range.locate_opt None @@ Sem.Text dest] title
-          in
-          begin
-            match doc.taxon with
-            | Some "reference" ->
-              Format.dprintf {|%a~\cite{%s}|} (Fun.flip render) title dest
-            | Some "person" ->
-              render title
-            | _ ->
-              Format.dprintf {|\ForesterRef{%s}{%a}|} dest (Fun.flip render) title
-          end
-      end
-    | Math (Inline, body) ->
-      Format.dprintf {|\(%a\)|} (Fun.flip (Render_verbatim.render ~cfg:{tex = true})) body
-    | Math (Display, body) ->
-      Format.dprintf {|\[%a\]|} (Fun.flip (Render_verbatim.render ~cfg:{tex = true})) body
-    | Embed_tex {source; packages} ->
-      let code =
-        Render_verbatim.Printer.contents @@
-        Render_verbatim.render ~cfg:{tex = true} source
-      in
-      let hash = Digest.to_hex @@ Digest.string code in
-      E.enqueue_latex ~name:hash ~packages ~source:code;
-      let path = Format.sprintf "resources/%s-print.pdf" hash in
-      Format.dprintf {|\[\includegraphics{%s}\]%s|} path "\n"
-    | If_tex (x, _) ->
-      render x
-    | Block (title, body) ->
-      Printer.seq [
-        Format.dprintf {|\begin{proof}[{%a}]%s|} (Fun.flip render) title "\n";
-        render @@ add_qedhere body;
-        Format.dprintf {|\end{proof}%s|} "\n"
-      ]
-    | Query _ ->
-      Printer.nil
-  in
-  fun fmt ->
-    printer fmt
+  match located.value with
+  | Text txt -> Printer.text txt
+  | Transclude (_, addr) ->
+    begin
+      match E.get_doc addr with
+      | None ->
+        Reporter.emitf ?loc:located.loc Tree_not_found "could not find tree at address `%s` for transclusion" addr;
+        Printer.nil
+      | Some doc ->
+        render_doc_section doc
+    end
+  | Xml_tag (name, _, body) ->
+    (* Best effort: maybe turn into a warning or an error  *)
+    Format.dprintf {|\%s{%a}|} name (Fun.flip render) body
+  | Unresolved name ->
+    Format.dprintf {|\%s|} name
+  | Prim (p, body) ->
+    render_prim p body
+  | Link {title; dest} ->
+    begin
+      match E.get_doc dest with
+      | None ->
+        let title = Option.value ~default:[Range.locate_opt None @@ Sem.Text dest] title in
+        Format.dprintf {|\href{%s}{%a}|} dest (Fun.flip render) title
+      | Some doc ->
+        let title =
+          match title with
+          | Some t -> t
+          | None -> Option.value ~default:[Range.locate_opt None @@ Sem.Text dest] title
+        in
+        begin
+          match doc.taxon with
+          | Some "reference" ->
+            Format.dprintf {|%a~\cite{%s}|} (Fun.flip render) title dest
+          | Some "person" ->
+            render title
+          | _ ->
+            Format.dprintf {|\ForesterRef{%s}{%a}|} dest (Fun.flip render) title
+        end
+    end
+  | Math (Inline, body) ->
+    Format.dprintf {|\(%a\)|} (Fun.flip (Render_verbatim.render ~cfg:{tex = true})) body
+  | Math (Display, body) ->
+    Format.dprintf {|\[%a\]|} (Fun.flip (Render_verbatim.render ~cfg:{tex = true})) body
+  | Embed_tex {source; packages} ->
+    let code =
+      Render_verbatim.Printer.contents @@
+      Render_verbatim.render ~cfg:{tex = true} source
+    in
+    let hash = Digest.to_hex @@ Digest.string code in
+    E.enqueue_latex ~name:hash ~packages ~source:code;
+    let path = Format.sprintf "resources/%s-print.pdf" hash in
+    Format.dprintf {|\[\includegraphics{%s}\]%s|} path "\n"
+  | If_tex (x, _) ->
+    render x
+  | Block (title, body) ->
+    Printer.seq [
+      Format.dprintf {|\begin{proof}[{%a}]%s|} (Fun.flip render) title "\n";
+      render @@ add_qedhere body;
+      Format.dprintf {|\end{proof}%s|} "\n"
+    ]
+  | Query _ ->
+    Printer.nil
+
 
 and render_title title =
   Format.dprintf {|\title{%a}%s|} (Fun.flip render) (Sem.sentence_case title) "\n"
 
-and render_tag name body =
-  match name with
-  | "ol" ->
+and render_prim p body =
+  let render' = Fun.flip render in
+  match p with
+  | `P -> Format.dprintf {|\par{%a}|} render' body
+  | `Em -> Format.dprintf {|\emph{%a}|} render' body
+  | `Strong -> Format.dprintf {|\textbf{%a}|} render' body
+  | `Li -> Format.dprintf {|\item{%a}|} render' body
+  | `Code -> Format.dprintf {|\verb!%a!|} render' body
+  | `Ol ->
     Printer.seq ~sep:(Printer.text "\n") [
       Format.dprintf {|\begin{enumerate}|};
       render body;
       Format.dprintf {|\end{enumerate}|};
     ]
-  | "ul" ->
+  | `Ul ->
     Printer.seq ~sep:(Printer.text "\n") [
-      Format.dprintf {|\begin{itemize}|};
+      Format.dprintf {|\begin{enumerate}|};
       render body;
-      Format.dprintf {|\end{itemize}|};
+      Format.dprintf {|\end{enumerate}|};
     ]
-  | "blockquote" ->
+  | `Blockquote ->
     Printer.seq ~sep:(Printer.text "\n") [
-      Format.dprintf {|\begin{quotation}|};
+      Format.dprintf {|\begin{quote}|};
       render body;
-      Format.dprintf {|\end{quotation}|};
+      Format.dprintf {|\end{quote}|};
     ]
-  | _ ->
-    let name =
-      match name with
-      | "p" -> "par"
-      | "b" | "strong" -> "textbf"
-      | "em" -> "emph"
-      | "li" -> "item"
-      | _ -> name
-    in
-    Format.dprintf {|\%s{%a}|} name (Fun.flip render) body
+  | `Pre ->
+    Printer.seq ~sep:(Printer.text "\n") [
+      Format.dprintf {|\begin{verbatim}|};
+      render body;
+      Format.dprintf {|\end{verbatim}|};
+    ]
 
 
 and render_author author =
@@ -175,7 +175,7 @@ and render_contributors =
 
 and strip_first_paragraph xs =
   match xs with
-  | Range.{value = Sem.Tag ("p", _, body); _} :: rest -> body @ rest
+  | Range.{value = Sem.Xml_tag ("p", _, body); _} :: rest -> body @ rest
   | _ -> xs
 
 and render_doc_section (doc : Sem.doc) : Printer.t =
