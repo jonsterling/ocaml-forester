@@ -27,7 +27,6 @@ let only_frontmatter loc () =
   | Body ->
     Reporter.fatal ?loc Frontmatter_in_body
       "encountered frontmatter-only code in the body"
-
 let rec expand : Code.t -> Syn.t =
   function
   | [] -> []
@@ -263,7 +262,6 @@ and expand_lambda loc : Trie.path list * Code.t -> Syn.t =
   let syms =
     xs |> List.map @@ fun x ->
     let sym = Symbol.fresh x in
-    (* TODO: get the location back *)
     let var = Range.locate_opt None @@ Syn.Var sym in
     let singlx = Trie.Untagged.singleton (x, `Term [var]) in
     Scope.import_subtree ([], singlx);
