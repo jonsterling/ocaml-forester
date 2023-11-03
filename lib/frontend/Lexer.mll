@@ -85,7 +85,7 @@ rule token =
   | "\\ul" { return lexbuf @@ Parser.PRIM `Ul }
   | "\\ol" { return lexbuf @@ Parser.PRIM `Ol }
   | "\\code" { return lexbuf @@ Parser.PRIM `Code }
-  | "\\blockquote" { return lexbuf @@ Parser.PRIM `Code }
+  | "\\blockquote" { return lexbuf @@ Parser.PRIM `Blockquote }
   | "\\pre" { return lexbuf @@ Parser.PRIM `Pre }
   | "#" { return lexbuf @@ Parser.TEXT "#" }
   | ident { return lexbuf @@ ident (Lexing.lexeme lexbuf) }
