@@ -31,7 +31,6 @@ let rec add_qedhere xs =
     | _ ->
       Bwd.Snoc (Bwd.Snoc (xs', last), qedhere)
 
-
 let render_date =
   Format.dprintf {|\date{%a}@.|} Date.pp_human
 
@@ -159,8 +158,7 @@ and render_authors =
   | authors, contributors ->
     let pp_sep fmt () = Format.fprintf fmt {| \and |} in
     Format.dprintf {|\author{%a%a}%s|}
-      (Format.pp_print_list ~pp_sep (Fun.flip render_author))
-      authors
+      (Format.pp_print_list ~pp_sep (Fun.flip render_author)) authors
       (Fun.flip render_contributors) contributors
       "\n"
 
@@ -175,13 +173,18 @@ and render_contributors =
 
 and strip_first_paragraph xs =
   match xs with
-  | Range.{value = Sem.Prim (`P, body); _} :: rest -> body @ rest
+  | Range.{value = Sem.Prim (`P, body); _} :: rest ->
+    body @ rest
   | _ -> xs
 
 and render_doc_section (doc : Sem.doc) : Printer.t =
   let title = Sem.sentence_case @@ Option.value ~default:[] doc.title in
   let taxon = Option.value ~default:"" doc.taxon in
-  let addr = Option.value doc.addr ~default:(string_of_int @@ Oo.id (object end)) in
+  let addr =
+    match doc.addr with
+    | Some addr -> addr
+    | None -> string_of_int @@ Oo.id @@ object end
+  in
   Printer.seq ~sep:(Printer.text "\n") [
     Printer.nil;
     Format.dprintf
