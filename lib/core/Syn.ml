@@ -8,7 +8,7 @@ type node =
   | Link of {dest : t; title : t option}
   | Transclude of string
   | Query of t Query.t
-  | Embed_tex of {packages : string list; source : t}
+  | Embed_tex of {source : t}
   | Block of t * t
   | Lam of Symbol.t list * t
   | Var of Symbol.t

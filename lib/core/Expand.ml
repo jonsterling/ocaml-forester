@@ -102,10 +102,9 @@ let rec expand : Code.t -> Syn.t =
 
   | {value = Embed_tex xs; loc} :: rest ->
     Part.set Body;
-    let fm = Fm.get () in
     let tex =
       Range.locate_opt loc @@
-      Syn.Embed_tex {packages = fm.tex_packages; source = expand xs}
+      Syn.Embed_tex {source = expand xs}
     in
     tex :: expand rest
 

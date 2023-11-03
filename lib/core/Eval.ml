@@ -3,6 +3,7 @@ open Bwd
 
 module LexEnv = Algaeff.Reader.Make (struct type env = Sem.t Env.t end)
 module DynEnv = Algaeff.Reader.Make (struct type env = Sem.t Env.t end)
+module PkgEnv = Algaeff.Reader.Make (struct type env = string list end)
 
 let get_transclusion_opts () =
   let dynenv = DynEnv.read () in
@@ -69,7 +70,8 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     in
     let query = Query.map eval query in
     Range.locate_opt node.loc (Sem.Query (opts, query)) :: eval rest
-  | Embed_tex {packages; source} ->
+  | Embed_tex {source} ->
+    let packages = PkgEnv.read () in
     Range.locate_opt node.loc (Sem.Embed_tex {packages; source = eval source}) :: eval rest
   | Block (title, body) ->
     Range.locate_opt node.loc (Sem.Block (eval title, eval body)) :: eval rest
@@ -142,6 +144,7 @@ let eval_doc (doc : Syn.doc) : Sem.doc =
   let fm, tree = doc in
   LexEnv.run ~env:Env.empty @@ fun () ->
   DynEnv.run ~env:Env.empty @@ fun () ->
+  PkgEnv.run ~env:fm.tex_packages @@ fun () ->
   let tree = eval tree in
   let title = Option.map eval fm.title in
   let metas =
