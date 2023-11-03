@@ -175,7 +175,7 @@ and render_contributors =
 
 and strip_first_paragraph xs =
   match xs with
-  | Range.{value = Sem.Xml_tag ("p", _, body); _} :: rest -> body @ rest
+  | Range.{value = Sem.Prim (`P, body); _} :: rest -> body @ rest
   | _ -> xs
 
 and render_doc_section (doc : Sem.doc) : Printer.t =
