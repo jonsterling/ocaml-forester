@@ -9,7 +9,9 @@ homepage: "https://sr.ht/~jonsterling/forester/"
 bug-reports: "https://todo.sr.ht/~jonsterling/forester"
 depends: [
   "algaeff" {= "1.1.0"}
+  "asai" {= "0.2.0"}
   "base-bigarray" {= "base"}
+  "base-bytes" {= "base"}
   "base-domains" {= "base"}
   "base-nnp" {= "base"}
   "base-threads" {= "base"}
@@ -32,11 +34,13 @@ depends: [
   "fmt" {= "0.9.0"}
   "hmap" {= "0.8.1"}
   "iomux" {= "0.3"}
+  "lwt" {= "5.7.0"}
   "lwt-dllist" {= "1.0.1"}
   "menhir" {= "20230608"}
   "menhirLib" {= "20230608"}
   "menhirSdk" {= "20230608"}
   "mtime" {= "2.0.0"}
+  "notty" {= "0.2.3"}
   "ocaml" {= "5.1.0"}
   "ocaml-base-compiler" {= "5.1.0"}
   "ocaml-compiler-libs" {= "v0.12.4"}
@@ -45,6 +49,7 @@ depends: [
   "ocamlbuild" {= "0.14.2"}
   "ocamlfind" {= "1.9.6"}
   "ocamlgraph" {= "2.1.0"}
+  "ocplib-endian" {= "1.2"}
   "optint" {= "0.3.0"}
   "ppx_derivers" {= "1.2.1"}
   "ppx_deriving" {= "5.2.1"}
@@ -59,6 +64,7 @@ depends: [
   "stdlib-shims" {= "0.3.0"}
   "thread-table" {= "1.0.0"}
   "topkg" {= "1.0.7"}
+  "uutf" {= "1.0.3"}
   "xmlm" {= "1.4.0"}
   "yuujinchou" {= "5.1.0"}
 ]
