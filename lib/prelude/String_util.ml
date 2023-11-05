@@ -3,7 +3,7 @@ let index_of_first_ascii_char word =
   try Option.some @@ Str.search_forward rx word 0 with _ -> None
 
 let title_case_word ix word =
-  if ix == 0 then
+  if ix = 0 then
     begin
       match index_of_first_ascii_char word with
       | None -> word
