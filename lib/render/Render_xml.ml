@@ -7,10 +7,12 @@ module E = Render_effect.Perform
 module Printer = Xml_printer
 type printer = Printer.printer
 
-type cfg = {base_url : string option; trail : int bwd option; counter : int ref; in_backmatter : bool; top : bool}
-
-
-let (let*?) = Option.bind
+type cfg =
+  {base_url : string option;
+   trail : int bwd option;
+   counter : int ref;
+   in_backmatter : bool;
+   top : bool}
 
 let rec render_node ~cfg : Sem.node Range.located -> printer =
   fun located ->
