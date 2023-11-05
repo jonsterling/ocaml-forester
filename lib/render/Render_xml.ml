@@ -187,8 +187,13 @@ and render_date (doc : Sem.doc) =
   match doc.date with
   | None -> Printer.nil
   | Some date ->
-    let str = Format.asprintf "%a" Date.pp_human date in
-    Printer.tag "date" [] [
+    let date_addr = Format.asprintf "%a" Date.pp date in
+    let attrs =
+      match E.get_doc date_addr with
+      | None -> []
+      | Some _ -> ["href", E.route Xml date_addr]
+    in
+    Printer.tag "date" attrs [
       Printer.tag "year" [] [Printer.text @@ string_of_int @@ Date.year date];
       Date.month date |> Printer.option begin fun m ->
         Printer.tag "month" [] [Printer.text @@ string_of_int m]
