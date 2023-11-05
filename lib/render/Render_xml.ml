@@ -92,6 +92,8 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
     E.enqueue_latex ~name:hash ~packages ~source:code;
     let path = Format.sprintf "resources/%s-web.svg" hash in
     Printer.tag "img" ["src", path] []
+  | Sem.Img {path} ->
+    Printer.tag "img" ["src", path] []
   | Sem.Block (title, body) ->
     Printer.tag "block" ["open", "open"] @@
     [Printer.tag "headline" [] [render ~cfg title];

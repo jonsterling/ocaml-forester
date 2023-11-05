@@ -92,6 +92,8 @@ and render_node : Sem.node Range.located -> Printer.t =
     E.enqueue_latex ~name:hash ~packages ~source:code;
     let path = Format.sprintf "resources/%s-print.pdf" hash in
     Format.dprintf {|\[\includegraphics{%s}\]%s|} path "\n"
+  | Img {path} ->
+    Format.dprintf {|\includegraphics{%s}%s|} path "\n"
   | If_tex (x, _) ->
     render x
   | Block (title, body) ->

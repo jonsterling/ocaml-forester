@@ -10,6 +10,7 @@ type node =
   | Unresolved of string
   | Math of math_mode * t
   | Embed_tex of {packages : string list; source : t}
+  | Img of {path : string}
   | Block of t * t
   | If_tex of t * t
   | Prim of Prim.t * t
@@ -61,7 +62,7 @@ let string_of_nodes =
     | Embed_tex {source; _} -> Some (render source)
     | If_tex (_, x) -> Some (render x)
     | Prim (_, x) -> Some (render x)
-    | Transclude _ | Query _ | Block _ | Unresolved _ -> None
+    | Transclude _ | Query _ | Block _ | Unresolved _ | Img _ -> None
   in
   render
 

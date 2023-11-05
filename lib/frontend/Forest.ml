@@ -197,7 +197,7 @@ struct
     | Sem.Link {title; dest} ->
       Option.iter (analyze_nodes scope) title;
       Gph.add_edge link_graph dest scope
-    | Sem.Unresolved _ ->
+    | Sem.Unresolved _ | Sem.Img _ ->
       ()
     | Sem.Xml_tag (_, attrs, xs) ->
       begin
