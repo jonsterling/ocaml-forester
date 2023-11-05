@@ -16,9 +16,10 @@ struct
 end
 
 
-let rec add_qedhere xs =
+
+let rec add_qedhere (xs : Sem.t) : Sem.t =
   match Bwd.of_list xs with
-  | Emp -> xs
+  | Emp -> []
   | Snoc (xs', last) ->
     let qedhere = Range.locate_opt None @@ Sem.Unresolved "qedhere" in
     let locate = Range.locate_opt Range.(last.loc) in
@@ -67,7 +68,7 @@ and render_node : Sem.node Range.located -> Printer.t =
         let title =
           match title with
           | Some t -> t
-          | None -> Option.value ~default:[Range.locate_opt None @@ Sem.Text dest] title
+          | None -> Option.value ~default:[Range.locate_opt None @@ Sem.Text dest] doc.title
         in
         begin
           match doc.taxon with
@@ -175,9 +176,15 @@ and render_contributors =
 
 and strip_first_paragraph xs =
   match xs with
-  | Range.{value = Sem.Prim (`P, body); _} :: rest ->
-    body @ rest
-  | _ -> xs
+  | [] -> []
+  | node :: rest ->
+    match Range.(node.value) with
+    | Sem.Prim (`P, body) ->
+      body @ rest
+    | Sem.Text x when String.trim x = "" ->
+      strip_first_paragraph rest
+    | _ ->
+      node :: rest
 
 and render_doc_section (doc : Sem.doc) : Printer.t =
   let title = Sem.sentence_case @@ Option.value ~default:[] doc.title in
