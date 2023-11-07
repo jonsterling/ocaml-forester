@@ -25,7 +25,8 @@
  (name forester)
  (synopsis "A tool for tending mathematical forests")
  (depends
-  menhir
+  (menhir
+   (>= 20211230))
   (ocamlgraph
    (>= 2.1.0))
   (ocaml

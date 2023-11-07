@@ -8,7 +8,7 @@ license: "GPL-3.0-or-later"
 homepage: "https://sr.ht/~jonsterling/forester/"
 bug-reports: "https://todo.sr.ht/~jonsterling/forester"
 depends: [
-  "menhir"
+  "menhir" {>= "20211230"}
   "ocamlgraph" {>= "2.1.0"}
   "ocaml" {>= "0.5.0"}
   "dune" {>= "3.7"}
