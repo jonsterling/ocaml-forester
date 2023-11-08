@@ -31,10 +31,12 @@ and t = node Range.located list
 and env = t Env.t
 [@@deriving show]
 
-let sentence_case =
+let rec sentence_case =
   function
   | Range.{value = Text str; loc} :: xs ->
     Range.{value = Text (String_util.sentence_case str); loc} :: xs
+  | Range.{value = Link {title; dest}; loc} :: xs ->
+    {Range.value = Link {title = Option.map sentence_case title; dest}; loc} :: xs
   | xs -> xs
 
 type doc =
