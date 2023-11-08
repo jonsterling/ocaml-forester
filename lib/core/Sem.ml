@@ -31,13 +31,19 @@ and t = node Range.located list
 and env = t Env.t
 [@@deriving show]
 
-let rec sentence_case =
-  function
-  | Range.{value = Text str; loc} :: xs ->
-    Range.{value = Text (String_util.sentence_case str); loc} :: xs
-  | Range.{value = Link {title; dest}; loc} :: xs ->
-    {Range.value = Link {title = Option.map sentence_case title; dest}; loc} :: xs
-  | xs -> xs
+let rec sentence_case nodes =
+  let map_head f =
+    function
+    | [] -> []
+    | x :: xs -> f x :: xs
+  in
+  let map_located f node =
+    Range.{node with value = f node.value}
+  in
+  nodes |> map_head @@ map_located @@ function
+  | Text str -> Text (String_util.sentence_case str)
+  | Link link -> Link {link with title = Option.map sentence_case link.title}
+  | node -> node
 
 type doc =
   {title : t option;
