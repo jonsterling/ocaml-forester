@@ -104,4 +104,6 @@ rule token =
 and comment =
   parse
   | newline { Lexing.new_line lexbuf; token lexbuf }
+  | eof { Parser.EOF }
   | _ { comment lexbuf }
+
