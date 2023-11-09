@@ -309,10 +309,14 @@ struct
     let create = `Or_truncate 0o644 in
     let base_url = I.base_url in
     begin
-      let path = Eio.Path.(cwd / "output" / E.route Xml addr) in
-      Eio.Path.with_open_out ~create path @@ fun flow ->
-      Eio.Buf_write.with_flow flow @@ fun w ->
-      let out = Xmlm.make_output @@ Eio_util.xmlm_dest_of_writer w in
+      (* TODO: the XML output via Eio is overflowing!!! *)
+      let ch = open_out @@ "output/" ^ E.route Xml addr in
+      (* let path = Eio.Path.(cwd / "output" / E.route Xml addr) in *)
+      (* Eio.Path.with_open_out ~create path @@ fun flow -> *)
+      (* Eio.Buf_write.with_flow flow @@ fun w -> *)
+      Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
+      let out = Xmlm.make_output @@ `Channel ch in
+      (* Eio_util.xmlm_dest_of_writer w in *)
       Render_xml.render_doc_page ~base_url ~trail:(Some Emp) doc out
     end;
     begin

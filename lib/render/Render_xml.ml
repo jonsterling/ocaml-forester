@@ -7,12 +7,15 @@ module E = Render_effect.Perform
 module Printer = Xml_printer
 type printer = Printer.printer
 
+let gcount = ref 0
+
 type cfg =
   {base_url : string option;
    trail : int bwd option;
    counter : int ref;
    in_backmatter : bool;
-   top : bool}
+   top : bool;
+   seen : addr list}
 
 let rec render_node ~cfg : Sem.node Range.located -> printer =
   fun located ->
@@ -164,7 +167,7 @@ and render ~cfg : Sem.t -> printer =
   Printer.iter (render_node ~cfg)
 
 and render_author (author : string) =
-  let cfg = {base_url = None; top = false; trail = Some Emp; counter = ref 0; in_backmatter = false} in
+  let cfg = {base_url = None; top = false; trail = Some Emp; counter = ref 0; in_backmatter = false; seen = []} in
   (* If the author string is an address to a biographical page, then link to it *)
   match E.get_doc author with
   | Some bio ->
@@ -177,8 +180,13 @@ and render_author (author : string) =
         Printer.tag "link"
           ["href", url; "type", "local"]
           [match bio.title with
-           | None -> Printer.text "Untitled"
-           | Some title -> render ~cfg title]
+           | Some title ->
+             gcount := !gcount + 1;
+             (* for some reason, this throws an exception if I render anything that is a sufficiently long string here!!! *)
+             (* Eio.traceln "author %i: %s" (!gcount) str; *)
+             render ~cfg title
+           | _ -> Printer.text "Untitled"
+          ]
     end
   | None ->
     Printer.text author
@@ -275,7 +283,9 @@ and render_mainmatter ~cfg (doc : Sem.doc) =
 and render_backmatter ~cfg (doc : Sem.doc) =
   let cfg = {cfg with in_backmatter = true; top = false} in
   let opts = Sem.{title_override = None; taxon_override = None; toc = false; show_heading = true; expanded = false; numbered = false; show_metadata = true} in
-  with_addr doc @@ fun addr ->
+
+  with_addr doc @@ fun addr fmt ->
+  Reporter.tracef "when rendering backmatter of `%s" addr @@ fun () ->
   Printer.tag "backmatter" [] [
     Printer.tag "contributions" [] [
       E.contributions addr |> Printer.iter @@
@@ -297,7 +307,7 @@ and render_backmatter ~cfg (doc : Sem.doc) =
       E.bibliography addr |> Printer.iter @@
       render_doc ~cfg ~opts
     ];
-  ]
+  ] fmt
 
 and render_trail trail =
   match trail with
@@ -320,7 +330,6 @@ and trail_to_string =
   | Snoc (trail, i) ->
     Format.sprintf "%s.%i" (trail_to_string trail) i
 
-
 and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
   let doc =
     match opts.title_override with
@@ -339,16 +348,30 @@ and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
      "toc", string_of_bool opts.toc;
      "root", string_of_bool @@ Option.fold doc.addr ~none:false ~some:(fun addr -> E.is_root addr)]
   in
-  Printer.tag "tree" attrs
-    [render_frontmatter ~cfg ~toc:opts.toc doc;
-     render_mainmatter ~cfg doc;
-     match cfg.top with
-     | true -> render_backmatter ~cfg doc
-     | _ -> Printer.nil
-    ]
+  let seen =
+    match doc.addr with
+    | None -> false
+    | Some addr -> List.mem addr cfg.seen
+  in
+  if seen then
+    Printer.nil
+  else
+    let cfg =
+      match doc.addr with
+      | None -> cfg
+      | Some addr ->
+        {cfg with seen = addr :: cfg.seen}
+    in
+    Printer.tag "tree" attrs
+      [render_frontmatter ~cfg ~toc:opts.toc doc;
+       render_mainmatter ~cfg doc;
+       match cfg.top with
+       | true -> render_backmatter ~cfg doc
+       | _ -> Printer.nil
+      ]
 
 let render_doc_page ~base_url ~trail (doc : Sem.doc) : printer =
-  let cfg = {base_url; trail; top = true; counter = ref 0; in_backmatter = false} in
+  let cfg = {base_url; trail; top = true; counter = ref 0; seen = []; in_backmatter = false} in
   let opts = Sem.{title_override = None; taxon_override = None; toc = false; show_heading = true; expanded = true; numbered = true; show_metadata = true} in
   let trace k =
     match doc.addr with

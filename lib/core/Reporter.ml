@@ -10,6 +10,7 @@ struct
     | Created_tree
     | Frontmatter_in_body
     | Unhandled_case
+    | Transclusion_loop
   [@@deriving show]
 
   let default_severity : t -> Asai.Diagnostic.severity =
@@ -23,6 +24,7 @@ struct
     | Created_tree -> Info
     | Frontmatter_in_body -> Error
     | Unhandled_case -> Bug
+    | Transclusion_loop -> Error
 
   let short_code : t -> string =
     show
