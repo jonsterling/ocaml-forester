@@ -74,7 +74,7 @@ let rec expand : Code.t -> Syn.t =
     Part.set Body;
     let dest = expand dest in
     let title = Option.some @@ expand title in
-    let link = Range.locate_opts [loc1; loc2] @@ Syn.Link {dest; title} in
+    let link = Range.locate_opt loc1 @@ Syn.Link {dest; title} in
     link :: expand rest
 
   | {value = Group (Squares, [{value = Group (Squares, dest); _}]); loc} :: rest ->

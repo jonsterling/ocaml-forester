@@ -76,18 +76,18 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
   | Block (title, body) ->
     Range.locate_opt node.loc (Sem.Block (eval title, eval body)) :: eval rest
   | Lam (xs, body) ->
-    let rec loop loc xs rest =
+    let rec loop xs rest =
       match xs, rest with
       | [], rest -> eval body, rest
       | x :: xs, Range.{value = Syn.Group (Braces, u); loc = loc'} :: rest ->
         LexEnv.scope (Env.add x (eval u)) @@ fun () ->
-        loop (Range.merge_ranges_opt loc loc') xs rest
+        loop xs rest
       | _ ->
-        Reporter.fatalf Type_error ?loc
-          "expected function to be applied to `%i` arguments"
+        Reporter.fatalf Type_error ?loc:node.loc
+          "expected function to be applied to `%i` additional arguments"
           (List.length xs)
     in
-    let body, rest = loop node.loc xs rest in
+    let body, rest = loop xs rest in
     body @ eval rest
   | Thunk body ->
     let env = LexEnv.read () in
