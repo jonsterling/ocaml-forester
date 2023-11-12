@@ -161,7 +161,11 @@ let cmd ~env =
   Cmd.group info [build_cmd ~env; new_tree_cmd ~env; complete_cmd ~env]
 
 let () =
+  let fatal diagnostics =
+    Tty.display diagnostics;
+    exit 1
+  in
   Printexc.record_backtrace true;
   Eio_main.run @@ fun env ->
-  Core.Reporter.run ~emit:Tty.display ~fatal:Tty.display @@ fun () ->
+  Core.Reporter.run ~emit:Tty.display ~fatal @@ fun () ->
   exit @@ Cmd.eval ~catch:false @@ cmd ~env
