@@ -1,9 +1,12 @@
-type t = Trie.path ref
+type t = Trie.path * int
+
+let counter = ref 0
 
 let fresh path =
-  ref path
+  counter := !counter + 1;
+  path, !counter
 
-let pp fmt sym =
-  Format.fprintf fmt "%a" Trie.pp_path !sym
+let pp fmt (sym, ix) =
+  Format.fprintf fmt "%a%i" Trie.pp_path sym ix
 
 let compare = compare
