@@ -10,7 +10,7 @@ bug-reports: "https://todo.sr.ht/~jonsterling/forester"
 depends: [
   "menhir" {>= "20211230"}
   "ocamlgraph" {>= "2.1.0"}
-  "ocaml" {>= "0.5.0"}
+  "ocaml" {>= "5.0.0"}
   "dune" {>= "3.7"}
   "xmlm" {>= "1.4.0"}
   "ppx_deriving"
