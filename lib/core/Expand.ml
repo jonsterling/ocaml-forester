@@ -149,6 +149,14 @@ let rec expand : Code.t -> Syn.t =
     let k = expand_sym loc k in
     Range.locate_opt loc (Syn.Get k) :: expand rest
 
+  | {value = Thunk x; loc} :: rest ->
+    Part.set Body;
+    [Range.locate_opt loc @@ Syn.Thunk (expand x)]
+
+  | {value = Force x; loc} :: rest ->
+    Part.set Body;
+    [Range.locate_opt loc @@ Syn.Force (expand x)]
+
   | {value = If_tex (x, y); loc} :: rest ->
     Part.set Body;
     let x = expand x in

@@ -14,6 +14,7 @@ type node =
   | Block of t * t
   | If_tex of t * t
   | Prim of Prim.t * t
+  | Clo of Syn.t * env
 [@@deriving show]
 
 and transclusion_opts =
@@ -70,7 +71,7 @@ let string_of_nodes =
     | Embed_tex {source; _} -> Some (render source)
     | If_tex (_, x) -> Some (render x)
     | Prim (_, x) -> Some (render x)
-    | Transclude _ | Query _ | Block _ | Unresolved _ | Img _ -> None
+    | Transclude _ | Query _ | Block _ | Unresolved _ | Img _ | Clo _ -> None
   in
   render
 

@@ -89,6 +89,24 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     in
     let body, rest = loop node.loc xs rest in
     body @ eval rest
+  | Thunk body ->
+    let env = LexEnv.read () in
+    Range.locate_opt node.loc (Sem.Clo (body, env)) :: eval rest
+  | Force body ->
+    let not_whitespace node =
+      match Range.(node.value) with
+      | Sem.Text txt -> String.trim txt <> ""
+      | _ -> true
+    in
+    begin
+      match List.filter not_whitespace @@ eval body with
+      | [{value = Clo (syn, env); _}] ->
+        LexEnv.scope (fun _ -> env) @@ fun () ->
+        eval syn
+      | body ->
+        Reporter.fatalf ?loc:node.loc Type_error
+          "tried to force non-closure: %a" Sem.pp body
+    end
   | Var x ->
     begin
       match Env.find_opt x @@ LexEnv.read () with
@@ -113,8 +131,10 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     body @ eval rest
   | Get key ->
     begin
+      let env = DynEnv.read () in
       match Env.find_opt key @@ DynEnv.read () with
       | None ->
+        Eio.traceln "getting %a from %a" Symbol.pp key (Env.pp Sem.pp) env;
         Reporter.fatalf ?loc:node.loc Resolution_error
           "could not find fluid binding named %a"
           Symbol.pp key

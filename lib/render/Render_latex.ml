@@ -105,6 +105,10 @@ and render_node : Sem.node Range.located -> Printer.t =
     ]
   | Query _ ->
     Printer.nil
+  | Clo _ ->
+    Reporter.fatal ?loc:located.loc Type_error
+      "tried to render closure to LaTeX"
+
 
 
 and render_title title =

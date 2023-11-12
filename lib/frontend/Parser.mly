@@ -7,6 +7,7 @@
 %token <string list> IDENT
 %token <Core.Prim.t> PRIM
 %token TITLE IMPORT EXPORT DEF TAXON AUTHOR TEX_PACKAGE TAG DATE NAMESPACE LET TEX BLOCK META OPEN
+%token THUNK FORCE
 %token TRANSCLUDE SCOPE PUT GET DEFAULT ALLOC IF_TEX XML_TAG
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token QUERY_AND QUERY_OR QUERY_AUTHOR QUERY_TAG QUERY_TAXON QUERY_META
@@ -54,6 +55,8 @@ let node :=
 | TRANSCLUDE; ~ = txt_arg; <Code.Transclude>
 | LET; (~,~,~) = fun_spec; <Code.Let>
 | TEX; ~ = arg; <Code.Embed_tex>
+| THUNK; ~ = arg; <Code.Thunk>
+| FORCE; ~ = arg; <Code.Force>
 | IF_TEX; x = arg; y = arg; <Code.If_tex>
 | BLOCK; x = arg; y = arg; <Code.Block>
 | ~ = IDENT; <Code.Ident>

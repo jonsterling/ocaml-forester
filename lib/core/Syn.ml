@@ -19,6 +19,8 @@ type node =
   | Xml_tag of string * (string * t) list * t
   | Unresolved of string
   | Prim of Prim.t * t
+  | Thunk of t
+  | Force of t
 [@@deriving show]
 
 and t = node Range.located list

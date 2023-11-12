@@ -87,6 +87,8 @@ rule token =
   | "\\code" { return lexbuf @@ Parser.PRIM `Code }
   | "\\blockquote" { return lexbuf @@ Parser.PRIM `Blockquote }
   | "\\pre" { return lexbuf @@ Parser.PRIM `Pre }
+  | "\\thunk" { return lexbuf @@ Parser.THUNK }
+  | "\\force" { return lexbuf @@ Parser.FORCE }
   | "#" { return lexbuf @@ Parser.TEXT "#" }
   | ident { return lexbuf @@ ident (Lexing.lexeme lexbuf) }
   | '{' { return lexbuf @@ Parser.LBRACE }

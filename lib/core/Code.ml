@@ -19,6 +19,9 @@ type node =
   | If_tex of t * t
   | Prim of Prim.t * t
 
+  | Thunk of t
+  | Force of t
+
   | Query of t Query.t
 
   | Import of visibility * addr
