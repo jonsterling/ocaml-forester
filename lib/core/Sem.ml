@@ -15,6 +15,7 @@ type node =
   | If_tex of t * t
   | Prim of Prim.t * t
   | Clo of Syn.t * env
+  | Object of Symbol.t list * (string * (Syn.t * env)) list
 [@@deriving show]
 
 and transclusion_opts =
@@ -71,7 +72,7 @@ let string_of_nodes =
     | Embed_tex {source; _} -> Some (render source)
     | If_tex (_, x) -> Some (render x)
     | Prim (_, x) -> Some (render x)
-    | Transclude _ | Query _ | Block _ | Unresolved _ | Img _ | Clo _ -> None
+    | Transclude _ | Query _ | Block _ | Unresolved _ | Img _ | Clo _ | Object _ -> None
   in
   render
 

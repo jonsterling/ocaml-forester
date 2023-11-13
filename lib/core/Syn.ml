@@ -21,6 +21,9 @@ type node =
   | Prim of Prim.t * t
   | Thunk of t
   | Force of t
+  | Object of Symbol.t * (string * t) list
+  | Patch of t * Symbol.t * (string * t) list
+  | Call of t * string
 [@@deriving show]
 
 and t = node Range.located list

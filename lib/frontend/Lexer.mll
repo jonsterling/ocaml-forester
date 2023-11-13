@@ -90,6 +90,9 @@ rule token =
   | "\\pre" { return lexbuf @@ Parser.PRIM `Pre }
   | "\\thunk" { return lexbuf @@ Parser.THUNK }
   | "\\force" { return lexbuf @@ Parser.FORCE }
+  | "\\object" { return lexbuf @@ Parser.OBJECT }
+  | "\\patch" { return lexbuf @@ Parser.PATCH }
+  | "\\call" { return lexbuf @@ Parser.CALL }
   | "#" { return lexbuf @@ Parser.TEXT "#" }
   | ident { return lexbuf @@ ident (Lexing.lexeme lexbuf) }
   | '{' { return lexbuf @@ Parser.LBRACE }

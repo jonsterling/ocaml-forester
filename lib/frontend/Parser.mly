@@ -8,7 +8,7 @@
 %token <string list> IDENT
 %token <Core.Prim.t> PRIM
 %token TITLE IMPORT EXPORT DEF TAXON AUTHOR TEX_PACKAGE TAG DATE NAMESPACE LET TEX BLOCK META OPEN
-%token THUNK FORCE
+%token THUNK FORCE OBJECT PATCH CALL
 %token TRANSCLUDE SCOPE PUT GET DEFAULT ALLOC IF_TEX XML_TAG
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token QUERY_AND QUERY_OR QUERY_AUTHOR QUERY_TAG QUERY_TAXON QUERY_META
@@ -61,8 +61,8 @@ let head_node :=
 | TRANSCLUDE; ~ = txt_arg; <Code.Transclude>
 | LET; (~,~,~) = fun_spec; <Code.Let>
 | TEX; ~ = arg; <Code.Embed_tex>
-| THUNK; ~ = braces(code_expr); <Code.Thunk>
-| FORCE; ~ = arg; <Code.Force>
+| THUNK; ~ = arg; <Code.Thunk>
+| FORCE; ~ = braces(code_expr); <Code.Force>
 | IF_TEX; x = arg; y = arg; <Code.If_tex>
 | BLOCK; x = arg; y = arg; <Code.Block>
 | ~ = IDENT; <Code.Ident>
@@ -73,12 +73,18 @@ let head_node :=
 | OPEN; ~ = IDENT; <Code.Open>
 | QUERY_TREE; ~ = braces(query); <Code.Query>
 | XML_TAG; ~ = txt_arg; ~ = list(xml_attr); ~ = arg; <Code.Xml_tag>
+| OBJECT; ~ = option(squares(bvar)); ~ = braces(ws_list(struct_field)); <Code.Object>
+| PATCH; ~ = braces(code_expr); ~ = option(squares(bvar)); ~ = braces(ws_list(struct_field)); <Code.Patch>
+| CALL; ~ = braces(code_expr); ~ = txt_arg; <Code.Call>
 | ~ = PRIM; ~ = arg; <Code.Prim>
 | ~ = delimited(HASH_LBRACE, textual_expr, RBRACE); <Code.inline_math>
 | ~ = delimited(HASH_HASH_LBRACE, textual_expr, RBRACE); <Code.display_math>
 | ~ = braces(textual_expr); <Code.braces>
 | ~ = squares(textual_expr); <Code.squares>
 | ~ = parens(textual_expr); <Code.parens>
+
+let struct_field :=
+| k = squares(TEXT); list(WHITESPACE); v = arg; { k, v }
 
 let xml_attr :=
 | k = squares(TEXT); v = arg; { (k, v) }

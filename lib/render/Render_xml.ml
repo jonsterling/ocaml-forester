@@ -121,7 +121,10 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
     Printer.tag name [] [render ~cfg x]
   | Sem.Clo _ ->
     Reporter.fatal ?loc:located.loc Type_error
-      "tried to render closure to XML"
+      "tried to render thunk closure to XML"
+  | Sem.Object _ ->
+    Reporter.fatal ?loc:located.loc Type_error
+      "tried to render object closure to XML"
 
 and render_transclusion ~cfg ~opts doc =
   let cfg =

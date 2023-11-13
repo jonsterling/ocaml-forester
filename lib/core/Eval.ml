@@ -92,20 +92,60 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
   | Thunk body ->
     let env = LexEnv.read () in
     Range.locate_opt node.loc (Sem.Clo (body, env)) :: eval rest
-  | Force body ->
-    let not_whitespace node =
-      match Range.(node.value) with
-      | Sem.Text txt -> String.trim txt <> ""
-      | _ -> true
+  | Object (self, methods) ->
+    let closures =
+      let env = LexEnv.read () in
+      methods |> List.map @@ fun (key, body) ->
+      key, (body, env)
     in
+    Range.locate_opt node.loc (Sem.Object ([self], closures)) :: eval rest
+  | Force body ->
     begin
-      match List.filter not_whitespace @@ eval body with
-      | [{value = Clo (syn, env); _}] ->
+      match eval_strip body with
+      | [Range.{value = Sem.Clo (syn, env); _}] ->
         LexEnv.scope (fun _ -> env) @@ fun () ->
         eval syn
       | body ->
         Reporter.fatalf ?loc:node.loc Type_error
           "tried to force non-closure: %a" Sem.pp body
+    end
+  | Patch (obj, self, methods) as patch ->
+    let env = LexEnv.read () in
+    let old_selves, old_cls =
+      match eval_strip obj with
+      | [Range.{value = Sem.Object (old_selves, old_methods); _}] as obj ->
+        old_selves, old_methods |> List.filter @@ fun (name, _ ) ->
+        Option.is_none @@ List.assoc_opt name methods
+      | xs ->
+        Reporter.fatalf ?loc:node.loc Type_error
+          "tried to patch non-object"
+    in
+    let new_cls =
+      methods |> List.map @@ fun (key, body) ->
+      key, (body, env)
+    in
+    let patched = Sem.Object (self :: old_selves, new_cls @ old_cls) in
+    Range.locate_opt node.loc patched :: eval rest
+  | Call (obj, method_name) ->
+    begin
+      match eval_strip obj with
+      | [Range.{value = Sem.Object (selves, methods); _}] as obj ->
+        let result =
+          match List.assoc_opt method_name methods with
+          | Some (body, env) ->
+            let env' =
+              List.fold_right (fun self -> Env.add self obj) selves env
+            in
+            LexEnv.scope (fun _ -> env') @@ fun () ->
+            eval body
+          | None ->
+            Reporter.fatalf ?loc:node.loc Type_error
+              "tried to call unbound method `%s`" method_name
+        in
+        result @ eval rest
+      | xs ->
+        Reporter.fatalf ?loc:node.loc Type_error
+          "tried to call method `%s` non-object: %a" method_name Sem.pp xs
     end
   | Var x ->
     begin
@@ -142,6 +182,15 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     end
   | Group _ | Text _ ->
     eval_textual [] @@ node :: rest
+
+and eval_strip xs =
+  let not_whitespace node =
+    match Range.(node.value) with
+    | Sem.Text txt -> String.trim txt <> ""
+    | _ -> true
+  in
+  List.filter not_whitespace @@ eval xs
+
 
 and eval_textual prefix : Syn.t -> Sem.t =
   function

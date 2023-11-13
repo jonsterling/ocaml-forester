@@ -213,7 +213,7 @@ struct
       analyze_nodes scope y
     | Sem.Prim (_, x) ->
       analyze_nodes scope x
-    | Sem.Clo _ ->
+    | Sem.Clo _ | Sem.Object _ ->
       ()
 
   and analyze_transclusion_opts scope : Sem.transclusion_opts -> unit =

@@ -27,6 +27,7 @@ let only_frontmatter loc () =
   | Body ->
     Reporter.fatal ?loc Frontmatter_in_body
       "encountered frontmatter-only code in the body"
+
 let rec expand : Code.t -> Syn.t =
   function
   | [] -> []
@@ -151,11 +152,40 @@ let rec expand : Code.t -> Syn.t =
 
   | {value = Thunk x; loc} :: rest ->
     Part.set Body;
-    [Range.locate_opt loc @@ Syn.Thunk (expand x)]
+    Range.locate_opt loc (Syn.Thunk (expand x)) :: expand rest
 
   | {value = Force x; loc} :: rest ->
     Part.set Body;
-    [Range.locate_opt loc @@ Syn.Force (expand x)]
+    Range.locate_opt loc (Syn.Force (expand x)) :: expand rest
+
+  | {value = Object (self, methods); loc} :: rest ->
+    Part.set Body;
+    let self, methods =
+      Scope.section [] @@ fun () ->
+      let self = Option.value ~default:["self"] self in
+      let sym = Symbol.fresh self in
+      let var = Range.locate_opt None @@ Syn.Var sym in
+      Scope.import_subtree ([], Trie.Untagged.singleton (self, `Term [var]));
+      sym, List.map expand_method methods
+    in
+    Range.locate_opt loc (Syn.Object (self, methods)) :: expand rest
+
+  | {value = Patch (old, self, methods); loc} :: rest ->
+    Part.set Body;
+    let self, methods =
+      Scope.section [] @@ fun () ->
+      let self = Option.value ~default:["patch"; "self"] self in
+      let sym = Symbol.fresh self in
+      let var = Range.locate_opt None @@ Syn.Var sym in
+      Scope.import_subtree ([], Trie.Untagged.singleton (self, `Term [var]));
+      sym, List.map expand_method methods
+    in
+    let patched = Syn.Patch (expand old, self, methods) in
+    Range.locate_opt loc patched :: expand rest
+
+  | {value = Call (obj, method_name); loc} :: rest ->
+    Part.set Body;
+    Range.locate_opt loc (Syn.Call (expand obj, method_name)) :: expand rest
 
   | {value = If_tex (x, y); loc} :: rest ->
     Part.set Body;
@@ -262,6 +292,8 @@ let rec expand : Code.t -> Syn.t =
     Part.set Frontmatter;
     expand rest
 
+and expand_method (key, body) =
+  key, expand body
 
 and expand_lambda loc : Trie.path list * Code.t -> Syn.t =
   fun (xs, body) ->

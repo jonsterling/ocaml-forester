@@ -22,6 +22,10 @@ type node =
   | Thunk of t
   | Force of t
 
+  | Object of Trie.path option * (string * t) list
+  | Patch of t * Trie.path option * (string * t) list
+  | Call of t * string
+
   | Query of t Query.t
 
   | Import of visibility * addr
