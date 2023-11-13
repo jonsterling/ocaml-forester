@@ -54,6 +54,7 @@ let render_doc (doc : Sem.doc) : Printer.t =
          | None -> Printer.text "null"
          | Some title ->
            let title_string =
+             String.trim @@
              String_util.sentence_case @@
              Render_text.Printer.contents @@
              Render_text.render title
