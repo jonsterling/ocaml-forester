@@ -15,15 +15,12 @@
 %token QUERY_TREE
 %token EOF
 
-%type <Code.t> expr
-%start <Core.Code.t> main
+%start <Code.t> main
 
 %%
 
-%inline
-locate(X):
-  | e = X
-    { Asai.Range.locate_lex $loc e }
+let locate(p) ==
+| x = p; { Asai.Range.locate_lex $loc x }
 
 let braces(p) == delimited(LBRACE, p, RBRACE)
 let squares(p) == delimited(LSQUARE, p, RSQUARE)
@@ -34,7 +31,21 @@ let bvar :=
 
 let binder == list(squares(bvar))
 
-let node :=
+let ws_or(p) :=
+| WHITESPACE; { [] }
+| x = p; { [x] }
+
+let ws_list(p) := flatten(list(ws_or(p)))
+
+let textual_node :=
+| ~ = TEXT; <Code.Text>
+| ~ = WHITESPACE; <Code.Text>
+| ~ = head_node; <Fun.id>
+
+let code_expr == ws_list(locate(head_node))
+let textual_expr == list(locate(textual_node))
+
+let head_node :=
 | TITLE; ~ = arg; <Code.Title>
 | AUTHOR; ~ = txt_arg; <Code.Author>
 | DATE; ~ = txt_arg; <Code.Date>
@@ -46,23 +57,15 @@ let node :=
 | IMPORT; ~ = txt_arg; <Code.import_private>
 | EXPORT; ~ = txt_arg; <Code.import_public>
 | TAG; ~ = txt_arg; <Code.Tag>
-| NAMESPACE; ~ = IDENT; ~ = arg; <Code.Namespace>
-
-| ~ = braces(expr); <Code.braces>
-| ~ = squares(expr); <Code.squares>
-| ~ = parens(expr); <Code.parens>
-| ~ = delimited(HASH_LBRACE, expr, RBRACE); <Code.inline_math>
-| ~ = delimited(HASH_HASH_LBRACE, expr, RBRACE); <Code.display_math>
+| NAMESPACE; ~ = IDENT; ~ = braces(code_expr); <Code.Namespace>
 | TRANSCLUDE; ~ = txt_arg; <Code.Transclude>
 | LET; (~,~,~) = fun_spec; <Code.Let>
 | TEX; ~ = arg; <Code.Embed_tex>
-| THUNK; ~ = arg; <Code.Thunk>
+| THUNK; ~ = braces(code_expr); <Code.Thunk>
 | FORCE; ~ = arg; <Code.Force>
 | IF_TEX; x = arg; y = arg; <Code.If_tex>
 | BLOCK; x = arg; y = arg; <Code.Block>
 | ~ = IDENT; <Code.Ident>
-| ~ = TEXT; <Code.Text>
-| ~ = WHITESPACE; <Code.Text>
 | SCOPE; ~ = arg; <Code.Scope>
 | PUT; ~ = IDENT; ~ = arg; <Code.Put>
 | DEFAULT; ~ = IDENT; ~ = arg; <Code.Default>
@@ -71,11 +74,15 @@ let node :=
 | QUERY_TREE; ~ = braces(query); <Code.Query>
 | XML_TAG; ~ = txt_arg; ~ = list(xml_attr); ~ = arg; <Code.Xml_tag>
 | ~ = PRIM; ~ = arg; <Code.Prim>
+| ~ = delimited(HASH_LBRACE, textual_expr, RBRACE); <Code.inline_math>
+| ~ = delimited(HASH_HASH_LBRACE, textual_expr, RBRACE); <Code.display_math>
+| ~ = braces(textual_expr); <Code.braces>
+| ~ = squares(textual_expr); <Code.squares>
+| ~ = parens(textual_expr); <Code.parens>
 
 let xml_attr :=
 | k = squares(TEXT); v = arg; { (k, v) }
 
-let eat_ws == list(WHITESPACE)
 
 let query0 :=
 | QUERY_AUTHOR; ~ = arg; <Query.Author>
@@ -85,16 +92,9 @@ let query0 :=
 | QUERY_OR; ~ = braces(queries); <Query.Or>
 | QUERY_META; k = txt_arg; v = arg; <Query.Meta>
 
-let query0_or_whitespace :=
-| ~= query0; <Some>
-| WHITESPACE; { None }
+let queries == ws_list(query0)
 
-let queries :=
-| qs = list(query0_or_whitespace); { List.filter_map (fun x -> x) qs }
-
-let query := _ = eat_ws; q = query0; eat_ws; {q}
-
-let expr == list(locate(node))
+let query := list(WHITESPACE); q = query0; list(WHITESPACE); {q}
 
 let ws_or_text :=
 | x = TEXT; { x }
@@ -103,9 +103,9 @@ let ws_or_text :=
 let wstext :=
 | xs = list(ws_or_text); { String.concat "" xs }
 
-let arg == braces(expr)
+let arg == braces(textual_expr)
 let txt_arg == braces(wstext)
 let fun_spec == ~ = IDENT; ~ = binder; ~ = arg; <>
 
 let main :=
-| ~ = expr; EOF; <>
+| ~ = ws_list(locate(head_node)); EOF; <>
