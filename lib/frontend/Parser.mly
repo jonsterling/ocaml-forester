@@ -4,6 +4,7 @@
 %}
 
 %token <string> TEXT
+%token <string> WHITESPACE
 %token <string list> IDENT
 %token <Core.Prim.t> PRIM
 %token TITLE IMPORT EXPORT DEF TAXON AUTHOR TEX_PACKAGE TAG DATE NAMESPACE LET TEX BLOCK META OPEN
@@ -61,6 +62,7 @@ let node :=
 | BLOCK; x = arg; y = arg; <Code.Block>
 | ~ = IDENT; <Code.Ident>
 | ~ = TEXT; <Code.Text>
+| ~ = WHITESPACE; <Code.Text>
 | SCOPE; ~ = arg; <Code.Scope>
 | PUT; ~ = IDENT; ~ = arg; <Code.Put>
 | DEFAULT; ~ = IDENT; ~ = arg; <Code.Default>
@@ -73,7 +75,7 @@ let node :=
 let xml_attr :=
 | k = squares(TEXT); v = arg; { (k, v) }
 
-let eat_text == option(TEXT)
+let eat_ws == list(WHITESPACE)
 
 let query0 :=
 | QUERY_AUTHOR; ~ = arg; <Query.Author>
@@ -83,16 +85,26 @@ let query0 :=
 | QUERY_OR; ~ = braces(queries); <Query.Or>
 | QUERY_META; k = txt_arg; v = arg; <Query.Meta>
 
-let queries :=
-| TEXT; { [] }
-| qs = queries; q = query0; _ = eat_text; {qs @ [q]}
+let query0_or_whitespace :=
+| ~= query0; <Some>
+| WHITESPACE; { None }
 
-let query := _ = eat_text; q = query0; eat_text; {q}
+let queries :=
+| qs = list(query0_or_whitespace); { List.filter_map (fun x -> x) qs }
+
+let query := _ = eat_ws; q = query0; eat_ws; {q}
 
 let expr == list(locate(node))
 
+let ws_or_text :=
+| x = TEXT; { x }
+| x = WHITESPACE; { x }
+
+let wstext :=
+| xs = list(ws_or_text); { String.concat "" xs }
+
 let arg == braces(expr)
-let txt_arg == braces(TEXT)
+let txt_arg == braces(wstext)
 let fun_spec == ~ = IDENT; ~ = binder; ~ = arg; <>
 
 let main :=

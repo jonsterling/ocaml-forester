@@ -5,6 +5,7 @@
   let illegal str = raise @@ SyntaxError str
 
   let text str = Parser.TEXT str
+  let whitespace str = Parser.WHITESPACE str
   let dbg str = Format.printf "%s\n" str; flush stdout
 
   let verbatim = ref false
@@ -26,7 +27,7 @@ let ident = '\\' (alpha) (alpha|digit|'-'|'/')*
 let addr = (alpha) (alpha|digit|'_'|'-')*
 let whitespace = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
-let text = [^ '%' '#' '\\' '{' '}' '[' ']' '(' ')' '\r' '\n']+
+let text = [^ ' ' '%' '#' '\\' '{' '}' '[' ']' '(' ')' '\r' '\n']+
 
 rule token =
   parse
@@ -98,8 +99,8 @@ rule token =
   | '(' { return lexbuf @@ Parser.LPAREN }
   | ')' { return lexbuf @@ Parser.RPAREN }
   | text { text (Lexing.lexeme lexbuf) }
-  | whitespace { return_thunk lexbuf @@ fun _ -> token lexbuf }
-  | newline { Lexing.new_line lexbuf; return_thunk lexbuf @@ fun _ -> token lexbuf }
+  | whitespace { whitespace (Lexing.lexeme lexbuf) }
+  | newline { Lexing.new_line lexbuf; whitespace (Lexing.lexeme lexbuf) }
   | eof { Parser.EOF }
   | _ { illegal @@ Lexing.lexeme lexbuf }
 
