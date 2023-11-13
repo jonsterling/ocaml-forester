@@ -98,7 +98,7 @@ struct
 
       let related scope =
         get_all_links scope |> List.filter @@ fun (doc : Sem.doc) ->
-        not (doc.taxon = Some "reference")
+        doc.taxon <> Some "reference"
 
       let bibliography scope =
         get_sorted_trees @@
