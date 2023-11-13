@@ -26,7 +26,7 @@ let ident = '\\' (alpha) (alpha|digit|'-'|'/')*
 let addr = (alpha) (alpha|digit|'_'|'-')*
 let whitespace = [' ' '\t']+
 let newline = '\r' | '\n' | "\r\n"
-let text = [^ '%' '#' '\\' '{' '}' '[' ']' '(' ')' '\n']+ newline?
+let text = [^ '%' '#' '\\' '{' '}' '[' ']' '(' ')' '\r' '\n']+
 
 rule token =
   parse
@@ -97,6 +97,7 @@ rule token =
   | ']' { return lexbuf @@ Parser.RSQUARE }
   | '(' { return lexbuf @@ Parser.LPAREN }
   | ')' { return lexbuf @@ Parser.RPAREN }
+  | text newline { Lexing.new_line lexbuf; text (Lexing.lexeme lexbuf) }
   | text { text (Lexing.lexeme lexbuf) }
   | whitespace { return_thunk lexbuf @@ fun _ -> token lexbuf }
   | newline { Lexing.new_line lexbuf; return_thunk lexbuf @@ fun _ -> token lexbuf }
