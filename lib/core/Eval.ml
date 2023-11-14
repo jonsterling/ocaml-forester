@@ -116,10 +116,8 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     end
   | Patch {obj; self; super; methods} ->
     begin
-      Eio.traceln "patching";
       match eval_strip obj with
       | [Range.{value = Sem.Object obj_ptr; _}] as obj ->
-        Eio.traceln "patching %a" Symbol.pp obj_ptr;
         let table =
           let env = LexEnv.read () in
           List.fold_right
