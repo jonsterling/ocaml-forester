@@ -1,10 +1,10 @@
 open Base
 open Bwd
 
-module LexEnv = Algaeff.Reader.Make (struct type env = Sem.t Env.t end)
-module DynEnv = Algaeff.Reader.Make (struct type env = Sem.t Env.t end)
-module PkgEnv = Algaeff.Reader.Make (struct type env = string list end)
-module HeapState = Algaeff.State.Make (struct type state = Sem.obj Env.t end)
+module LexEnv = Algaeff.Reader.Make (struct type t = Sem.t Env.t end)
+module DynEnv = Algaeff.Reader.Make (struct type t = Sem.t Env.t end)
+module PkgEnv = Algaeff.Reader.Make (struct type t = string list end)
+module HeapState = Algaeff.State.Make (struct type t = Sem.obj Env.t end)
 
 let get_transclusion_opts () =
   let dynenv = DynEnv.read () in

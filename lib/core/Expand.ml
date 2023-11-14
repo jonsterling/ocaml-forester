@@ -8,12 +8,12 @@ module UnitMap = Map.Make (String)
 type part = Frontmatter | Body [@@deriving show]
 type exports = P.data Trie.Untagged.t
 
-module U = Algaeff.Reader.Make (struct type env = exports UnitMap.t end)
-module Fm = Algaeff.State.Make (struct type state = Syn.frontmatter end)
+module U = Algaeff.Reader.Make (struct type t = exports UnitMap.t end)
+module Fm = Algaeff.State.Make (struct type t = Syn.frontmatter end)
 
 module Part =
 struct
-  include Algaeff.State.Make (struct type state = part end)
+  include Algaeff.State.Make (struct type t = part end)
 
   let protect kont =
     let part = get () in

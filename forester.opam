@@ -22,7 +22,7 @@ depends: [
   "asai" {>= "0.2.0"}
   "yuujinchou" {>= "5.1.0"}
   "bwd" {>= "2.3.0"}
-  "algaeff" {>= "1.0.0" & < "2.0.0"}
+  "algaeff" {>= "2.0.0"}
   "odoc" {with-doc}
 ]
 build: [
