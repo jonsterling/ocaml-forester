@@ -1,5 +1,6 @@
 open Prelude
 open Resolver
+open Bwd
 
 module Set = Set.Make (String)
 module UnitMap = Map.Make (String)
@@ -122,9 +123,15 @@ let rec expand : Code.t -> Syn.t =
     let math = Range.locate_opt loc @@ Syn.Math (m, expand xs) in
     math :: expand rest
 
-  | {value = Ident str; loc} :: rest ->
+  | {value = Ident (path, methods); loc} :: rest ->
     Part.set Body;
-    expand_ident loc str @ expand rest
+    let rec loop acc  =
+      function
+      | [] -> acc
+      | m :: ms ->
+        loop [Range.locate_opt loc (Syn.Call (acc, m))] ms
+    in
+    loop (expand_ident loc path) methods @ expand rest
 
   | {value = Scope body; _} :: rest ->
     let body =

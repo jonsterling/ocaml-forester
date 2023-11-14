@@ -5,7 +5,7 @@
 
 %token <string> TEXT
 %token <string> WHITESPACE
-%token <string list> IDENT
+%token <string> IDENT
 %token <Core.Prim.t> PRIM
 %token TITLE IMPORT EXPORT DEF TAXON AUTHOR TEX_PACKAGE TAG DATE NAMESPACE LET TEX BLOCK META OPEN
 %token THUNK FORCE OBJECT PATCH CALL
@@ -51,13 +51,13 @@ let head_node :=
 | DATE; ~ = txt_arg; <Code.Date>
 | TEX_PACKAGE; ~ = txt_arg; <Code.TeX_package>
 | DEF; (~,~,~) = fun_spec; <Code.Def>
-| ALLOC; ~ = IDENT; <Code.Alloc>
+| ALLOC; ~ = ident; <Code.Alloc>
 | TAXON; ~ = txt_arg; <Code.Taxon>
 | META; ~ = txt_arg; ~ = arg; <Code.Meta>
 | IMPORT; ~ = txt_arg; <Code.import_private>
 | EXPORT; ~ = txt_arg; <Code.import_public>
 | TAG; ~ = txt_arg; <Code.Tag>
-| NAMESPACE; ~ = IDENT; ~ = braces(code_expr); <Code.Namespace>
+| NAMESPACE; ~ = ident; ~ = braces(code_expr); <Code.Namespace>
 | TRANSCLUDE; ~ = txt_arg; <Code.Transclude>
 | LET; (~,~,~) = fun_spec; <Code.Let>
 | TEX; ~ = arg; <Code.Embed_tex>
@@ -65,12 +65,12 @@ let head_node :=
 | FORCE; ~ = braces(code_expr); <Code.Force>
 | IF_TEX; x = arg; y = arg; <Code.If_tex>
 | BLOCK; x = arg; y = arg; <Code.Block>
-| ~ = IDENT; <Code.Ident>
+| (~,~) = ident_with_method_calls; <Code.Ident>
 | SCOPE; ~ = arg; <Code.Scope>
-| PUT; ~ = IDENT; ~ = arg; <Code.Put>
-| DEFAULT; ~ = IDENT; ~ = arg; <Code.Default>
-| GET; ~ = IDENT; <Code.Get>
-| OPEN; ~ = IDENT; <Code.Open>
+| PUT; ~ = ident; ~ = arg; <Code.Put>
+| DEFAULT; ~ = ident; ~ = arg; <Code.Default>
+| GET; ~ = ident; <Code.Get>
+| OPEN; ~ = ident; <Code.Open>
 | QUERY_TREE; ~ = braces(query); <Code.Query>
 | XML_TAG; ~ = txt_arg; ~ = list(xml_attr); ~ = arg; <Code.Xml_tag>
 | OBJECT; ~ = option(squares(bvar)); ~ = braces(ws_list(struct_field)); <Code.Object>
@@ -88,6 +88,19 @@ let struct_field :=
 
 let xml_attr :=
 | k = squares(TEXT); v = arg; { (k, v) }
+
+let ident :=
+| ident = IDENT;
+ { String.split_on_char '/' ident }
+
+let ident_with_method_calls :=
+| ident = IDENT;
+  { match String.split_on_char '#' ident with
+    | [x] -> String.split_on_char '/' x, []
+    | "" :: xs -> ["#"], List.filter (fun x -> x <> "") xs
+    | x :: xs -> String.split_on_char '/' x, List.filter (fun x -> x <> "") xs
+    | [] -> [], []
+   }
 
 
 let query0 :=
@@ -111,7 +124,7 @@ let wstext :=
 
 let arg == braces(textual_expr)
 let txt_arg == braces(wstext)
-let fun_spec == ~ = IDENT; ~ = binder; ~ = arg; <>
+let fun_spec == ~ = ident; ~ = binder; ~ = arg; <>
 
 let main :=
 | ~ = ws_list(locate(head_node)); EOF; <>

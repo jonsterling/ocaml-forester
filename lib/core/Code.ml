@@ -5,7 +5,7 @@ type node =
   | Text of string
   | Group of delim * t
   | Math of math_mode * t
-  | Ident of Trie.path
+  | Ident of Trie.path * string list
   | Xml_tag of string * (string * t) list * t
   | Transclude of string
   | Embed_tex of t

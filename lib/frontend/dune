@@ -9,6 +9,7 @@
  (preprocess
   (pps ppx_deriving.show))
  (libraries
+  bwd
   forester.prelude
   forester.core
   forester.render

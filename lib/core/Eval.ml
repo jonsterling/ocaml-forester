@@ -140,7 +140,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
             eval body
           | None ->
             Reporter.fatalf ?loc:node.loc Type_error
-              "tried to call unbound method `%s`" method_name
+              "tried to call unbound method `%s` on %a" method_name Sem.pp obj
         in
         result @ eval rest
       | xs ->

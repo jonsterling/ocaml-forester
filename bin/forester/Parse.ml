@@ -9,7 +9,7 @@ let parse_channel filename ch =
   try Parser.main Lexer.token lexbuf with
   | Parser.Error ->
     let loc = Asai.Range.of_lexbuf lexbuf in
-    Reporter.fatal ~loc Parse_error "failed to parse"
+    Reporter.fatalf ~loc Parse_error "failed to parse `%s`" (Lexing.lexeme lexbuf)
   | Lexer.SyntaxError token ->
     let loc = Asai.Range.of_lexbuf lexbuf in
     Reporter.fatalf ~loc Parse_error "unrecognized token `%s`" @@
