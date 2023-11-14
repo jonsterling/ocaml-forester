@@ -169,10 +169,9 @@ let rec expand : Code.t -> Syn.t =
     Part.set Body;
     let self, methods =
       Scope.section [] @@ fun () ->
-      let self = Option.value ~default:["self"] self in
-      let sym = Symbol.fresh self in
+      let sym = Symbol.fresh [] in
       let var = Range.locate_opt None @@ Syn.Var sym in
-      Scope.import_subtree ([], Trie.Untagged.singleton (self, `Term [var]));
+      self |> Option.iter (fun self -> Scope.import_subtree ([], Trie.Untagged.singleton (self, `Term [var])));
       sym, List.map expand_method methods
     in
     Range.locate_opt loc (Syn.Object (self, methods)) :: expand rest
@@ -181,14 +180,14 @@ let rec expand : Code.t -> Syn.t =
     Part.set Body;
     let self, super, methods =
       Scope.section [] @@ fun () ->
-      let self = Option.value ~default:["patch"; "self"] self in
-      let super = self @ ["super"] in
-      let self_sym = Symbol.fresh self in
-      let super_sym = Symbol.fresh super in
+      let self_sym = Symbol.fresh [] in
+      let super_sym = Symbol.fresh [] in
       let self_var = Range.locate_opt None @@ Syn.Var self_sym in
       let super_var = Range.locate_opt None @@ Syn.Var super_sym in
-      Scope.import_subtree ([], Trie.Untagged.singleton (self, `Term [self_var]));
-      Scope.import_subtree ([], Trie.Untagged.singleton (super, `Term [super_var]));
+      self |> Option.iter begin fun self ->
+        Scope.import_subtree ([], Trie.Untagged.singleton (self, `Term [self_var]));
+        Scope.import_subtree ([], Trie.Untagged.singleton (self @ ["super"], `Term [super_var]));
+      end;
       self_sym, super_sym, List.map expand_method methods
     in
     let patched = Syn.Patch {obj = expand old; self; super; methods} in
