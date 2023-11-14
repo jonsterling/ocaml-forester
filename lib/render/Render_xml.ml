@@ -291,7 +291,7 @@ and render_backmatter ~cfg (doc : Sem.doc) =
   let opts = Sem.{title_override = None; taxon_override = None; toc = false; show_heading = true; expanded = false; numbered = false; show_metadata = true} in
 
   with_addr doc @@ fun addr fmt ->
-  Reporter.tracef "when rendering backmatter of `%s" addr @@ fun () ->
+  Reporter.tracef "when rendering backmatter of `%s` to XML" addr @@ fun () ->
   Printer.tag "backmatter" [] [
     Printer.tag "contributions" [] [
       E.contributions addr |> Printer.iter @@
@@ -359,6 +359,12 @@ and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
     | None -> false
     | Some addr -> List.mem addr cfg.seen
   in
+  let trace k =
+    match doc.addr with
+    | None -> k ()
+    | Some addr ->
+      Reporter.tracef "when rendering tree at address `%s` to XML" addr k
+  in
   if seen then
     Printer.nil
   else
@@ -368,24 +374,17 @@ and render_doc ~cfg ~opts (doc : Sem.doc) : printer =
       | Some addr ->
         {cfg with seen = addr :: cfg.seen}
     in
-    Printer.tag "tree" attrs
-      [render_frontmatter ~cfg ~toc:opts.toc doc;
-       render_mainmatter ~cfg doc;
-       match cfg.top with
-       | true -> render_backmatter ~cfg doc
-       | _ -> Printer.nil
-      ]
+    fun fmt ->
+      trace @@ fun () ->
+      Printer.tag "tree" attrs
+        [render_frontmatter ~cfg ~toc:opts.toc doc;
+         render_mainmatter ~cfg doc;
+         match cfg.top with
+         | true -> render_backmatter ~cfg doc
+         | _ -> Printer.nil
+        ] fmt
 
 let render_doc_page ~base_url ~trail (doc : Sem.doc) : printer =
   let cfg = {base_url; trail; top = true; counter = ref 0; seen = []; in_backmatter = false} in
   let opts = Sem.{title_override = None; taxon_override = None; toc = false; show_heading = true; expanded = true; numbered = true; show_metadata = true} in
-  let trace k =
-    match doc.addr with
-    | None -> k ()
-    | Some addr ->
-      Reporter.tracef "when rendering tree at address `%s` to XML" addr k
-  in
-  let printer = Printer.with_xsl "forest.xsl" @@ render_doc ~cfg ~opts doc in
-  fun fmt ->
-    trace @@ fun () ->
-    printer fmt
+  Printer.with_xsl "forest.xsl" @@ render_doc ~cfg ~opts doc
