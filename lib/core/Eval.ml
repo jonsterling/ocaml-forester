@@ -132,7 +132,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
         Range.locate_opt node.loc (Sem.Object sym) :: eval rest
       | xs ->
         Reporter.fatalf ?loc:node.loc Type_error
-          "tried to call patch non-object"
+          "tried to patch non-object"
     end
   | Call (obj, method_name) ->
     begin
