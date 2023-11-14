@@ -33,8 +33,7 @@ let rec render_node ~cfg : Sem.node Range.located -> Printer.t =
   | Sem.Unresolved name ->
     render_tag ~cfg name []
   | node ->
-    Format.eprintf "missing case: %a@." Sem.pp_node node;
-    failwith "Render_verbatim.render_node"
+    Reporter.fatalf ?loc:located.loc Type_error "Render_verbatim: cannot render this kind of object"
 
 
 and render_tag ~cfg name body =
