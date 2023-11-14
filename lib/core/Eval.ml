@@ -4,6 +4,7 @@ open Bwd
 module LexEnv = Algaeff.Reader.Make (struct type env = Sem.t Env.t end)
 module DynEnv = Algaeff.Reader.Make (struct type env = Sem.t Env.t end)
 module PkgEnv = Algaeff.Reader.Make (struct type env = string list end)
+module HeapState = Algaeff.State.Make (struct type state = Sem.obj Env.t end)
 
 let get_transclusion_opts () =
   let dynenv = DynEnv.read () in
@@ -93,12 +94,16 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     let env = LexEnv.read () in
     Range.locate_opt node.loc (Sem.Clo (body, env)) :: eval rest
   | Object (self, methods) ->
-    let closures =
+    let table =
       let env = LexEnv.read () in
-      methods |> List.map @@ fun (key, body) ->
-      key, (body, env)
+      List.fold_right
+        (fun (name, body) -> Sem.MethodTable.add name (body, self, Symbol.fresh [], env))
+        methods
+        Sem.MethodTable.empty
     in
-    Range.locate_opt node.loc (Sem.Object ([self], closures)) :: eval rest
+    let sym = Symbol.fresh ["obj"] in
+    HeapState.modify @@ Env.add sym Sem.{prototype = None; methods = table};
+    Range.locate_opt node.loc (Sem.Object sym) :: eval rest
   | Force body ->
     begin
       match eval_strip body with
@@ -109,43 +114,60 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
         Reporter.fatalf ?loc:node.loc Type_error
           "tried to force non-closure: %a" Sem.pp body
     end
-  | Patch (obj, self, methods) as patch ->
-    let env = LexEnv.read () in
-    let old_selves, old_cls =
+  | Patch {obj; self; super; methods} ->
+    begin
+      Eio.traceln "patching";
       match eval_strip obj with
-      | [Range.{value = Sem.Object (old_selves, old_methods); _}] as obj ->
-        old_selves, old_methods |> List.filter @@ fun (name, _ ) ->
-        Option.is_none @@ List.assoc_opt name methods
+      | [Range.{value = Sem.Object obj_ptr; _}] as obj ->
+        Eio.traceln "patching %a" Symbol.pp obj_ptr;
+        let table =
+          let env = LexEnv.read () in
+          List.fold_right
+            (fun (name, body) -> Sem.MethodTable.add name (body, self, super, env))
+            methods
+            Sem.MethodTable.empty
+        in
+        let sym = Symbol.fresh ["obj"] in
+        HeapState.modify @@ Env.add sym Sem.{prototype = Some obj_ptr; methods = table};
+        Range.locate_opt node.loc (Sem.Object sym) :: eval rest
       | xs ->
         Reporter.fatalf ?loc:node.loc Type_error
-          "tried to patch non-object"
-    in
-    let new_cls =
-      methods |> List.map @@ fun (key, body) ->
-      key, (body, env)
-    in
-    let patched = Sem.Object (self :: old_selves, new_cls @ old_cls) in
-    Range.locate_opt node.loc patched :: eval rest
+          "tried to call patch non-object"
+    end
   | Call (obj, method_name) ->
     begin
       match eval_strip obj with
-      | [Range.{value = Sem.Object (selves, methods); _}] as obj ->
-        let result =
-          match List.assoc_opt method_name methods with
-          | Some (body, env) ->
-            let env' =
-              List.fold_right (fun self -> Env.add self obj) selves env
-            in
-            LexEnv.scope (fun _ -> env') @@ fun () ->
+      | [Range.{value = Sem.Object sym; _}] as obj_val ->
+        let rec call_method (obj : Sem.obj) =
+          let proto_val =
+            match obj.prototype with
+            | None -> None
+            | Some ptr -> Some [Range.locate_opt None @@ Sem.Object ptr]
+          in
+          match Sem.MethodTable.find_opt method_name obj.methods with
+          | Some (body, self, super, env) ->
+            LexEnv.scope begin fun _ ->
+              let env = Env.add self obj_val env in
+              match proto_val with
+              | None -> env
+              | Some proto_val ->
+                Env.add super proto_val env
+            end @@ fun () ->
             eval body
           | None ->
-            Reporter.fatalf ?loc:node.loc Type_error
-              "tried to call unbound method `%s` on %a" method_name Sem.pp obj
+            match obj.prototype with
+            | Some proto ->
+              call_method @@ Env.find proto @@ HeapState.get ()
+            | None ->
+              Reporter.fatalf ?loc:node.loc Type_error
+                "tried to call unbound method `%s`" method_name
         in
+
+        let result = call_method @@ Env.find sym @@ HeapState.get () in
         result @ eval rest
       | xs ->
         Reporter.fatalf ?loc:node.loc Type_error
-          "tried to call method `%s` non-object: %a" method_name Sem.pp xs
+          "tried to call method `%s` on non-object: %a" method_name Sem.pp xs
     end
   | Var x ->
     begin
@@ -211,6 +233,7 @@ and eval_textual prefix : Syn.t -> Sem.t =
 
 let eval_doc (doc : Syn.doc) : Sem.doc =
   let fm, tree = doc in
+  HeapState.run ~init:Env.empty @@ fun () ->
   LexEnv.run ~env:Env.empty @@ fun () ->
   DynEnv.run ~env:Env.empty @@ fun () ->
   PkgEnv.run ~env:fm.tex_packages @@ fun () ->

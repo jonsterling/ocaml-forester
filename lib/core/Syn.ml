@@ -22,7 +22,7 @@ type node =
   | Thunk of t
   | Force of t
   | Object of Symbol.t * (string * t) list
-  | Patch of t * Symbol.t * (string * t) list
+  | Patch of {obj : t; self : Symbol.t; super : Symbol.t; methods : (string * t) list}
   | Call of t * string
 [@@deriving show]
 

@@ -179,15 +179,19 @@ let rec expand : Code.t -> Syn.t =
 
   | {value = Patch (old, self, methods); loc} :: rest ->
     Part.set Body;
-    let self, methods =
+    let self, super, methods =
       Scope.section [] @@ fun () ->
       let self = Option.value ~default:["patch"; "self"] self in
-      let sym = Symbol.fresh self in
-      let var = Range.locate_opt None @@ Syn.Var sym in
-      Scope.import_subtree ([], Trie.Untagged.singleton (self, `Term [var]));
-      sym, List.map expand_method methods
+      let super = self @ ["super"] in
+      let self_sym = Symbol.fresh self in
+      let super_sym = Symbol.fresh super in
+      let self_var = Range.locate_opt None @@ Syn.Var self_sym in
+      let super_var = Range.locate_opt None @@ Syn.Var super_sym in
+      Scope.import_subtree ([], Trie.Untagged.singleton (self, `Term [self_var]));
+      Scope.import_subtree ([], Trie.Untagged.singleton (super, `Term [super_var]));
+      self_sym, super_sym, List.map expand_method methods
     in
-    let patched = Syn.Patch (expand old, self, methods) in
+    let patched = Syn.Patch {obj = expand old; self; super; methods} in
     Range.locate_opt loc patched :: expand rest
 
   | {value = Call (obj, method_name); loc} :: rest ->

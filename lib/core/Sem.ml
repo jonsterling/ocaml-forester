@@ -1,6 +1,8 @@
 open Base
 open Prelude
 
+module MethodTable = Map.Make (String)
+
 type node =
   | Text of string
   | Transclude of transclusion_opts * addr
@@ -15,7 +17,7 @@ type node =
   | If_tex of t * t
   | Prim of Prim.t * t
   | Clo of Syn.t * env
-  | Object of Symbol.t list * (string * (Syn.t * env)) list
+  | Object of Symbol.t
 [@@deriving show]
 
 and transclusion_opts =
@@ -32,6 +34,8 @@ and t = node Range.located list
 
 and env = t Env.t
 [@@deriving show]
+
+type obj = {prototype : Symbol.t option; methods : (Syn.t * Symbol.t * Symbol.t * env) MethodTable.t}
 
 let rec sentence_case nodes =
   let map_head f =
