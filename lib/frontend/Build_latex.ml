@@ -39,7 +39,6 @@ let write_tex_file ~env ~name ~packages ~source =
 let render_dvi_file ~env ~name ~source =
   let cwd = build_dir @@ Eio.Stdenv.cwd env in
   Eio_util.ensure_remove_file Eio.Path.(cwd / dvi_fname name);
-  Eio_util.ensure_remove_file Eio.Path.(cwd / pdf_fname name);
   Eio_util.run_process ~env ~cwd
     ["latex"; "-halt-on-error"; "-interaction=nonstopmode"; tex_fname name]
 
