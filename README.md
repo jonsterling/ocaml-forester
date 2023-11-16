@@ -15,7 +15,7 @@ Forester can also be used with `nix`. To run `forester`, use `nix run sourcehut:
 ```nix
 {
   inputs = {
-    forester.url = "/home/kento/projects/ocaml-forester-kento/";
+    forester.url = "sourcehut:~jonsterling/ocaml-forester";
     forester.inputs.nixpkgs.follows = "nixpkgs";
   };
 
