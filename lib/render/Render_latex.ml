@@ -105,9 +105,6 @@ and render_node : Sem.node Range.located -> Printer.t =
     ]
   | Query _ ->
     Printer.nil
-  | Clo _ ->
-    Reporter.fatal ?loc:located.loc Type_error
-      "tried to render thunk closure to LaTeX"
   | Object _ ->
     Reporter.fatal ?loc:located.loc Type_error
       "tried to render object closure to LaTeX"

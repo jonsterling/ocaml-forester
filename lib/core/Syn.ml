@@ -19,9 +19,7 @@ type node =
   | Xml_tag of string * (string * t) list * t
   | Unresolved of string
   | Prim of Prim.t * t
-  | Thunk of t
-  | Force of t
-  | Object of Symbol.t * (string * t) list
+  | Object of {self : Symbol.t; methods: (string * t) list}
   | Patch of {obj : t; self : Symbol.t; super : Symbol.t; methods : (string * t) list}
   | Call of t * string
 [@@deriving show]

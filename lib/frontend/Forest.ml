@@ -9,7 +9,6 @@ module Addr = String
 module Tbl = Hashtbl.Make (Addr)
 module Gph = Graph.Imperative.Digraph.Concrete (Addr)
 module Topo = Graph.Topological.Make (Gph)
-module Clo = Graph.Traverse
 
 module M = Map.Make (String)
 
@@ -213,7 +212,7 @@ struct
       analyze_nodes scope y
     | Sem.Prim (_, x) ->
       analyze_nodes scope x
-    | Sem.Clo _ | Sem.Object _ ->
+    | Sem.Object _ ->
       ()
 
   and analyze_transclusion_opts scope : Sem.transclusion_opts -> unit =

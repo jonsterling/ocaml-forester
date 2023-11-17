@@ -157,15 +157,7 @@ let rec expand : Code.t -> Syn.t =
     let k = expand_sym loc k in
     Range.locate_opt loc (Syn.Get k) :: expand rest
 
-  | {value = Thunk x; loc} :: rest ->
-    Part.set Body;
-    Range.locate_opt loc (Syn.Thunk (expand x)) :: expand rest
-
-  | {value = Force x; loc} :: rest ->
-    Part.set Body;
-    Range.locate_opt loc (Syn.Force (expand x)) :: expand rest
-
-  | {value = Object (self, methods); loc} :: rest ->
+  | {value = Object {self; methods}; loc} :: rest ->
     Part.set Body;
     let self, methods =
       Scope.section [] @@ fun () ->
@@ -174,9 +166,9 @@ let rec expand : Code.t -> Syn.t =
       self |> Option.iter (fun self -> Scope.import_subtree ([], Trie.Untagged.singleton (self, `Term [var])));
       sym, List.map expand_method methods
     in
-    Range.locate_opt loc (Syn.Object (self, methods)) :: expand rest
+    Range.locate_opt loc (Syn.Object {self; methods}) :: expand rest
 
-  | {value = Patch (old, self, methods); loc} :: rest ->
+  | {value = Patch {obj; self; methods}; loc} :: rest ->
     Part.set Body;
     let self, super, methods =
       Scope.section [] @@ fun () ->
@@ -190,7 +182,7 @@ let rec expand : Code.t -> Syn.t =
       end;
       self_sym, super_sym, List.map expand_method methods
     in
-    let patched = Syn.Patch {obj = expand old; self; super; methods} in
+    let patched = Syn.Patch {obj = expand obj; self; super; methods} in
     Range.locate_opt loc patched :: expand rest
 
   | {value = Call (obj, method_name); loc} :: rest ->

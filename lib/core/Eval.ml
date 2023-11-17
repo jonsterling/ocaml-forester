@@ -90,10 +90,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     in
     let body, rest = loop xs rest in
     body @ eval rest
-  | Thunk body ->
-    let env = LexEnv.read () in
-    Range.locate_opt node.loc (Sem.Clo (body, env)) :: eval rest
-  | Object (self, methods) ->
+  | Object {self; methods} ->
     let table =
       let env = LexEnv.read () in
       List.fold_right
@@ -104,16 +101,6 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     let sym = Symbol.fresh ["obj"] in
     HeapState.modify @@ Env.add sym Sem.{prototype = None; methods = table};
     Range.locate_opt node.loc (Sem.Object sym) :: eval rest
-  | Force body ->
-    begin
-      match eval_strip body with
-      | [Range.{value = Sem.Clo (syn, env); _}] ->
-        LexEnv.scope (fun _ -> env) @@ fun () ->
-        eval syn
-      | body ->
-        Reporter.fatalf ?loc:node.loc Type_error
-          "tried to force non-closure: %a" Sem.pp body
-    end
   | Patch {obj; self; super; methods} ->
     begin
       match eval_strip obj with
