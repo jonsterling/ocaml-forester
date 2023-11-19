@@ -21,9 +21,7 @@ let rec expand : Code.t -> Syn.t =
     {value = Syn.Text x; loc} :: expand rest
 
   | {value = Let (a, bs, def); loc} :: rest ->
-    let singl =
-      Trie.Untagged.singleton (a, `Term (expand_lambda loc (bs, def)))
-    in
+    let singl = Trie.Untagged.singleton (a, `Term (expand_lambda loc (bs, def))) in
     Resolver.Scope.section [] @@ fun _ ->
     Resolver.Scope.import_subtree ([], singl);
     expand rest
@@ -49,53 +47,37 @@ let rec expand : Code.t -> Syn.t =
   | {value = Group (Squares, title); loc = loc1} :: {value = Group (Parens, dest); loc = loc2} :: rest ->
     let dest = expand dest in
     let title = Option.some @@ expand title in
-    let link = Range.locate_opt loc1 @@ Syn.Link {dest; title} in
-    link :: expand rest
+    let link = Syn.Link {dest; title} in
+    {value = link; loc = loc1} :: expand rest
 
   | {value = Group (Squares, [{value = Group (Squares, dest); _}]); loc} :: rest ->
     let dest = expand dest in
-    let link = Range.locate_opt loc @@ Syn.Link {dest; title = None} in
-    link :: expand rest
+    {value = Syn.Link {dest; title = None}; loc} :: expand rest
 
   | {value = Group (d, xs); loc} :: rest ->
-    let group = Range.locate_opt loc @@ Syn.Group (d, expand xs) in
-    group :: expand rest
+    {value = Syn.Group (d, expand xs); loc} :: expand rest
 
   | {value = Transclude addr; loc} :: rest ->
-    let transclusion = Range.locate_opt loc @@ Syn.Transclude addr in
-    transclusion :: expand rest
+    {value = Syn.Transclude addr; loc} :: expand rest
 
   | {value = Query query; loc} :: rest ->
-    let query =
-      Range.locate_opt loc @@
-      Syn.Query (Query.map expand query)
-    in
-    query :: expand rest
+    {value = Syn.Query (Query.map expand query); loc} :: expand rest
 
   | {value = Embed_tex xs; loc} :: rest ->
-    let tex =
-      Range.locate_opt loc @@
-      Syn.Embed_tex {source = expand xs}
-    in
-    tex :: expand rest
+    {value = Syn.Embed_tex {source = expand xs}; loc} :: expand rest
 
   | {value = Block (xs, ys); loc} :: rest ->
-    let block =
-      Range.locate_opt loc @@
-      Syn.Block (expand xs, expand ys)
-    in
-    block :: expand rest
+    {value = Syn.Block (expand xs, expand ys); loc} :: expand rest
 
   | {value = Math (m, xs); loc} :: rest ->
-    let math = Range.locate_opt loc @@ Syn.Math (m, expand xs) in
-    math :: expand rest
+    {value = Syn.Math (m, expand xs); loc} :: expand rest
 
   | {value = Ident (path, methods); loc} :: rest ->
     let rec loop acc  =
       function
       | [] -> acc
       | m :: ms ->
-        loop [Range.locate_opt loc (Syn.Call (acc, m))] ms
+        loop [Range.{value = Syn.Call (acc, m); loc}] ms
     in
     loop (expand_ident loc path) methods @ expand rest
 
@@ -109,26 +91,26 @@ let rec expand : Code.t -> Syn.t =
   | {value = Put (k, v); loc} :: rest ->
     let k = expand_sym loc k in
     let v = expand v in
-    [Range.locate_opt loc @@ Syn.Put (k, v, expand rest)]
+    [{value = Syn.Put (k, v, expand rest); loc}]
 
   | {value = Default (k, v); loc} :: rest ->
     let k = expand_sym loc k in
     let v = expand v in
-    [Range.locate_opt loc @@ Syn.Default (k, v, expand rest)]
+    [{value = Syn.Default (k, v, expand rest); loc}]
 
   | {value = Get k; loc} :: rest ->
     let k = expand_sym loc k in
-    Range.locate_opt loc (Syn.Get k) :: expand rest
+    {value = Syn.Get k; loc} :: expand rest
 
   | {value = Object {self; methods}; loc} :: rest ->
     let self, methods =
       Scope.section [] @@ fun () ->
       let sym = Symbol.fresh [] in
-      let var = Range.locate_opt None @@ Syn.Var sym in
+      let var = Range.{value = Syn.Var sym; loc} in
       self |> Option.iter (fun self -> Scope.import_subtree ([], Trie.Untagged.singleton (self, `Term [var])));
       sym, List.map expand_method methods
     in
-    Range.locate_opt loc (Syn.Object {self; methods}) :: expand rest
+    {value = Syn.Object {self; methods}; loc} :: expand rest
 
   | {value = Patch {obj; self; methods}; loc} :: rest ->
     let self, super, methods =
@@ -144,15 +126,15 @@ let rec expand : Code.t -> Syn.t =
       self_sym, super_sym, List.map expand_method methods
     in
     let patched = Syn.Patch {obj = expand obj; self; super; methods} in
-    Range.locate_opt loc patched :: expand rest
+    {value = patched; loc} :: expand rest
 
   | {value = Call (obj, method_name); loc} :: rest ->
-    Range.locate_opt loc (Syn.Call (expand obj, method_name)) :: expand rest
+    {value = Syn.Call (expand obj, method_name); loc} :: expand rest
 
   | {value = If_tex (x, y); loc} :: rest ->
     let x = expand x in
     let y = expand y in
-    Range.locate_opt loc (Syn.If_tex (x, y)) :: expand rest
+    {value = Syn.If_tex (x, y); loc} :: expand rest
 
   | {value = Xml_tag (title, attrs, body); loc} :: rest ->
     let attrs =
@@ -160,8 +142,7 @@ let rec expand : Code.t -> Syn.t =
       k, expand v
     in
     let body = expand body in
-    let xml = Syn.Xml_tag (title, attrs, body) in
-    Range.locate_opt loc xml :: expand rest
+    {value = Syn.Xml_tag (title, attrs, body); loc} :: expand rest
 
   | {value = Import (vis, dep); loc} :: rest ->
     let import = UnitMap.find dep @@ U.read () in
@@ -247,12 +228,12 @@ and expand_lambda loc : Trie.path list * Code.t -> Syn.t =
     Scope.import_subtree ([], singlx);
     sym
   in
-  [Range.locate_opt loc @@ Syn.Lam (syms, expand body)]
+  [Range.{value = Syn.Lam (syms, expand body); loc}]
 
 and expand_ident loc path =
   match Scope.resolve path, path with
   | None, [name] ->
-    [Range.locate_opt loc @@ Syn.Unresolved name]
+    [Range.{value = Syn.Unresolved name; loc}]
   | None, _ ->
     Reporter.fatalf ?loc Resolution_error
       "path %a could not be resolved"

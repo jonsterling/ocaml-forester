@@ -1,11 +1,11 @@
 {
   exception SyntaxError of string
   let drop_sigil c str = 1 |> List.nth @@ String.split_on_char c str
-  let ident str = Parser.IDENT (drop_sigil '\\' str)
+  let ident str = Grammar.IDENT (drop_sigil '\\' str)
   let illegal str = raise @@ SyntaxError str
 
-  let text str = Parser.TEXT str
-  let whitespace str = Parser.WHITESPACE str
+  let text str = Grammar.TEXT str
+  let whitespace str = Grammar.WHITESPACE str
   let dbg str = Format.printf "%s\n" str; flush stdout
 
   let verbatim = ref false
@@ -32,82 +32,82 @@ let text = [^ ' ' '%' '#' '\\' '{' '}' '[' ']' '(' ')' '\r' '\n']+
 rule token =
   parse
   | "%" { comment lexbuf }
-  | "##{" { return lexbuf @@ Parser.HASH_HASH_LBRACE }
-  | "#{" { return lexbuf @@ Parser.HASH_LBRACE }
-  | "\\\\" { return lexbuf @@ Parser.IDENT {|\|} }
-  | "\\," { return lexbuf @@ Parser.IDENT {|,|} }
-  | "\\\"" { return lexbuf @@ Parser.IDENT {|"|} }
-  | "\\'" { return lexbuf @@ Parser.IDENT {|'|} }
-  | "\\`" { return lexbuf @@ Parser.IDENT {|`|} }
-  | "\\_" { return lexbuf @@ Parser.IDENT {|_|} }
-  | "\\;" { return lexbuf @@ Parser.IDENT {|;|} }
-  | "\\#" { return lexbuf @@ Parser.IDENT {|#|} }
-  | "\\{" { return lexbuf @@ Parser.IDENT {|{|} }
-  | "\\}" { return lexbuf @@ Parser.IDENT {|}|} }
-  | "\\[" { return lexbuf @@ Parser.IDENT {|[|} }
-  | "\\]" { return lexbuf @@ Parser.IDENT {|]|} }
+  | "##{" { return lexbuf @@ Grammar.HASH_HASH_LBRACE }
+  | "#{" { return lexbuf @@ Grammar.HASH_LBRACE }
+  | "\\\\" { return lexbuf @@ Grammar.IDENT {|\|} }
+  | "\\," { return lexbuf @@ Grammar.IDENT {|,|} }
+  | "\\\"" { return lexbuf @@ Grammar.IDENT {|"|} }
+  | "\\'" { return lexbuf @@ Grammar.IDENT {|'|} }
+  | "\\`" { return lexbuf @@ Grammar.IDENT {|`|} }
+  | "\\_" { return lexbuf @@ Grammar.IDENT {|_|} }
+  | "\\;" { return lexbuf @@ Grammar.IDENT {|;|} }
+  | "\\#" { return lexbuf @@ Grammar.IDENT {|#|} }
+  | "\\{" { return lexbuf @@ Grammar.IDENT {|{|} }
+  | "\\}" { return lexbuf @@ Grammar.IDENT {|}|} }
+  | "\\[" { return lexbuf @@ Grammar.IDENT {|[|} }
+  | "\\]" { return lexbuf @@ Grammar.IDENT {|]|} }
   | "\\startverb" { verbatim := true; token lexbuf }
   | "\\stopverb" { verbatim := false; token lexbuf }
-  | "\\ " { return lexbuf @@ Parser.IDENT {| |} }
-  | "\\title" { return lexbuf @@ Parser.TITLE }
-  | "\\taxon" { return lexbuf @@ Parser.TAXON }
-  | "\\author" { return lexbuf @@ Parser.AUTHOR }
-  | "\\scope" { return lexbuf @@ Parser.SCOPE }
-  | "\\put" { return lexbuf @@ Parser.PUT }
-  | "\\put?" { return lexbuf @@ Parser.DEFAULT }
-  | "\\get" { return lexbuf @@ Parser.GET }
-  | "\\tag" { return lexbuf @@ Parser.TAG }
-  | "\\date" { return lexbuf @@ Parser.DATE }
-  | "\\import" { return lexbuf @@ Parser.IMPORT }
-  | "\\export" { return lexbuf @@ Parser.EXPORT }
-  | "\\namespace" { return lexbuf @@ Parser.NAMESPACE }
-  | "\\open" { return lexbuf @@ Parser.OPEN }
-  | "\\meta" { return lexbuf @@ Parser.META }
-  | "\\def" { return lexbuf @@ Parser.DEF }
-  | "\\alloc" { return lexbuf @@ Parser.ALLOC }
-  | "\\let" { return lexbuf @@ Parser.LET }
-  | "\\tex" { return lexbuf @@ Parser.TEX }
-  | "\\block" { return lexbuf @@ Parser.BLOCK }
-  | "\\iftex" { return lexbuf @@ Parser.IF_TEX }
-  | "\\texpackage" { return lexbuf @@ Parser.TEX_PACKAGE }
-  | "\\transclude" { return lexbuf @@ Parser.TRANSCLUDE }
-  | "\\query/and" {return lexbuf @@ Parser.QUERY_AND }
-  | "\\query/or" {return lexbuf @@ Parser.QUERY_OR }
-  | "\\query/author" {return lexbuf @@ Parser.QUERY_AUTHOR }
-  | "\\query/tag" {return lexbuf @@ Parser.QUERY_TAG }
-  | "\\query/taxon" {return lexbuf @@ Parser.QUERY_TAXON }
-  | "\\query/meta" {return lexbuf @@ Parser.QUERY_META }
-  | "\\query" { return lexbuf @@ Parser.QUERY_TREE }
-  | "\\xml" { return lexbuf @@ Parser.XML_TAG }
-  | "\\p" { return lexbuf @@ Parser.PRIM `P }
-  | "\\em" { return lexbuf @@ Parser.PRIM `Em }
-  | "\\strong" { return lexbuf @@ Parser.PRIM `Strong }
-  | "\\li" { return lexbuf @@ Parser.PRIM `Li }
-  | "\\ul" { return lexbuf @@ Parser.PRIM `Ul }
-  | "\\ol" { return lexbuf @@ Parser.PRIM `Ol }
-  | "\\code" { return lexbuf @@ Parser.PRIM `Code }
-  | "\\blockquote" { return lexbuf @@ Parser.PRIM `Blockquote }
-  | "\\pre" { return lexbuf @@ Parser.PRIM `Pre }
-  | "\\object" { return lexbuf @@ Parser.OBJECT }
-  | "\\patch" { return lexbuf @@ Parser.PATCH }
-  | "\\call" { return lexbuf @@ Parser.CALL }
-  | "#" { return lexbuf @@ Parser.TEXT "#" }
+  | "\\ " { return lexbuf @@ Grammar.IDENT {| |} }
+  | "\\title" { return lexbuf @@ Grammar.TITLE }
+  | "\\taxon" { return lexbuf @@ Grammar.TAXON }
+  | "\\author" { return lexbuf @@ Grammar.AUTHOR }
+  | "\\scope" { return lexbuf @@ Grammar.SCOPE }
+  | "\\put" { return lexbuf @@ Grammar.PUT }
+  | "\\put?" { return lexbuf @@ Grammar.DEFAULT }
+  | "\\get" { return lexbuf @@ Grammar.GET }
+  | "\\tag" { return lexbuf @@ Grammar.TAG }
+  | "\\date" { return lexbuf @@ Grammar.DATE }
+  | "\\import" { return lexbuf @@ Grammar.IMPORT }
+  | "\\export" { return lexbuf @@ Grammar.EXPORT }
+  | "\\namespace" { return lexbuf @@ Grammar.NAMESPACE }
+  | "\\open" { return lexbuf @@ Grammar.OPEN }
+  | "\\meta" { return lexbuf @@ Grammar.META }
+  | "\\def" { return lexbuf @@ Grammar.DEF }
+  | "\\alloc" { return lexbuf @@ Grammar.ALLOC }
+  | "\\let" { return lexbuf @@ Grammar.LET }
+  | "\\tex" { return lexbuf @@ Grammar.TEX }
+  | "\\block" { return lexbuf @@ Grammar.BLOCK }
+  | "\\iftex" { return lexbuf @@ Grammar.IF_TEX }
+  | "\\texpackage" { return lexbuf @@ Grammar.TEX_PACKAGE }
+  | "\\transclude" { return lexbuf @@ Grammar.TRANSCLUDE }
+  | "\\query/and" {return lexbuf @@ Grammar.QUERY_AND }
+  | "\\query/or" {return lexbuf @@ Grammar.QUERY_OR }
+  | "\\query/author" {return lexbuf @@ Grammar.QUERY_AUTHOR }
+  | "\\query/tag" {return lexbuf @@ Grammar.QUERY_TAG }
+  | "\\query/taxon" {return lexbuf @@ Grammar.QUERY_TAXON }
+  | "\\query/meta" {return lexbuf @@ Grammar.QUERY_META }
+  | "\\query" { return lexbuf @@ Grammar.QUERY_TREE }
+  | "\\xml" { return lexbuf @@ Grammar.XML_TAG }
+  | "\\p" { return lexbuf @@ Grammar.PRIM `P }
+  | "\\em" { return lexbuf @@ Grammar.PRIM `Em }
+  | "\\strong" { return lexbuf @@ Grammar.PRIM `Strong }
+  | "\\li" { return lexbuf @@ Grammar.PRIM `Li }
+  | "\\ul" { return lexbuf @@ Grammar.PRIM `Ul }
+  | "\\ol" { return lexbuf @@ Grammar.PRIM `Ol }
+  | "\\code" { return lexbuf @@ Grammar.PRIM `Code }
+  | "\\blockquote" { return lexbuf @@ Grammar.PRIM `Blockquote }
+  | "\\pre" { return lexbuf @@ Grammar.PRIM `Pre }
+  | "\\object" { return lexbuf @@ Grammar.OBJECT }
+  | "\\patch" { return lexbuf @@ Grammar.PATCH }
+  | "\\call" { return lexbuf @@ Grammar.CALL }
+  | "#" { return lexbuf @@ Grammar.TEXT "#" }
   | ident { return lexbuf @@ ident (Lexing.lexeme lexbuf) }
-  | '{' { return lexbuf @@ Parser.LBRACE }
-  | '}' { return lexbuf @@ Parser.RBRACE }
-  | '[' { return lexbuf @@ Parser.LSQUARE }
-  | ']' { return lexbuf @@ Parser.RSQUARE }
-  | '(' { return lexbuf @@ Parser.LPAREN }
-  | ')' { return lexbuf @@ Parser.RPAREN }
+  | '{' { return lexbuf @@ Grammar.LBRACE }
+  | '}' { return lexbuf @@ Grammar.RBRACE }
+  | '[' { return lexbuf @@ Grammar.LSQUARE }
+  | ']' { return lexbuf @@ Grammar.RSQUARE }
+  | '(' { return lexbuf @@ Grammar.LPAREN }
+  | ')' { return lexbuf @@ Grammar.RPAREN }
   | text { text (Lexing.lexeme lexbuf) }
   | whitespace { whitespace (Lexing.lexeme lexbuf) }
   | newline { Lexing.new_line lexbuf; whitespace (Lexing.lexeme lexbuf) }
-  | eof { Parser.EOF }
+  | eof { Grammar.EOF }
   | _ { illegal @@ Lexing.lexeme lexbuf }
 
 and comment =
   parse
   | newline { Lexing.new_line lexbuf; token lexbuf }
-  | eof { Parser.EOF }
+  | eof { Grammar.EOF }
   | _ { comment lexbuf }
 

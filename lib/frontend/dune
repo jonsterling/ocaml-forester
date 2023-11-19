@@ -1,7 +1,7 @@
 (ocamllex Lexer)
 
 (menhir
- (modules Parser))
+ (modules Grammar))
 
 (library
  (name Forester)
