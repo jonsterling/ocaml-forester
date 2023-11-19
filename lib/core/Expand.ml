@@ -5,46 +5,23 @@ open Bwd
 module Set = Set.Make (String)
 module UnitMap = Map.Make (String)
 
-type part = Frontmatter | Body [@@deriving show]
 type exports = P.data Trie.Untagged.t
 
 module U = Algaeff.Reader.Make (struct type t = exports UnitMap.t end)
 module Fm = Algaeff.State.Make (struct type t = Syn.frontmatter end)
-
-module Part =
-struct
-  include Algaeff.State.Make (struct type t = part end)
-
-  let protect kont =
-    let part = get () in
-    let x = kont () in
-    set part;
-    x
-end
-
-let only_frontmatter loc () =
-  match Part.get () with
-  | Frontmatter -> ()
-  | Body ->
-    Reporter.fatal ?loc Frontmatter_in_body
-      "encountered frontmatter-only code in the body"
 
 let rec expand : Code.t -> Syn.t =
   function
   | [] -> []
 
   | {value = Prim (p, x); loc} :: rest ->
-    Part.set Body;
     {value = Syn.Prim (p, expand x); loc} :: expand rest
 
   | {value = Text x; loc} :: rest ->
-    if not (String.trim x = "") then
-      Part.set Body;
     {value = Syn.Text x; loc} :: expand rest
 
   | {value = Let (a, bs, def); loc} :: rest ->
     let singl =
-      Part.protect @@ fun () ->
       Trie.Untagged.singleton (a, `Term (expand_lambda loc (bs, def)))
     in
     Resolver.Scope.section [] @@ fun _ ->
@@ -52,13 +29,10 @@ let rec expand : Code.t -> Syn.t =
     expand rest
 
   | {value = Namespace (path, body); loc} :: rest ->
-    only_frontmatter loc ();
-    let mode, result =
+    let result =
       Scope.section path @@ fun () ->
-      let x = expand body in
-      Part.get (), x
+      expand body
     in
-    Part.set mode;
     result @ expand rest
 
   | {value = Open path; loc} :: rest ->
@@ -73,7 +47,6 @@ let rec expand : Code.t -> Syn.t =
     expand rest
 
   | {value = Group (Squares, title); loc = loc1} :: {value = Group (Parens, dest); loc = loc2} :: rest ->
-    Part.set Body;
     let dest = expand dest in
     let title = Option.some @@ expand title in
     let link = Range.locate_opt loc1 @@ Syn.Link {dest; title} in
@@ -85,17 +58,14 @@ let rec expand : Code.t -> Syn.t =
     link :: expand rest
 
   | {value = Group (d, xs); loc} :: rest ->
-    Part.set Body;
     let group = Range.locate_opt loc @@ Syn.Group (d, expand xs) in
     group :: expand rest
 
   | {value = Transclude addr; loc} :: rest ->
-    Part.set Body;
     let transclusion = Range.locate_opt loc @@ Syn.Transclude addr in
     transclusion :: expand rest
 
   | {value = Query query; loc} :: rest ->
-    Part.set Body;
     let query =
       Range.locate_opt loc @@
       Syn.Query (Query.map expand query)
@@ -103,7 +73,6 @@ let rec expand : Code.t -> Syn.t =
     query :: expand rest
 
   | {value = Embed_tex xs; loc} :: rest ->
-    Part.set Body;
     let tex =
       Range.locate_opt loc @@
       Syn.Embed_tex {source = expand xs}
@@ -111,7 +80,6 @@ let rec expand : Code.t -> Syn.t =
     tex :: expand rest
 
   | {value = Block (xs, ys); loc} :: rest ->
-    Part.set Body;
     let block =
       Range.locate_opt loc @@
       Syn.Block (expand xs, expand ys)
@@ -119,12 +87,10 @@ let rec expand : Code.t -> Syn.t =
     block :: expand rest
 
   | {value = Math (m, xs); loc} :: rest ->
-    Part.set Body;
     let math = Range.locate_opt loc @@ Syn.Math (m, expand xs) in
     math :: expand rest
 
   | {value = Ident (path, methods); loc} :: rest ->
-    Part.set Body;
     let rec loop acc  =
       function
       | [] -> acc
@@ -141,24 +107,20 @@ let rec expand : Code.t -> Syn.t =
     body @ expand rest
 
   | {value = Put (k, v); loc} :: rest ->
-    Part.set Body;
     let k = expand_sym loc k in
     let v = expand v in
     [Range.locate_opt loc @@ Syn.Put (k, v, expand rest)]
 
   | {value = Default (k, v); loc} :: rest ->
-    Part.set Body;
     let k = expand_sym loc k in
     let v = expand v in
     [Range.locate_opt loc @@ Syn.Default (k, v, expand rest)]
 
   | {value = Get k; loc} :: rest ->
-    Part.set Body;
     let k = expand_sym loc k in
     Range.locate_opt loc (Syn.Get k) :: expand rest
 
   | {value = Object {self; methods}; loc} :: rest ->
-    Part.set Body;
     let self, methods =
       Scope.section [] @@ fun () ->
       let sym = Symbol.fresh [] in
@@ -169,7 +131,6 @@ let rec expand : Code.t -> Syn.t =
     Range.locate_opt loc (Syn.Object {self; methods}) :: expand rest
 
   | {value = Patch {obj; self; methods}; loc} :: rest ->
-    Part.set Body;
     let self, super, methods =
       Scope.section [] @@ fun () ->
       let self_sym = Symbol.fresh [] in
@@ -186,17 +147,14 @@ let rec expand : Code.t -> Syn.t =
     Range.locate_opt loc patched :: expand rest
 
   | {value = Call (obj, method_name); loc} :: rest ->
-    Part.set Body;
     Range.locate_opt loc (Syn.Call (expand obj, method_name)) :: expand rest
 
   | {value = If_tex (x, y); loc} :: rest ->
-    Part.set Body;
     let x = expand x in
     let y = expand y in
     Range.locate_opt loc (Syn.If_tex (x, y)) :: expand rest
 
   | {value = Xml_tag (title, attrs, body); loc} :: rest ->
-    Part.set Body;
     let attrs =
       attrs |> List.map @@ fun (k, v) ->
       k, expand v
@@ -206,7 +164,6 @@ let rec expand : Code.t -> Syn.t =
     Range.locate_opt loc xml :: expand rest
 
   | {value = Import (vis, dep); loc} :: rest ->
-    only_frontmatter loc ();
     let import = UnitMap.find dep @@ U.read () in
     begin
       match vis with
@@ -216,82 +173,64 @@ let rec expand : Code.t -> Syn.t =
     expand rest
 
   | {value = Def (path, xs, body); loc} :: rest ->
-    only_frontmatter loc ();
-    let lam = Part.protect @@ fun () -> expand_lambda loc (xs, body) in
+    let lam = expand_lambda loc (xs, body) in
     Resolver.Scope.include_singleton (path, (`Term lam, ()));
     expand rest
 
   | {value = Alloc path; loc} :: rest ->
-    only_frontmatter loc ();
     let symbol = Symbol.fresh path in
     Resolver.Scope.include_singleton (path, (`Sym symbol, ()));
     expand rest
 
   | {value = Title xs; loc} :: rest ->
-    only_frontmatter loc ();
     begin
-      Part.protect @@ fun () ->
       Fm.modify @@ fun fm ->
       {fm with title = Option.some @@ expand xs}
     end;
-    Part.set Frontmatter;
     expand rest
 
   | {value = Author author; loc} :: rest ->
-    only_frontmatter loc ();
     begin
       Fm.modify @@ fun fm ->
       {fm with authors = fm.authors @ [author]}
     end;
-    Part.set Frontmatter;
     expand rest
 
   | {value = Tag tag; loc} :: rest ->
-    only_frontmatter loc ();
     begin
       Fm.modify @@ fun fm ->
       {fm with tags = fm.tags @ [tag]}
     end;
-    Part.set Frontmatter;
     expand rest
 
   | {value = Taxon taxon; loc} :: rest ->
-    only_frontmatter loc ();
     begin
       Fm.modify @@ fun fm ->
       {fm with taxon = Some taxon}
     end;
-    Part.set Frontmatter;
     expand rest
 
   | {value = Date str; loc} :: rest ->
-    only_frontmatter loc ();
     let date = Date.parse str in
     begin
       Fm.modify @@ fun fm ->
       {fm with date = Some date}
     end;
-    Part.set Frontmatter;
     expand rest
 
   | {value = Meta (k, v); loc} :: rest ->
-    only_frontmatter loc ();
     begin
-      Part.protect @@ fun () ->
       let v = expand v in
       Fm.modify @@ fun fm ->
       {fm with metas = fm.metas @ [k,v]}
     end;
-    Part.set Frontmatter;
     expand rest
 
   | {value = TeX_package pkg; loc} :: rest ->
-    only_frontmatter loc ();
     begin
       Fm.modify @@ fun fm ->
       {fm with tex_packages = fm.tex_packages @ [pkg]}
     end;
-    Part.set Frontmatter;
     expand rest
 
 and expand_method (key, body) =
@@ -368,7 +307,6 @@ let expand_doc (units : exports UnitMap.t) addr (doc : Code.doc) =
 
   U.run ~env:units @@ fun () ->
   Fm.run ~init @@ fun () ->
-  Part.run ~init:Frontmatter @@ fun () ->
   let tree = expand doc in
   let fm = Fm.get () in
   let exports = Resolver.Scope.get_export () in
