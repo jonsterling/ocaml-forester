@@ -34,7 +34,15 @@ and t = node Range.located list
 and env = t Env.t
 [@@deriving show]
 
-type obj = {prototype : Symbol.t option; methods : (Syn.t * Symbol.t * Symbol.t * env) MethodTable.t}
+type obj_method =
+  {body : Syn.t;
+   self : Symbol.t;
+   super : Symbol.t;
+   env : env}
+
+type obj =
+  {prototype : Symbol.t option;
+   methods : obj_method MethodTable.t}
 
 let rec sentence_case nodes =
   let map_head f =

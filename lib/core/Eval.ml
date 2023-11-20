@@ -93,10 +93,11 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
   | Object {self; methods} ->
     let table =
       let env = LexEnv.read () in
-      List.fold_right
-        (fun (name, body) -> Sem.MethodTable.add name (body, self, Symbol.fresh [], env))
-        methods
-        Sem.MethodTable.empty
+      let add (name, body) =
+        let super = Symbol.fresh [] in
+        Sem.MethodTable.add name Sem.{body; self; super; env}
+      in
+      List.fold_right add methods Sem.MethodTable.empty
     in
     let sym = Symbol.fresh ["obj"] in
     HeapState.modify @@ Env.add sym Sem.{prototype = None; methods = table};
@@ -107,10 +108,11 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
       | [Range.{value = Sem.Object obj_ptr; _}] as obj ->
         let table =
           let env = LexEnv.read () in
-          List.fold_right
-            (fun (name, body) -> Sem.MethodTable.add name (body, self, super, env))
-            methods
-            Sem.MethodTable.empty
+          let add (name, body) =
+            Sem.MethodTable.add name
+              Sem.{body; self; super; env}
+          in
+          List.fold_right add methods Sem.MethodTable.empty
         in
         let sym = Symbol.fresh ["obj"] in
         HeapState.modify @@ Env.add sym Sem.{prototype = Some obj_ptr; methods = table};
@@ -130,15 +132,16 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
             | Some ptr -> Some [Range.locate_opt None @@ Sem.Object ptr]
           in
           match Sem.MethodTable.find_opt method_name obj.methods with
-          | Some (body, self, super, env) ->
-            LexEnv.scope begin fun _ ->
-              let env = Env.add self obj_val env in
+          | Some mthd ->
+            let env =
+              let env = Env.add mthd.self obj_val mthd.env in
               match proto_val with
               | None -> env
               | Some proto_val ->
-                Env.add super proto_val env
-            end @@ fun () ->
-            eval body
+                Env.add mthd.super proto_val env
+            in
+            LexEnv.scope (fun _ -> env) @@ fun () ->
+            eval mthd.body
           | None ->
             match obj.prototype with
             | Some proto ->
