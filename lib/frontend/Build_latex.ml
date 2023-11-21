@@ -63,7 +63,7 @@ let render_svg_file ~env ~name ~source =
   Eio_util.ensure_remove_file Eio.Path.(cwd / fname)
 
 
-let build_latex ~env ~ignore_tex_cache ~name ~packages ~source =
+let build_latex ~env ~ignore_tex_cache ~name ~packages ~source : Eio.Fs.dir_ty Eio.Path.t list =
   let cwd = Eio.Stdenv.cwd env in
   let web_name = name ^ "-web" in
   let print_name = name ^ "-print" in
@@ -75,15 +75,22 @@ let build_latex ~env ~ignore_tex_cache ~name ~packages ~source =
       begin
         write_tex_file ~env ~name:web_name ~packages ~source;
         render_dvi_file ~env ~name:web_name ~source;
-        render_svg_file ~env ~name:web_name ~source
+        render_svg_file ~env ~name:web_name ~source;
+        Some svg_path
       end
+    else
+      None
   in
   let pdf_task () =
     if ignore_tex_cache || not @@ Eio_util.file_exists pdf_path then
       begin
         write_tex_file ~env ~name:print_name ~packages:(packages @ ["newpxtext"; "newpxmath"]) ~source;
-        render_pdf_file ~env ~name:print_name ~source
+        render_pdf_file ~env ~name:print_name ~source;
+        Some pdf_path
       end
+    else
+      None
   in
 
-  Eio.Fiber.both svg_task pdf_task
+  [svg_task; pdf_task] |> Eio.Fiber.List.filter_map @@ fun task ->
+  task ()

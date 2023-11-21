@@ -13,4 +13,4 @@ val build_latex
   -> name:string
   -> packages:string list
   -> source:string
-  -> unit
+  -> Eio.Fs.dir_ty Eio.Path.t list
