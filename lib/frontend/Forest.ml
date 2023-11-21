@@ -360,23 +360,21 @@ struct
     Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"output";
     Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"latex"
 
-  let copy_resources ~env paths =
-    paths |> List.iter @@ fun fp ->
+  let copy_resources ~env =
     let cwd = Eio.Stdenv.cwd env in
-    let fname =
-      match Eio.Path.native fp with
-      | Some fname -> fname
-      | None ->
-        Reporter.fatalf Internal_error "encountered file path `%a` that could not be converted to a native string representation" Eio.Path.pp fp
-    in
+    Eio.Path.with_open_dir Eio.Path.(cwd / "build") @@ fun build ->
+    Eio.Path.read_dir build |> List.iter @@ fun fname ->
     let ext = Filename.extension fname in
-    begin
+    let fp = Format.sprintf "build/%s" fname in
+    let dest_opt =
       match ext with
       | ".svg" -> Some "output/resources";
       | ".pdf" -> Some "latex/resources"
       | _ -> None
-    end |> Option.iter @@ fun dest_dir ->
-    Eio_util.copy_to_dir ~cwd ~env ~source:fname ~dest_dir
+    in
+    dest_opt |> Option.iter @@ fun dest_dir ->
+    if not @@ Eio_util.file_exists Eio.Path.(cwd / dest_dir / fname) then
+      Eio_util.copy_to_dir ~cwd ~env ~source:fp ~dest_dir
 
   let with_bib_fmt ~cwd kont =
     let create = `Or_truncate 0o644 in
@@ -401,6 +399,6 @@ struct
     render_json ~cwd docs;
     copy_assets ~env;
     copy_theme ~env;
-    let paths = LaTeX_queue.process ~env in
-    copy_resources ~env paths
+    let _ = LaTeX_queue.process ~env in
+    copy_resources ~env
 end
