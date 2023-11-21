@@ -188,7 +188,7 @@ struct
     | Sem.Transclude (opts, addr) ->
       analyze_transclusion_opts scope opts;
       Gph.add_edge transclusion_graph addr scope
-    | Sem.Link {title; dest} ->
+    | Sem.Link {title; dest; _} ->
       Option.iter (analyze_nodes scope) title;
       Gph.add_edge link_graph dest scope
     | Sem.Unresolved _ | Sem.Img _ ->

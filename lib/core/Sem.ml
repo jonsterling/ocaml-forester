@@ -7,7 +7,7 @@ type node =
   | Text of string
   | Transclude of transclusion_opts * addr
   | Query of transclusion_opts * t Query.t
-  | Link of {dest : string; title : t option}
+  | Link of {dest : string; title : t option; modifier : [`Sentence_case] option}
   | Xml_tag of string * (string * t) list * t
   | Unresolved of string
   | Math of math_mode * t
@@ -64,7 +64,7 @@ let trim_whitespace xs =
   trim_back @@ trim_front xs
 
 
-let rec sentence_case nodes =
+let sentence_case nodes =
   let map_head f =
     function
     | [] -> []
@@ -75,8 +75,14 @@ let rec sentence_case nodes =
   in
   nodes |> map_head @@ map_located @@ function
   | Text str -> Text (String_util.sentence_case str)
-  | Link link -> Link {link with title = Option.map sentence_case link.title}
+  | Link link -> Link {link with modifier = Some `Sentence_case}
   | node -> node
+
+
+let apply_modifier =
+  function
+  | Some `Sentence_case -> sentence_case
+  | None -> Fun.id
 
 type doc =
   {title : t option;
@@ -98,7 +104,7 @@ let string_of_nodes =
     match Range.(located.value) with
     | Text s -> Some s
     | Link {title = Some title; _} -> Some (render title)
-    | Link {title = None; dest} -> Some dest
+    | Link {title = None; dest; _} -> Some dest
     | Xml_tag (_, _, bdy) | Math (_, bdy) -> Some (render bdy)
     | Embed_tex {source; _} -> Some (render source)
     | If_tex (_, x) -> Some (render x)

@@ -58,17 +58,20 @@ and render_node : Sem.node Range.located -> Printer.t =
     Format.dprintf {|\%s|} name
   | Prim (p, body) ->
     render_prim p body
-  | Link {title; dest} ->
+  | Link {title; dest; modifier} ->
     begin
       match E.get_doc dest with
       | None ->
+        let title = Option.map (Sem.apply_modifier modifier) title in
         let title = Option.value ~default:[Range.locate_opt None @@ Sem.Text dest] title in
         Format.dprintf {|\href{%s}{%a}|} dest (Fun.flip render) title
       | Some doc ->
         let title =
           match title with
-          | Some t -> t
-          | None -> Option.value ~default:[Range.locate_opt None @@ Sem.Text dest] doc.title
+          | Some t -> Sem.apply_modifier modifier t
+          | None ->
+            let title = Option.map (Sem.apply_modifier modifier) doc.title in
+            Option.value ~default:[Range.locate_opt None @@ Sem.Text dest] doc.title
         in
         begin
           match doc.taxon with

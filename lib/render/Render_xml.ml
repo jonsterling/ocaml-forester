@@ -34,13 +34,13 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
       TP.contents @@
       Render_verbatim.render ~cfg:{tex = false} bdy
     ]
-  | Sem.Link {title; dest} ->
+  | Sem.Link {title; dest; modifier} ->
     begin
       match E.get_doc dest with
       | Some _ ->
-        render_internal_link ~cfg ~title ~addr:dest
+        render_internal_link ~cfg ~title ~modifier ~addr:dest
       | None ->
-        render_external_link ~cfg ~title ~url:dest
+        render_external_link ~cfg ~title ~modifier ~url:dest
     end
   | Sem.Xml_tag (name, attrs, xs) ->
     let attrs =
@@ -138,7 +138,7 @@ and render_transclusion ~cfg ~opts doc =
   in
   render_doc ~cfg ~opts doc
 
-and render_internal_link ~cfg ~title ~addr =
+and render_internal_link ~cfg ~title ~modifier ~addr =
   let url = E.route Xml addr in
   let doc = E.get_doc addr in
   let doc_title = Option.bind doc @@ fun d -> d.title in
@@ -154,12 +154,14 @@ and render_internal_link ~cfg ~title ~addr =
       in
       ["title", title_string]
   in
+  let title = Option.map (Sem.apply_modifier modifier) title in
   let title = Option.value ~default:[Range.locate_opt None @@ Sem.Text addr] title in
   Printer.tag "link"
     (["href", url; "type", "local"] @ target_title_attr)
     [render ~cfg title]
 
-and render_external_link ~cfg ~title ~url =
+and render_external_link ~cfg ~title ~modifier ~url =
+  let title = Option.map (Sem.apply_modifier modifier) title in
   let title = Option.value ~default:[Range.locate_opt None @@ Sem.Text url] title in
   Printer.tag "link"
     ["href", url; "type", "external"]
