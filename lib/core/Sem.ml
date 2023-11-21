@@ -44,6 +44,26 @@ type obj =
   {prototype : Symbol.t option;
    methods : obj_method MethodTable.t}
 
+let is_whitespace node =
+  match Range.(node.value) with
+  | Text txt -> String.trim txt = ""
+  | _ -> false
+
+let strip_whitespace =
+  List.filter @@ fun x -> not @@ is_whitespace x
+
+let trim_whitespace xs =
+  let rec trim_front xs =
+    match xs with
+    | x :: xs when is_whitespace x ->
+      trim_front xs
+    | xs -> xs
+  and trim_back xs =
+    List.rev @@ trim_front @@ List.rev xs
+  in
+  trim_back @@ trim_front xs
+
+
 let rec sentence_case nodes =
   let map_head f =
     function

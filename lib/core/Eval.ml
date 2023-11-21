@@ -44,7 +44,8 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
   | Math (mmode, e) ->
     Range.locate_opt node.loc (Sem.Math (mmode, eval e)) :: eval rest
   | Prim (p, body) ->
-    Range.locate_opt node.loc (Sem.Prim (p, eval body)) :: eval rest
+    let prim = Sem.Prim (p, eval_trim body) in
+    Range.locate_opt node.loc prim :: eval rest
   | Xml_tag (name, attrs, body) ->
     let attrs =
       attrs |> List.map @@ fun (k, v) ->
@@ -193,14 +194,9 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
   | Group _ | Text _ ->
     eval_textual [] @@ node :: rest
 
-and eval_strip xs =
-  let not_whitespace node =
-    match Range.(node.value) with
-    | Sem.Text txt -> String.trim txt <> ""
-    | _ -> true
-  in
-  List.filter not_whitespace @@ eval xs
+and eval_strip xs = Sem.strip_whitespace @@ eval xs
 
+and eval_trim xs = Sem.trim_whitespace @@ eval xs
 
 and eval_textual prefix : Syn.t -> Sem.t =
   function
