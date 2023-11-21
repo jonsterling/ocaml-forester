@@ -39,30 +39,26 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
   | Link {title; dest} ->
     let title = Option.map eval title in
     let dest = Sem.string_of_nodes @@ eval_textual [] dest in
-    let link = Sem.Link {dest; title; modifier = None} in
-    Range.locate_opt node.loc link :: eval rest
+    {node with value = Sem.Link {dest; title; modifier = None}} :: eval rest
   | Math (mmode, e) ->
-    Range.locate_opt node.loc (Sem.Math (mmode, eval e)) :: eval rest
+    {node with value = Sem.Math (mmode, eval e)} :: eval rest
   | Prim (p, body) ->
-    let prim = Sem.Prim (p, eval_trim body) in
-    Range.locate_opt node.loc prim :: eval rest
+    {node with value = Sem.Prim (p, eval_trim body)} :: eval rest
   | Xml_tag (name, attrs, body) ->
     let attrs =
       attrs |> List.map @@ fun (k, v) ->
       k, eval v
     in
-    let xml = Sem.Xml_tag (name, attrs, eval body) in
-    Range.locate_opt node.loc xml :: eval rest
+    {node with value = Sem.Xml_tag (name, attrs, eval body)} :: eval rest
   | Unresolved name ->
-    let cmd = Sem.Unresolved name in
-    Range.locate_opt node.loc cmd :: eval rest
+    {node with value = Sem.Unresolved name} :: eval rest
   | Transclude addr ->
     let opts = get_transclusion_opts () in
-    Range.locate_opt node.loc (Sem.Transclude (opts, addr)) :: eval rest
+    {node with value = Sem.Transclude (opts, addr)} :: eval rest
   | If_tex (x , y) ->
     let x = eval x in
     let y = eval y in
-    Range.locate_opt node.loc (Sem.If_tex (x, y)) :: eval rest
+    {node with value = Sem.If_tex (x, y)} :: eval rest
   | Query query ->
     let opts = get_transclusion_opts () in
     let opts =
@@ -71,12 +67,12 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
       | Some _ -> opts
     in
     let query = Query.map eval query in
-    Range.locate_opt node.loc (Sem.Query (opts, query)) :: eval rest
+    {node with value = Sem.Query (opts, query)} :: eval rest
   | Embed_tex {source} ->
     let packages = PkgEnv.read () in
-    Range.locate_opt node.loc (Sem.Embed_tex {packages; source = eval source}) :: eval rest
+    {node with value = Sem.Embed_tex {packages; source = eval source}} :: eval rest
   | Block (title, body) ->
-    Range.locate_opt node.loc (Sem.Block (eval title, eval body)) :: eval rest
+    {node with value = Sem.Block (eval title, eval body)} :: eval rest
   | Lam (xs, body) ->
     let rec loop xs rest =
       match xs, rest with
@@ -102,7 +98,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     in
     let sym = Symbol.fresh ["obj"] in
     HeapState.modify @@ Env.add sym Sem.{prototype = None; methods = table};
-    Range.locate_opt node.loc (Sem.Object sym) :: eval rest
+    {node with value = Sem.Object sym} :: eval rest
   | Patch {obj; self; super; methods} ->
     begin
       match eval_strip obj with
@@ -117,7 +113,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
         in
         let sym = Symbol.fresh ["obj"] in
         HeapState.modify @@ Env.add sym Sem.{prototype = Some obj_ptr; methods = table};
-        Range.locate_opt node.loc (Sem.Object sym) :: eval rest
+        {node with value = Sem.Object sym} :: eval rest
       | xs ->
         Reporter.fatalf ?loc:node.loc Type_error
           "tried to patch non-object"
