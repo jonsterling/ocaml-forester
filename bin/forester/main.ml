@@ -30,7 +30,7 @@ let build ~env input_dirs root base_url dev max_fibers ignore_tex_cache =
   end;
   F.render_trees ()
 
-let new_tree ~env input_dir dest_dir prefix =
+let new_tree ~env input_dir dest_dir prefix template =
   let module I =
   struct
     let env = env
@@ -44,7 +44,7 @@ let new_tree ~env input_dir dest_dir prefix =
   let module P = Process.Make (F) in
   P.process_dir ~dev:true input_dir;
   let dest_dir = Option.value ~default:input_dir dest_dir in
-  let addr = F.create_tree ~dir:input_dir ~dest:dest_dir ~prefix in
+  let addr = F.create_tree ~dir:input_dir ~dest:dest_dir ~prefix ~template in
   Core.Reporter.emitf Created_tree "created tree `%s` at `%s/%s.tree`" addr dest_dir addr
 
 let complete ~env input_dirs title =
@@ -119,6 +119,11 @@ let new_tree_cmd ~env =
     Arg.required @@ Arg.opt (Arg.some Arg.string) None @@
     Arg.info ["prefix"] ~docv:"XXX" ~doc
   in
+  let arg_template =
+    let doc = "The template name going to use" in
+    Arg.value @@ Arg.opt (Arg.some Arg.string) None @@
+    Arg.info ["template"] ~docv:"XXX" ~doc
+  in
   let arg_input_dir =
     let doc = "The directory in which to scan tree identifiers." in
     Arg.value @@ Arg.opt Arg.file "." @@
@@ -131,7 +136,7 @@ let new_tree_cmd ~env =
   in
   let doc = "Create a new tree." in
   let info = Cmd.info "new" ~version ~doc in
-  Cmd.v info Term.(const (new_tree ~env) $ arg_input_dir $ arg_dest_dir $ arg_prefix)
+  Cmd.v info Term.(const (new_tree ~env) $ arg_input_dir $ arg_dest_dir $ arg_prefix $ arg_template)
 
 let complete_cmd ~env =
   let arg_title =
