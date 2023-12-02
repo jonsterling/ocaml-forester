@@ -1,9 +1,10 @@
 open Core
 
-module Gph = Graph.Imperative.Digraph.Concrete (String)
-module Tbl = Hashtbl.Make (String)
 module Map = Map.Make (String)
+module Gph = Graph.Imperative.Digraph.Concrete (String)
 module Topo = Graph.Topological.Make (Gph)
+
+module Tbl = Hashtbl.Make (String)
 
 module type S =
 sig
@@ -12,21 +13,21 @@ sig
 
   val transclusion_graph : Gph.t
   val link_graph : Gph.t
+  val import_graph : Gph.t
   val contributors : addr Tbl.t
   val author_pages : addr Tbl.t
   val bibliography : addr Tbl.t
-  val import_graph : Gph.t
 end
 
 module Make () : S =
 struct
   let size = 100
-  let transclusion_graph : Gph.t = Gph.create ()
-  let link_graph : Gph.t = Gph.create ()
-  let author_pages : addr Tbl.t = Tbl.create 10
-  let contributors : addr Tbl.t = Tbl.create size
-  let bibliography : addr Tbl.t = Tbl.create size
-  let import_graph : Gph.t = Gph.create ()
+  let transclusion_graph = Gph.create ()
+  let link_graph = Gph.create ()
+  let import_graph = Gph.create ()
+  let author_pages = Tbl.create 10
+  let contributors = Tbl.create size
+  let bibliography = Tbl.create size
 
   let rec analyze_nodes scope : Sem.t -> unit =
     List.iter @@ fun located ->

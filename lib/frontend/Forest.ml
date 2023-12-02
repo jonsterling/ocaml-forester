@@ -10,7 +10,6 @@ module Addr = String
 module M = Analysis.Map
 module Tbl = Analysis.Tbl
 module Gph = Analysis.Gph
-module Topo = Graph.Topological.Make (Gph)
 
 module type S =
 sig
@@ -39,7 +38,7 @@ struct
   let size = 100
 
   let frozen = ref false
-  let source_paths : string Analysis.Tbl.t = Analysis.Tbl.create size
+  let source_paths : (string, string) Hashtbl.t = Hashtbl.create size
 
   let run_renderer (docs : Sem.doc M.t) (body : unit -> 'a) : 'a =
     let module S = Set.Make (String) in
@@ -62,7 +61,7 @@ struct
         Format.asprintf "%s.%s" base ext
 
       let source_path addr =
-        Tbl.find_opt source_paths addr
+        Hashtbl.find_opt source_paths addr
 
       let get_doc addr =
         M.find_opt addr docs
@@ -95,7 +94,7 @@ struct
 
       let bibliography scope =
         get_sorted_trees @@
-        S.of_list @@ Tbl.find_all A.bibliography scope
+        S.of_list @@ Analysis.Tbl.find_all A.bibliography scope
 
       let parents scope =
         get_sorted_trees @@ S.of_list @@ Gph.succ A.transclusion_graph scope
@@ -146,15 +145,15 @@ struct
     let module Run = Render_effect.Run (H) in
     Run.run body
 
-  let unexpanded_trees : Code.doc Tbl.t = Tbl.create size
+  let unexpanded_trees : (addr, Code.doc) Hashtbl.t = Hashtbl.create size
 
   let plant_tree ~(source_path : string option) addr (doc : Code.doc) : unit =
     assert (not !frozen);
-    if Tbl.mem unexpanded_trees addr then
+    if Hashtbl.mem unexpanded_trees addr then
       Reporter.fatalf Duplicate_tree "duplicate tree at address `%s`" addr;
-    source_path |> Option.iter @@ Tbl.add source_paths addr;
+    source_path |> Option.iter @@ Hashtbl.add source_paths addr;
     A.plant_tree addr doc;
-    Tbl.add unexpanded_trees addr doc
+    Hashtbl.add unexpanded_trees addr doc
 
   let prepare_forest ()  =
     frozen := true;
@@ -162,12 +161,12 @@ struct
     let docs =
       begin
         let task addr (units, trees) =
-          let doc = Tbl.find unexpanded_trees addr in
+          let doc = Hashtbl.find unexpanded_trees addr in
           let units, doc = Expand.expand_doc units addr doc in
           let doc = Eval.eval_doc doc in
           units, M.add addr doc trees
         in
-        snd @@ Topo.fold task A.import_graph (Expand.UnitMap.empty, M.empty)
+        snd @@ Analysis.Topo.fold task A.import_graph (Expand.UnitMap.empty, M.empty)
       end
     in
 
