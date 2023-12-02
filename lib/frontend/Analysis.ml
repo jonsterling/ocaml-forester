@@ -67,26 +67,27 @@ struct
   let analyze_doc scope (doc : Sem.doc) =
     analyze_nodes scope doc.body;
     doc.title |> Option.iter @@ analyze_nodes scope;
-    doc.metas |> List.iter @@ fun (_, meta) ->
-    analyze_nodes scope meta
-
-  let rec process_decl scope decl =
-    match Asai.Range.(decl.value) with
-    | Code.Author author ->
+    begin
+      doc.authors |> List.iter @@ fun author ->
       Tbl.add author_pages author scope
+    end;
+    begin
+      doc.metas |> List.iter @@ fun (_, meta) ->
+      analyze_nodes scope meta
+    end
+
+  let process_imports scope =
+    List.iter @@ fun decl ->
+    match Asai.Range.(decl.value) with
     | Code.Import (_, dep) ->
       Gph.add_edge import_graph dep scope
     | _ -> ()
-
-  and process_decls scope =
-    List.iter @@ process_decl scope
 
   let plant_tree addr doc =
     Gph.add_vertex transclusion_graph addr;
     Gph.add_vertex link_graph addr;
     Gph.add_vertex import_graph addr;
-    process_decls addr doc
-
+    process_imports addr doc
 
   let analyze_trees (trees : Sem.doc Map.t) : unit =
     begin
