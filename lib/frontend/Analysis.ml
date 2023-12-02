@@ -76,7 +76,7 @@ struct
       analyze_nodes scope meta
     end
 
-  let process_imports scope =
+  let populate_import_graph scope =
     List.iter @@ fun decl ->
     match Asai.Range.(decl.value) with
     | Code.Import (_, dep) ->
@@ -87,7 +87,11 @@ struct
     Gph.add_vertex transclusion_graph addr;
     Gph.add_vertex link_graph addr;
     Gph.add_vertex import_graph addr;
-    process_imports addr doc
+    populate_import_graph addr doc
+
+  let merge_bibliography ~from_addr ~to_addr =
+    Tbl.find_all bibliography from_addr |> List.iter @@ fun ref ->
+    Tbl.add bibliography to_addr ref
 
   let analyze_trees (trees : Sem.doc Map.t) : unit =
     begin
@@ -101,21 +105,20 @@ struct
       in
       Gph.iter_pred task link_graph addr;
     end;
-    transclusion_graph |> Topo.iter @@ fun addr ->
-    let task addr' =
-      Map.find_opt addr trees |> Option.iter @@ fun (doc : Sem.doc) ->
-      match doc.taxon with
+
+    transclusion_graph |> Topo.iter @@ fun child_addr ->
+
+    let handle_parent parent_addr =
+      Map.find_opt child_addr trees |> Option.iter @@ fun (parent_doc : Sem.doc) ->
+      match parent_doc.taxon with
       | Some "reference" -> ()
       | _ ->
         begin
-          doc.authors @ Tbl.find_all contributors addr |> List.iter @@ fun contributor ->
-          Tbl.add contributors addr' contributor
+          parent_doc.authors @ Tbl.find_all contributors child_addr |> List.iter @@ fun contributor ->
+          Tbl.add contributors parent_addr contributor
         end;
-        begin
-          Tbl.find_all bibliography addr |> List.iter @@ fun ref ->
-          Tbl.add bibliography addr' ref
-        end
+        merge_bibliography ~from_addr:child_addr ~to_addr:parent_addr
     in
-    Gph.iter_succ task transclusion_graph addr
+    Gph.iter_succ handle_parent transclusion_graph child_addr
 
 end
