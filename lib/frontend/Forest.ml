@@ -288,14 +288,15 @@ struct
     let next = next_addr docs ~prefix in
     let fname = next ^ ".tree" in
     let now = Date.now () in
-    let template_content = (match template with
+    let template_content =
+      match template with
       | None -> ""
-      | Some name -> Eio.Path.load Eio.Path.(Eio.Stdenv.cwd I.env / "templates" / (name ^ ".tree")))
+      | Some name -> Eio.Path.load Eio.Path.(Eio.Stdenv.cwd I.env / "templates" / (name ^ ".tree"))
     in
     let body = Format.asprintf "\\date{%a}\n" Date.pp now in
     let create = `Exclusive 0o644 in
     let path = Eio.Path.(Eio.Stdenv.cwd I.env / dest / fname) in
-    Eio.Path.save ~create path (body ^ template_content);
+    Eio.Path.save ~create path @@ body ^ template_content;
     next
 
   let complete prefix =

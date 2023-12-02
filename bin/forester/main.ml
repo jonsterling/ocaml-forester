@@ -120,7 +120,7 @@ let new_tree_cmd ~env =
     Arg.info ["prefix"] ~docv:"XXX" ~doc
   in
   let arg_template =
-    let doc = "The template name going to use" in
+    let doc = "The tree to use as a template" in
     Arg.value @@ Arg.opt (Arg.some Arg.string) None @@
     Arg.info ["template"] ~docv:"XXX" ~doc
   in
