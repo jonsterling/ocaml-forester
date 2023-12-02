@@ -6,11 +6,11 @@ open Render
 module T = Domainslib.Task
 
 module Addr = String
-module Tbl = Hashtbl.Make (Addr)
-module Gph = Graph.Imperative.Digraph.Concrete (Addr)
-module Topo = Graph.Topological.Make (Gph)
 
-module M = Map.Make (String)
+module M = Analysis.Map
+module Tbl = Analysis.Tbl
+module Gph = Analysis.Gph
+module Topo = Graph.Topological.Make (Gph)
 
 module type S =
 sig
@@ -19,6 +19,7 @@ sig
   val complete : string -> (addr * string) Seq.t
   val render_trees : unit -> unit
 end
+
 
 module type I =
 sig
@@ -29,23 +30,16 @@ sig
   val max_fibers : int
 end
 
+
 module Make (I : I) : S =
 struct
   module LaTeX_queue = LaTeX_queue.Make (I)
+  module A = Analysis.Make ()
+
   let size = 100
 
   let frozen = ref false
-  let unexpanded_trees : Code.doc Tbl.t = Tbl.create size
-
-  let source_paths : string Tbl.t = Tbl.create size
-  let import_graph : Gph.t = Gph.create ()
-
-  let transclusion_graph : Gph.t = Gph.create ()
-  let link_graph : Gph.t = Gph.create ()
-  let tag_graph : Gph.t = Gph.create ()
-  let author_pages : addr Tbl.t = Tbl.create 10
-  let contributors : addr Tbl.t = Tbl.create size
-  let bibliography : addr Tbl.t = Tbl.create size
+  let source_paths : string Analysis.Tbl.t = Analysis.Tbl.create size
 
   let run_renderer (docs : Sem.doc M.t) (body : unit -> 'a) : 'a =
     let module S = Set.Make (String) in
@@ -90,10 +84,10 @@ struct
         Sem.Doc.sort @@ List.concat_map find @@ S.elements addrs
 
       let get_all_links scope =
-        get_sorted_trees @@ S.of_list @@ Gph.pred link_graph scope
+        get_sorted_trees @@ S.of_list @@ Gph.pred A.link_graph scope
 
       let backlinks scope =
-        get_sorted_trees @@ S.of_list @@ Gph.succ link_graph scope
+        get_sorted_trees @@ S.of_list @@ Gph.succ A.link_graph scope
 
       let related scope =
         get_all_links scope |> List.filter @@ fun (doc : Sem.doc) ->
@@ -101,21 +95,21 @@ struct
 
       let bibliography scope =
         get_sorted_trees @@
-        S.of_list @@ Tbl.find_all bibliography scope
+        S.of_list @@ Tbl.find_all A.bibliography scope
 
       let parents scope =
-        get_sorted_trees @@ S.of_list @@ Gph.succ transclusion_graph scope
+        get_sorted_trees @@ S.of_list @@ Gph.succ A.transclusion_graph scope
 
       let children scope =
-        get_sorted_trees @@ S.of_list @@ Gph.pred transclusion_graph scope
+        get_sorted_trees @@ S.of_list @@ Gph.pred A.transclusion_graph scope
 
       let contributions scope =
-        get_sorted_trees @@ S.of_list @@ Tbl.find_all author_pages scope
+        get_sorted_trees @@ S.of_list @@ Tbl.find_all A.author_pages scope
 
       let contributors scope =
         let doc = M.find scope docs in
         let authors = S.of_list doc.authors in
-        let contributors = S.of_list @@ Tbl.find_all contributors scope in
+        let contributors = S.of_list @@ Tbl.find_all A.contributors scope in
         let proper_contributors =
           contributors |> S.filter @@ fun contr ->
           not @@ S.mem contr authors
@@ -152,99 +146,15 @@ struct
     let module Run = Render_effect.Run (H) in
     Run.run body
 
-  let perform_transitive_analysis (trees : Sem.doc M.t) : unit =
-    begin
-      trees |> M.iter @@ fun addr _ ->
-      let task ref =
-        match M.find_opt ref trees with
-        | None -> ()
-        | Some (doc : Sem.doc) ->
-          if doc.taxon = Some "reference" then
-            Tbl.add bibliography addr ref
-      in
-      Gph.iter_pred task link_graph addr;
-    end;
-    transclusion_graph |> Topo.iter @@ fun addr ->
-    let task addr' =
-      M.find_opt addr trees |> Option.iter @@ fun (doc : Sem.doc) ->
-      match doc.taxon with
-      | Some "reference" -> ()
-      | _ ->
-        begin
-          doc.authors @ Tbl.find_all contributors addr |> List.iter @@ fun contributor ->
-          Tbl.add contributors addr' contributor
-        end;
-        begin
-          Tbl.find_all bibliography addr |> List.iter @@ fun ref ->
-          Tbl.add bibliography addr' ref
-        end
-    in
-    Gph.iter_succ task transclusion_graph addr
+  let unexpanded_trees : Code.doc Tbl.t = Tbl.create size
 
-  let rec analyze_nodes scope : Sem.t -> unit =
-    List.iter @@ fun located ->
-    match Range.(located.value) with
-    | Sem.Text _ -> ()
-    | Sem.Transclude (opts, addr) ->
-      analyze_transclusion_opts scope opts;
-      Gph.add_edge transclusion_graph addr scope
-    | Sem.Link {title; dest; _} ->
-      Option.iter (analyze_nodes scope) title;
-      Gph.add_edge link_graph dest scope
-    | Sem.Unresolved _ | Sem.Img _ ->
-      ()
-    | Sem.Xml_tag (_, attrs, xs) ->
-      begin
-        attrs |> List.iter @@ fun (k, v) ->
-        analyze_nodes scope v
-      end;
-      analyze_nodes scope xs
-    | Sem.Math (_, x) ->
-      analyze_nodes scope x
-    | Sem.Embed_tex {source; _} ->
-      analyze_nodes scope source
-    | Sem.Block (title, body) ->
-      analyze_nodes scope title;
-      analyze_nodes scope body
-    | Sem.Query (opts, _) ->
-      analyze_transclusion_opts scope opts
-    | Sem.If_tex (_, y) ->
-      analyze_nodes scope y
-    | Sem.Prim (_, x) ->
-      analyze_nodes scope x
-    | Sem.Object _ ->
-      ()
-
-  and analyze_transclusion_opts scope : Sem.transclusion_opts -> unit =
-    function Sem.{title_override; _} ->
-      title_override |> Option.iter @@ analyze_nodes scope
-
-  let rec process_decl scope decl =
-    match Asai.Range.(decl.value) with
-    | Code.Tag tag ->
-      Gph.add_edge tag_graph tag scope
-    | Code.Author author ->
-      Tbl.add author_pages author scope
-    | Code.Import (_, dep) ->
-      Gph.add_edge import_graph dep scope
-    | _ -> ()
-
-  and process_decls scope =
-    List.iter @@ process_decl scope
-
-
-  let plant_tree ~(source_path : string option) scope (doc : Code.doc) : unit =
+  let plant_tree ~(source_path : string option) addr (doc : Code.doc) : unit =
     assert (not !frozen);
-    if Tbl.mem unexpanded_trees scope then
-      Reporter.fatalf Duplicate_tree "duplicate tree at address `%s`" scope;
-    source_path |> Option.iter @@ Tbl.add source_paths scope;
-    Gph.add_vertex transclusion_graph scope;
-    Gph.add_vertex link_graph scope;
-    Gph.add_vertex import_graph scope;
-    Gph.add_vertex tag_graph scope;
-    process_decls scope doc;
-    Tbl.add unexpanded_trees scope doc
-
+    if Tbl.mem unexpanded_trees addr then
+      Reporter.fatalf Duplicate_tree "duplicate tree at address `%s`" addr;
+    source_path |> Option.iter @@ Tbl.add source_paths addr;
+    A.plant_tree addr doc;
+    Tbl.add unexpanded_trees addr doc
 
   let prepare_forest ()  =
     frozen := true;
@@ -257,19 +167,11 @@ struct
           let doc = Eval.eval_doc doc in
           units, M.add addr doc trees
         in
-        snd @@ Topo.fold task import_graph (Expand.UnitMap.empty, M.empty)
+        snd @@ Topo.fold task A.import_graph (Expand.UnitMap.empty, M.empty)
       end
     in
 
-    begin
-      docs |> M.iter @@ fun scope Sem.{body; title; metas; _} ->
-      analyze_nodes scope body;
-      title |> Option.iter @@ analyze_nodes scope;
-      metas |> List.iter @@ fun (_, meta) ->
-      analyze_nodes scope meta
-    end;
-
-    perform_transitive_analysis docs;
+    A.analyze_trees docs;
     docs
 
   let next_addr ~prefix docs =
