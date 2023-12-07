@@ -6,17 +6,21 @@ module Topo = Graph.Topological.Make (Gph)
 
 module Tbl = Hashtbl.Make (String)
 
+type analysis =
+  {transclusion_graph : Gph.t;
+   link_graph : Gph.t;
+   contributors : addr Tbl.t;
+   author_pages : addr Tbl.t;
+   bibliography : addr Tbl.t}
+
+
 module type S =
 sig
   val plant_tree : addr -> Code.t -> unit
-  val analyze_trees : Sem.doc Map.t -> unit
 
-  val transclusion_graph : Gph.t
-  val link_graph : Gph.t
   val import_graph : Gph.t
-  val contributors : addr Tbl.t
-  val author_pages : addr Tbl.t
-  val bibliography : addr Tbl.t
+
+  val analyze_trees : Sem.doc Map.t -> analysis
 end
 
 module Make () : S =
@@ -93,7 +97,7 @@ struct
     Tbl.find_all bibliography from_addr |> List.iter @@ fun ref ->
     Tbl.add bibliography to_addr ref
 
-  let analyze_trees (trees : Sem.doc Map.t) : unit =
+  let analyze_trees (trees : Sem.doc Map.t) : analysis =
     begin
       trees |> Map.iter @@ fun addr doc  ->
       analyze_doc addr doc;
@@ -106,19 +110,22 @@ struct
       Gph.iter_pred task link_graph addr;
     end;
 
-    transclusion_graph |> Topo.iter @@ fun child_addr ->
+    begin
+      transclusion_graph |> Topo.iter @@ fun child_addr ->
 
-    let handle_parent parent_addr =
-      Map.find_opt child_addr trees |> Option.iter @@ fun (parent_doc : Sem.doc) ->
-      match parent_doc.taxon with
-      | Some "reference" -> ()
-      | _ ->
-        begin
-          parent_doc.authors @ Tbl.find_all contributors child_addr |> List.iter @@ fun contributor ->
-          Tbl.add contributors parent_addr contributor
-        end;
-        merge_bibliography ~from_addr:child_addr ~to_addr:parent_addr
-    in
-    Gph.iter_succ handle_parent transclusion_graph child_addr
+      let handle_parent parent_addr =
+        Map.find_opt child_addr trees |> Option.iter @@ fun (parent_doc : Sem.doc) ->
+        match parent_doc.taxon with
+        | Some "reference" -> ()
+        | _ ->
+          begin
+            parent_doc.authors @ Tbl.find_all contributors child_addr |> List.iter @@ fun contributor ->
+            Tbl.add contributors parent_addr contributor
+          end;
+          merge_bibliography ~from_addr:child_addr ~to_addr:parent_addr
+      in
+      Gph.iter_succ handle_parent transclusion_graph child_addr
+    end;
 
+    {transclusion_graph; link_graph; contributors; author_pages; bibliography}
 end

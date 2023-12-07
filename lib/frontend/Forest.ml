@@ -40,7 +40,7 @@ struct
   let frozen = ref false
   let source_paths : (string, string) Hashtbl.t = Hashtbl.create size
 
-  let run_renderer (docs : Sem.doc M.t) (body : unit -> 'a) : 'a =
+  let run_renderer (docs : Sem.doc M.t) (analysis : Analysis.analysis) (body : unit -> 'a) : 'a =
     let module S = Set.Make (String) in
     let module H : Render_effect.Handler =
     struct
@@ -83,10 +83,10 @@ struct
         Sem.Doc.sort @@ List.concat_map find @@ S.elements addrs
 
       let get_all_links scope =
-        get_sorted_trees @@ S.of_list @@ Gph.pred A.link_graph scope
+        get_sorted_trees @@ S.of_list @@ Gph.pred analysis.link_graph scope
 
       let backlinks scope =
-        get_sorted_trees @@ S.of_list @@ Gph.succ A.link_graph scope
+        get_sorted_trees @@ S.of_list @@ Gph.succ analysis.link_graph scope
 
       let related scope =
         get_all_links scope |> List.filter @@ fun (doc : Sem.doc) ->
@@ -94,21 +94,21 @@ struct
 
       let bibliography scope =
         get_sorted_trees @@
-        S.of_list @@ Analysis.Tbl.find_all A.bibliography scope
+        S.of_list @@ Analysis.Tbl.find_all analysis.bibliography scope
 
       let parents scope =
-        get_sorted_trees @@ S.of_list @@ Gph.succ A.transclusion_graph scope
+        get_sorted_trees @@ S.of_list @@ Gph.succ analysis.transclusion_graph scope
 
       let children scope =
-        get_sorted_trees @@ S.of_list @@ Gph.pred A.transclusion_graph scope
+        get_sorted_trees @@ S.of_list @@ Gph.pred analysis.transclusion_graph scope
 
       let contributions scope =
-        get_sorted_trees @@ S.of_list @@ Tbl.find_all A.author_pages scope
+        get_sorted_trees @@ S.of_list @@ Tbl.find_all analysis.author_pages scope
 
       let contributors scope =
         let doc = M.find scope docs in
         let authors = S.of_list doc.authors in
-        let contributors = S.of_list @@ Tbl.find_all A.contributors scope in
+        let contributors = S.of_list @@ Tbl.find_all analysis.contributors scope in
         let proper_contributors =
           contributors |> S.filter @@ fun contr ->
           not @@ S.mem contr authors
@@ -155,7 +155,7 @@ struct
     A.plant_tree addr doc;
     Hashtbl.add unexpanded_trees addr doc
 
-  let prepare_forest ()  =
+  let prepare_forest () : Sem.doc M.t * Analysis.analysis =
     frozen := true;
 
     let docs =
@@ -170,8 +170,7 @@ struct
       end
     in
 
-    A.analyze_trees docs;
-    docs
+    docs, A.analyze_trees docs
 
   let next_addr ~prefix docs =
     let keys =
@@ -185,7 +184,7 @@ struct
     prefix ^ "-" ^ BaseN.Base36.string_of_int next
 
   let create_tree ~dir ~dest ~prefix ~template =
-    let docs = prepare_forest () in
+    let docs, _ = prepare_forest () in
     let next = next_addr docs ~prefix in
     let fname = next ^ ".tree" in
     let now = Date.now () in
@@ -202,6 +201,7 @@ struct
 
   let complete prefix =
     prepare_forest ()
+    |> fst
     |> M.filter_map (fun _ -> Sem.Doc.peek_title)
     |> M.filter (fun _ -> String.starts_with ~prefix)
     |> M.to_seq
@@ -290,7 +290,7 @@ struct
     kont @@ Eio_util.formatter_of_writer bib_w
 
   let render_trees () : unit =
-    let docs = prepare_forest () in
+    let docs, analysis = prepare_forest () in
 
     let env = I.env in
     let cwd = Eio.Stdenv.cwd env in
@@ -299,7 +299,7 @@ struct
     Eio_util.ensure_dir_path cwd ["output"; "resources"];
     Eio_util.ensure_dir_path cwd ["latex"; "resources"];
 
-    run_renderer docs @@ fun () ->
+    run_renderer docs analysis @@ fun () ->
     with_bib_fmt ~cwd @@ fun bib_fmt ->
     docs |> M.iter (fun _ -> render_doc ~cwd ~docs ~bib_fmt);
     render_json ~cwd docs;

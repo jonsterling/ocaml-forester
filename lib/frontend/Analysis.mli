@@ -17,20 +17,22 @@ module Topo : sig
   val fold : (addr -> 'a -> 'a) -> Gph.t -> 'a -> 'a
 end
 
+type analysis =
+  {transclusion_graph : Gph.t;
+   link_graph : Gph.t;
+   contributors : addr Tbl.t;
+   author_pages : addr Tbl.t;
+   bibliography : addr Tbl.t}
+
 module type S =
 sig
   (** Populating the import graph by inspecting unexpanded trees *)
   val plant_tree : addr -> Code.t -> unit
 
-  (** Populating all the graphs and tables by inspecting evaluated trees *)
-  val analyze_trees : Sem.doc Map.t -> unit
-
-  val transclusion_graph : Gph.t
-  val link_graph : Gph.t
   val import_graph : Gph.t
-  val contributors : addr Tbl.t
-  val author_pages : addr Tbl.t
-  val bibliography : addr Tbl.t
+
+  (** Populating all the graphs and tables by inspecting evaluated trees *)
+  val analyze_trees : Sem.doc Map.t -> analysis
 end
 
 module Make () : S
