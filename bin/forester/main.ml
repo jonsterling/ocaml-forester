@@ -13,51 +13,20 @@ let version =
 
 
 let build ~env input_dirs root base_url dev max_fibers ignore_tex_cache =
-  let module I =
-  struct
-    let env = env
-    let root = root
-    let base_url = base_url
-    let max_fibers = max_fibers
-    let ignore_tex_cache = ignore_tex_cache
-  end
-  in
-
-  let module F = Forest.Make (I) in
-  let import_graph = F.plant_trees @@ Process.read_trees_in_dirs ~dev input_dirs in
-  F.render_trees ~import_graph
+  let cfg = Forest.{env; root; base_url; max_fibers; ignore_tex_cache} in
+  let forest = Forest.plant_forest @@ Process.read_trees_in_dirs ~dev input_dirs in
+  Forest.render_trees ~cfg ~forest
 
 let new_tree ~env input_dir dest_dir prefix template =
-  let module I =
-  struct
-    let env = env
-    let root = None
-    let base_url = None
-    let max_fibers = 20
-    let ignore_tex_cache = true
-  end
-  in
-  let module F = Forest.Make (I) in
-  let import_graph = F.plant_trees @@ Process.read_trees_in_dir ~dev:true input_dir in
+  let cfg = Forest.{env; root = None; base_url = None; max_fibers = 20; ignore_tex_cache = true} in
+  let forest = Forest.plant_forest @@ Process.read_trees_in_dir ~dev:true input_dir in
   let dest_dir = Option.value ~default:input_dir dest_dir in
-  let addr = F.create_tree ~import_graph ~dir:input_dir ~dest:dest_dir ~prefix ~template in
+  let addr = Forest.create_tree ~cfg ~dir:input_dir ~dest:dest_dir ~prefix ~template ~forest in
   Core.Reporter.emitf Created_tree "created tree `%s` at `%s/%s.tree`" addr dest_dir addr
 
 let complete ~env input_dirs title =
-  let module I =
-  struct
-    let env = env
-    let root = None
-    let base_url = None
-    let max_fibers = 20
-    let ignore_tex_cache = false
-  end
-  in
-
-  let module F = Forest.Make (I) in
-
-  let import_graph = F.plant_trees @@ Process.read_trees_in_dirs ~dev:true input_dirs in
-  let completions = F.complete ~import_graph title in
+  let forest = Forest.plant_forest @@ Process.read_trees_in_dirs ~dev:true input_dirs in
+  let completions = Forest.complete ~forest title in
   completions |> Seq.iter @@ fun (addr, title) ->
   Format.printf "%s, %s\n" addr title
 

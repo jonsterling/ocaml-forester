@@ -1,21 +1,20 @@
 open Core
 
-module type S =
-sig
-  val plant_trees : Code.tree Seq.t -> Analysis.Gph.t
-  val render_trees : import_graph:Analysis.Gph.t -> unit
-  val create_tree : import_graph:Analysis.Gph.t -> dir:string -> dest:string -> prefix:string -> template:string option -> addr
-  val complete : import_graph:Analysis.Gph.t -> string -> (addr * string) Seq.t
-end
+type config =
+  {env : Eio_unix.Stdenv.base;
+   root : addr option;
+   base_url : string option;
+   ignore_tex_cache : bool;
+   max_fibers : int}
 
-module type I =
-sig
-  val env : Eio_unix.Stdenv.base
+type raw_forest = Code.tree Seq.t
 
-  val root : addr option
-  val base_url : string option
-  val ignore_tex_cache : bool
-  val max_fibers : int
-end
+type forest =
+  {trees : Sem.tree Analysis.Map.t;
+   analysis : Analysis.analysis Lazy.t}
 
-module Make (_ : I) : S
+val plant_forest : Code.tree Seq.t -> forest
+val render_trees : cfg:config -> forest:forest -> unit
+val create_tree : cfg:config -> forest:forest -> dir:string -> dest:string -> prefix:string -> template:string option -> addr
+
+val complete : forest:forest -> string -> (addr * string) Seq.t
