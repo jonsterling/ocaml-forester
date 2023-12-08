@@ -19,3 +19,4 @@ let rec map f =
   | And qs -> And (List.map (map f) qs)
   | Not q -> Not (map f q)
   | True -> True
+

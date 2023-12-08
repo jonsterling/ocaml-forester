@@ -114,7 +114,7 @@ let string_of_nodes =
   in
   render
 
-module Doc =
+module Util =
 struct
   let peek_title (tree : tree) =
     match tree.title with
@@ -126,4 +126,28 @@ struct
     let by_title = Compare.under peek_title @@ Compare.option String.compare in
     let by_addr = Compare.under (fun x -> x.addr) @@ Compare.option String.compare in
     List.sort @@ Compare.cascade by_date @@ Compare.cascade by_title by_addr
+end
+
+module Query =
+struct
+  let rec test query (doc : tree) =
+    match query with
+    | Query.Author [Range.{value = Text addr; _}] ->
+      List.mem addr doc.authors
+    | Query.Tag [{value = Text addr; _}] ->
+      List.mem addr doc.tags
+    | Query.Meta (key, value) ->
+      List.mem (key, value) doc.metas
+    | Query.Taxon [{value = Text taxon; _}] ->
+      doc.taxon = Some taxon
+    | Query.Or qs ->
+      qs |> List.exists @@ fun q -> test q doc
+    | Query.And qs ->
+      qs |> List.for_all @@ fun q -> test q doc
+    | Query.Not q ->
+      not @@ test q doc
+    | Query.True ->
+      true
+    | _ -> false
+
 end

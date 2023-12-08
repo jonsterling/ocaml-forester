@@ -53,7 +53,7 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
 
     let addr_peek_title scope =
       match M.find_opt scope forest.trees with
-      | Some doc -> Sem.Doc.peek_title doc
+      | Some doc -> Sem.Util.peek_title doc
       | None -> None
 
     let get_sorted_trees addrs : Sem.tree list =
@@ -62,7 +62,7 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
         | None -> []
         | Some doc -> [doc]
       in
-      Sem.Doc.sort @@ List.concat_map find @@ S.elements addrs
+      Sem.Util.sort @@ List.concat_map find @@ S.elements addrs
 
     let get_all_links scope =
       get_sorted_trees @@ S.of_list @@ Gph.pred analysis.link_graph scope
@@ -99,29 +99,9 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
       let compare = Compare.cascade by_title String.compare in
       List.sort compare @@ S.elements proper_contributors
 
-    let rec test_query query (doc : Sem.tree) =
-      match query with
-      | Query.Author [Range.{value = Sem.Text addr; _}] ->
-        List.mem addr doc.authors
-      | Query.Tag [{value = Sem.Text addr; _}] ->
-        List.mem addr doc.tags
-      | Query.Meta (key, value) ->
-        List.mem (key, value) doc.metas
-      | Query.Taxon [{value = Sem.Text taxon; _}] ->
-        doc.taxon = Some taxon
-      | Query.Or qs ->
-        qs |> List.exists @@ fun q -> test_query q doc
-      | Query.And qs ->
-        qs |> List.for_all @@ fun q -> test_query q doc
-      | Query.Not q ->
-        not @@ test_query q doc
-      | Query.True ->
-        true
-      | _ -> false
-
     let run_query query =
       get_sorted_trees @@ S.of_seq @@ Seq.map fst @@ M.to_seq @@
-      M.filter (fun _ -> test_query query) forest.trees
+      M.filter (fun _ -> Sem.Query.test query) forest.trees
   end
   in
   let module Run = Render_effect.Run (H) in
@@ -179,7 +159,7 @@ let create_tree ~cfg ~forest ~dir ~dest ~prefix ~template =
 
 let complete ~forest prefix =
   forest.trees
-  |> M.filter_map (fun _ -> Sem.Doc.peek_title)
+  |> M.filter_map (fun _ -> Sem.Util.peek_title)
   |> M.filter (fun _ -> String.starts_with ~prefix)
   |> M.to_seq
 
@@ -224,7 +204,7 @@ let render_json ~cwd docs =
   Eio.Path.with_open_out ~create json_path @@ fun json_sink ->
   Eio.Buf_write.with_flow json_sink @@ fun w ->
   let fmt = Eio_util.formatter_of_writer w in
-  let docs = Sem.Doc.sort @@ List.of_seq @@ Seq.map snd @@ M.to_seq docs in
+  let docs = Sem.Util.sort @@ List.of_seq @@ Seq.map snd @@ M.to_seq docs in
   Render_json.render_trees docs fmt
 
 let copy_theme ~env =
