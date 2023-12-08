@@ -80,7 +80,7 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
            taxon = None;
            title = None;
            authors = [];
-           date = None;
+           date = [];
            metas = [];
            tags = [];
            body = body;
@@ -198,9 +198,7 @@ and render_author (author : string) =
     Printer.text author
 
 and render_date (doc : Sem.tree) =
-  match doc.date with
-  | None -> Printer.nil
-  | Some date ->
+  let inner_render_date = fun date ->
     let date_addr = Format.asprintf "%a" Date.pp date in
     let attrs =
       match E.get_doc date_addr with
@@ -216,6 +214,8 @@ and render_date (doc : Sem.tree) =
         Printer.tag "day" [] [Printer.text @@ string_of_int d]
       end;
     ]
+  in
+  Printer.seq ~sep:(Printer.text "\n") @@ List.map inner_render_date doc.date
 
 and render_authors (doc : Sem.tree) =
   let contributors =

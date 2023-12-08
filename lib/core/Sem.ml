@@ -88,7 +88,7 @@ type tree =
   {title : t option;
    taxon : string option;
    authors : addr list;
-   date: Date.t option;
+   date: Date.t list;
    addr : addr option;
    metas : (string * t) list;
    tags: string list;
@@ -122,7 +122,7 @@ struct
     | _ -> None
 
   let sort =
-    let by_date = Fun.flip @@ Compare.under (fun x -> x.date) @@ Compare.option Date.compare in
+    let by_date = Fun.flip @@ Compare.under (fun x -> List.nth_opt x.date 0) @@ Compare.option Date.compare in
     let by_title = Compare.under peek_title @@ Compare.option String.compare in
     let by_addr = Compare.under (fun x -> x.addr) @@ Compare.option String.compare in
     List.sort @@ Compare.cascade by_date @@ Compare.cascade by_title by_addr
