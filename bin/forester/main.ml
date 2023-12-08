@@ -23,10 +23,9 @@ let build ~env input_dirs root base_url dev max_fibers ignore_tex_cache =
   in
 
   let module F = Forest.Make (I) in
-  let module P = Process.Make (F) in
   begin
-    input_dirs |> List.iter @@ fun dir ->
-    P.process_dir ~dev dir
+    Process.read_trees_in_dirs ~dev input_dirs |> Seq.iter @@ fun Process.{source_path; addr; code} ->
+    F.plant_tree ~source_path addr code
   end;
   F.render_trees ()
 
@@ -41,8 +40,10 @@ let new_tree ~env input_dir dest_dir prefix template =
   end
   in
   let module F = Forest.Make (I) in
-  let module P = Process.Make (F) in
-  P.process_dir ~dev:true input_dir;
+  begin
+    Process.read_trees_in_dir ~dev:true input_dir |> Seq.iter @@ fun Process.{source_path; addr; code} ->
+    F.plant_tree ~source_path addr code
+  end;
   let dest_dir = Option.value ~default:input_dir dest_dir in
   let addr = F.create_tree ~dir:input_dir ~dest:dest_dir ~prefix ~template in
   Core.Reporter.emitf Created_tree "created tree `%s` at `%s/%s.tree`" addr dest_dir addr
@@ -57,12 +58,12 @@ let complete ~env input_dirs title =
     let ignore_tex_cache = false
   end
   in
+
   let module F = Forest.Make (I) in
-  let module P = Process.Make (F) in
 
   begin
-    input_dirs |> List.iter @@
-    P.process_dir ~dev:true
+    Process.read_trees_in_dirs ~dev:true input_dirs |> Seq.iter @@ fun Process.{source_path; addr; code} ->
+    F.plant_tree ~source_path addr code
   end;
 
   let completions = F.complete title in
