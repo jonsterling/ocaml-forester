@@ -231,4 +231,5 @@ let eval_tree (doc : Syn.tree) : Sem.tree =
    authors = fm.authors;
    date = fm.date;
    tags = fm.tags;
+   source_path = fm.source_path;
    metas}

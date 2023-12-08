@@ -83,7 +83,8 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
            date = None;
            metas = [];
            tags = [];
-           body = body}
+           body = body;
+           source_path = None}
         in
         render_transclusion ~cfg ~opts doc
     else
@@ -256,15 +257,16 @@ and render_frontmatter ~cfg ?(toc = true) (doc : Sem.tree) =
     doc.taxon |> Printer.option begin fun taxon ->
       Printer.tag "taxon" [] [Printer.text @@ String_util.sentence_case taxon]
     end;
-    with_addr doc (fun addr -> Printer.tag "addr" [] [Printer.text addr]);
     with_addr doc begin fun addr ->
-      match E.source_path addr with
-      | Some source_path ->
-        Printer.tag "source-path" [] [Printer.text source_path]
-      | None ->
-        Printer.nil
+      Printer.tag "addr" [] [Printer.text addr]
     end;
-    with_addr doc (fun addr -> Printer.tag "route" [] [Printer.text @@ E.route Xml addr]);
+    begin
+      doc.source_path |> Printer.option @@ fun path ->
+      Printer.tag "source-path" [] [Printer.text path]
+    end;
+    with_addr doc begin fun addr ->
+      Printer.tag "route" [] [Printer.text @@ E.route Xml addr]
+    end;
     render_date doc;
     render_authors doc;
     begin

@@ -38,8 +38,7 @@ struct
   let size = 100
 
   let frozen = ref false
-  let source_paths : (string, string) Hashtbl.t = Hashtbl.create size
-  let unexpanded_trees : (addr, Code.t) Hashtbl.t = Hashtbl.create size
+  let unexpanded_trees : (addr, Code.tree) Hashtbl.t = Hashtbl.create size
 
   let run_renderer (docs : Sem.tree M.t) (analysis : A.analysis) (body : unit -> 'a) : 'a =
     let module S = Set.Make (String) in
@@ -60,9 +59,6 @@ struct
           | false -> addr
         in
         Format.asprintf "%s.%s" base ext
-
-      let source_path addr =
-        Hashtbl.find_opt source_paths addr
 
       let get_doc addr =
         M.find_opt addr docs
@@ -153,8 +149,7 @@ struct
       trees |> Seq.iter @@ fun (tree : Code.tree) ->
       if Hashtbl.mem unexpanded_trees tree.addr then
         Reporter.fatalf Duplicate_tree "duplicate tree at address `%s`" tree.addr;
-      tree.source_path |> Option.iter @@ Hashtbl.add source_paths tree.addr;
-      Hashtbl.add unexpanded_trees tree.addr tree.code
+      Hashtbl.add unexpanded_trees tree.addr tree
     end;
     A.build_import_graph trees
 
@@ -164,10 +159,11 @@ struct
     let docs =
       begin
         let task addr (units, trees) =
-          let code = Hashtbl.find unexpanded_trees addr in
-          let units, doc = Expand.expand_tree units addr code in
-          let doc = Eval.eval_tree doc in
-          units, M.add addr doc trees
+          let tree = Hashtbl.find unexpanded_trees addr in
+          (* TODO: refactor *)
+          let units, syn = Expand.expand_tree units tree in
+          let sem = Eval.eval_tree syn in
+          units, M.add addr sem trees
         in
         snd @@ A.Topo.fold task import_graph (Expand.UnitMap.empty, M.empty)
       end

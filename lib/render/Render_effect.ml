@@ -7,7 +7,6 @@ type target =
 module type Handler =
 sig
   val route : target -> addr -> string
-  val source_path : addr -> string option
   val is_root : addr -> bool
   val backlinks : addr -> Sem.tree list
   val related : addr -> Sem.tree list
@@ -23,7 +22,6 @@ end
 
 type _ Effect.t +=
   | Route : target * addr -> string Effect.t
-  | Abs_path : addr -> string option Effect.t
   | Is_root : addr -> bool Effect.t
   | Backlinks : addr -> Sem.tree list Effect.t
   | Related : addr -> Sem.tree list Effect.t
@@ -39,7 +37,6 @@ type _ Effect.t +=
 module Perform : Handler =
 struct
   let route target addr = Effect.perform @@ Route (target, addr)
-  let source_path addr = Effect.perform @@ Abs_path addr
   let is_root addr = Effect.perform @@ Is_root addr
   let backlinks addr = Effect.perform @@ Backlinks addr
   let related addr = Effect.perform @@ Related addr
@@ -66,8 +63,6 @@ struct
          match eff with
          | Route (target, addr) ->
            resume @@ fun () -> H.route target addr
-         | Abs_path addr ->
-           resume @@ fun () -> H.source_path addr
          | Is_root addr ->
            resume @@ fun () -> H.is_root addr
          | Backlinks addr ->

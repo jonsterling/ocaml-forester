@@ -92,7 +92,8 @@ type tree =
    addr : addr option;
    metas : (string * t) list;
    tags: string list;
-   body : t}
+   body : t;
+   source_path : string option}
 [@@deriving show]
 
 (** Best-effort rendering of a nodes as a string, to use in text-only contexts.*)

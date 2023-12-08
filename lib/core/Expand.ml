@@ -274,9 +274,9 @@ struct
   end
 end
 
-let expand_tree (units : exports UnitMap.t) addr (code : Code.t) =
-  Reporter.tracef "when expanding tree at address `%s`" addr @@ fun () ->
-  let init = Syn.{addr; title = None; taxon = None; date = None; authors = []; tags = []; metas = []; tex_packages = []} in
+let expand_tree (units : exports UnitMap.t) (tree : Code.tree) =
+  Reporter.tracef "when expanding tree at address `%s`" tree.addr @@ fun () ->
+  let init = Syn.{addr = tree.addr; title = None; taxon = None; date = None; authors = []; tags = []; metas = []; tex_packages = []; source_path = tree.source_path} in
   Resolver.Scope.run @@ fun () ->
   Builtins.Transclude.alloc_title ();
   Builtins.Transclude.alloc_taxon ();
@@ -288,7 +288,7 @@ let expand_tree (units : exports UnitMap.t) addr (code : Code.t) =
 
   U.run ~env:units @@ fun () ->
   Fm.run ~init @@ fun () ->
-  let tree = expand code in
+  let syn = expand tree.code in
   let fm = Fm.get () in
   let exports = Resolver.Scope.get_export () in
-  UnitMap.add addr exports units, (fm, tree)
+  UnitMap.add tree.addr exports units, (fm, syn)

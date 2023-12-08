@@ -7,7 +7,6 @@ type target =
 module type Handler =
 sig
   val route : target -> addr -> string
-  val source_path : addr -> string option
   val is_root : addr -> bool
   val backlinks : addr -> Sem.tree list
   val related : addr -> Sem.tree list

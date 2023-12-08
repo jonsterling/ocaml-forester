@@ -35,7 +35,8 @@ type frontmatter =
    tags : addr list;
    date: Date.t option;
    metas : (string * t) list;
-   tex_packages : string list}
+   tex_packages : string list;
+   source_path : string option}
 [@@deriving show]
 
 type tree = frontmatter * t
