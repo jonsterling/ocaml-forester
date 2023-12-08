@@ -151,10 +151,10 @@ let plant_forest (trees : raw_forest) : forest =
 
   {trees; analysis = lazy (A.analyze_trees trees)}
 
-let next_addr ~prefix docs =
+let next_addr ~prefix (forest : raw_forest) =
   let keys =
-    M.to_seq docs |> Seq.map fst |> Seq.filter_map @@ fun addr ->
-    match String.split_on_char '-' addr with
+    forest |> Seq.filter_map @@ fun (tree : Code.tree) ->
+    match String.split_on_char '-' tree.addr with
     | [prefix'; str] when prefix' = prefix ->
       BaseN.Base36.int_of_string str
     | _ -> None
@@ -163,7 +163,7 @@ let next_addr ~prefix docs =
   prefix ^ "-" ^ BaseN.Base36.string_of_int next
 
 let create_tree ~cfg ~forest ~dir ~dest ~prefix ~template =
-  let next = next_addr forest.trees ~prefix in
+  let next = next_addr forest ~prefix in
   let fname = next ^ ".tree" in
   let now = Date.now () in
   let template_content =
