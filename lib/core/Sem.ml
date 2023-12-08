@@ -84,7 +84,7 @@ let apply_modifier =
   | Some `Sentence_case -> sentence_case
   | None -> Fun.id
 
-type doc =
+type tree =
   {title : t option;
    taxon : string option;
    authors : addr list;
@@ -115,8 +115,8 @@ let string_of_nodes =
 
 module Doc =
 struct
-  let peek_title (doc : doc) =
-    match doc.title with
+  let peek_title (tree : tree) =
+    match tree.title with
     | Some ({value = Text txt; _} :: _) -> Some txt
     | _ -> None
 

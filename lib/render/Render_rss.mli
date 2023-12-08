@@ -3,4 +3,4 @@ open Bwd
 
 type printer = Xmlm.output -> unit
 
-val render_doc_page : base_url:string -> Sem.doc -> printer
+val render_tree_page : base_url:string -> Sem.tree -> printer

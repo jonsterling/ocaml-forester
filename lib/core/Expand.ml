@@ -274,7 +274,7 @@ struct
   end
 end
 
-let expand_doc (units : exports UnitMap.t) addr (doc : Code.doc) =
+let expand_tree (units : exports UnitMap.t) addr (code : Code.t) =
   Reporter.tracef "when expanding tree at address `%s`" addr @@ fun () ->
   let init = Syn.{addr; title = None; taxon = None; date = None; authors = []; tags = []; metas = []; tex_packages = []} in
   Resolver.Scope.run @@ fun () ->
@@ -288,7 +288,7 @@ let expand_doc (units : exports UnitMap.t) addr (doc : Code.doc) =
 
   U.run ~env:units @@ fun () ->
   Fm.run ~init @@ fun () ->
-  let tree = expand doc in
+  let tree = expand code in
   let fm = Fm.get () in
   let exports = Resolver.Scope.get_export () in
   UnitMap.add addr exports units, (fm, tree)

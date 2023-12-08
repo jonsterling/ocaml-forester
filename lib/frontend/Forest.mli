@@ -2,10 +2,10 @@ open Core
 
 module type S =
 sig
-  val plant_tree : source_path:string option -> addr -> Code.doc -> unit
-  val create_tree : dir:string -> dest:string -> prefix:string -> template:string option -> addr
-  val complete : string -> (addr * string) Seq.t
-  val render_trees : unit -> unit
+  val plant_trees : Code.tree Seq.t -> Analysis.Gph.t
+  val render_trees : import_graph:Analysis.Gph.t -> unit
+  val create_tree : import_graph:Analysis.Gph.t -> dir:string -> dest:string -> prefix:string -> template:string option -> addr
+  val complete : import_graph:Analysis.Gph.t -> string -> (addr * string) Seq.t
 end
 
 module type I =

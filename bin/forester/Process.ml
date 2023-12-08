@@ -1,13 +1,7 @@
 open Forester
 open Core
 
-type tree =
-  {source_path : string option;
-   addr : addr;
-   code : Code.t}
-
-module S = Algaeff.Sequencer.Make (struct type t = tree end)
-
+module S = Algaeff.Sequencer.Make (struct type t = Code.tree end)
 
 (* I would like to convert this code to use Eio's path primitives, but I don't see how to get around the need for 'realpath', etc. *)
 

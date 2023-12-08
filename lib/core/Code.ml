@@ -41,7 +41,10 @@ type node =
 and t = node Range.located list
 [@@deriving show]
 
-type doc = t
+type tree =
+  {source_path : string option;
+   addr : addr;
+   code : t}
 [@@deriving show]
 
 let import_private x = Import (Private, x)

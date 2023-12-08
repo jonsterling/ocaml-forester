@@ -42,7 +42,7 @@ let escape =
   Str.global_substitute (Str.regexp {|"|}) @@
   fun _ -> {|\"|}
 
-let render_doc (doc : Sem.doc) : Printer.t =
+let render_tree (doc : Sem.tree) : Printer.t =
   match doc.addr with
   | None -> Printer.nil
   | Some addr ->
@@ -76,5 +76,5 @@ let render_doc (doc : Sem.doc) : Printer.t =
        render_string_literal @@ Printer.text @@
        E.route Xml addr]
 
-let render_docs (docs : Sem.doc list) : Printer.t =
-  braces @@ Printer.iter ~sep:comma render_doc docs
+let render_trees (docs : Sem.tree list) : Printer.t =
+  braces @@ Printer.iter ~sep:comma render_tree docs

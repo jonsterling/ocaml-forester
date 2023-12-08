@@ -38,4 +38,4 @@ type frontmatter =
    tex_packages : string list}
 [@@deriving show]
 
-type doc = frontmatter * t
+type tree = frontmatter * t

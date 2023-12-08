@@ -44,7 +44,7 @@ let render_title ~taxon title =
   | None ->
     Render_latex.render @@ Sem.sentence_case title
 
-let render_auto_bibtex ~base_url (doc : Sem.doc) : Printer.t =
+let render_auto_bibtex ~base_url (doc : Sem.tree) : Printer.t =
   match doc.addr with
   | None -> Printer.nil
   | Some addr ->
@@ -73,7 +73,7 @@ let render_auto_bibtex ~base_url (doc : Sem.doc) : Printer.t =
       Printer.nil
     ]
 
-let render_bibtex ~base_url (doc : Sem.doc) : Printer.t =
+let render_bibtex ~base_url (doc : Sem.tree) : Printer.t =
   let metas = Metas.of_seq @@ List.to_seq doc.metas in
   match Metas.find_opt "bibtex" metas with
   | None ->

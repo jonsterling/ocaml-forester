@@ -211,7 +211,7 @@ and eval_textual prefix : Syn.t -> Sem.t =
     Range.locate_opt None (Sem.Text txt) :: eval rest
 
 
-let eval_doc (doc : Syn.doc) : Sem.doc =
+let eval_tree (doc : Syn.tree) : Sem.tree =
   let fm, tree = doc in
   HeapState.run ~init:Env.empty @@ fun () ->
   LexEnv.run ~env:Env.empty @@ fun () ->

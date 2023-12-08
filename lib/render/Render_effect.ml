@@ -9,32 +9,32 @@ sig
   val route : target -> addr -> string
   val source_path : addr -> string option
   val is_root : addr -> bool
-  val backlinks : addr -> Sem.doc list
-  val related : addr -> Sem.doc list
-  val bibliography : addr -> Sem.doc list
-  val parents : addr -> Sem.doc list
-  val children : addr -> Sem.doc list
+  val backlinks : addr -> Sem.tree list
+  val related : addr -> Sem.tree list
+  val bibliography : addr -> Sem.tree list
+  val parents : addr -> Sem.tree list
+  val children : addr -> Sem.tree list
   val contributors : addr -> string list
-  val contributions : addr -> Sem.doc list
+  val contributions : addr -> Sem.tree list
   val enqueue_latex : name:string -> packages:string list -> source:string -> unit
-  val get_doc : addr -> Sem.doc option
-  val run_query : Sem.t Query.t -> Sem.doc list
+  val get_doc : addr -> Sem.tree option
+  val run_query : Sem.t Query.t -> Sem.tree list
 end
 
 type _ Effect.t +=
   | Route : target * addr -> string Effect.t
   | Abs_path : addr -> string option Effect.t
   | Is_root : addr -> bool Effect.t
-  | Backlinks : addr -> Sem.doc list Effect.t
-  | Related : addr -> Sem.doc list Effect.t
-  | Bibliography : addr -> Sem.doc list Effect.t
-  | Parents : addr -> Sem.doc list Effect.t
-  | Children : addr -> Sem.doc list Effect.t
-  | Contributions : addr -> Sem.doc list Effect.t
+  | Backlinks : addr -> Sem.tree list Effect.t
+  | Related : addr -> Sem.tree list Effect.t
+  | Bibliography : addr -> Sem.tree list Effect.t
+  | Parents : addr -> Sem.tree list Effect.t
+  | Children : addr -> Sem.tree list Effect.t
+  | Contributions : addr -> Sem.tree list Effect.t
   | Contributors : addr -> string list Effect.t
   | Enqueue_latex : {name : string; packages : string list; source : string} -> unit Effect.t
-  | Get_doc : addr -> Sem.doc option Effect.t
-  | Run_query : Sem.t Query.t -> Sem.doc list Effect.t
+  | Get_doc : addr -> Sem.tree option Effect.t
+  | Run_query : Sem.t Query.t -> Sem.tree list Effect.t
 
 module Perform : Handler =
 struct

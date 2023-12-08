@@ -3,7 +3,7 @@ open Base
 type exports
 module UnitMap : Map.S with type key = string
 
-val expand_doc : exports UnitMap.t -> addr -> Code.doc -> exports UnitMap.t * Syn.doc
+val expand_tree : exports UnitMap.t -> addr -> Code.t -> exports UnitMap.t * Syn.tree
 
 module Builtins :
 sig

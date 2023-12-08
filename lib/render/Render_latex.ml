@@ -49,7 +49,7 @@ and render_node : Sem.node Range.located -> Printer.t =
         Reporter.emitf ?loc:located.loc Tree_not_found "could not find tree at address `%s` for transclusion" addr;
         Printer.nil
       | Some doc ->
-        render_doc_section doc
+        render_tree_section doc
     end
   | Xml_tag (name, _, body) ->
     (* Best effort: maybe turn into a warning or an error  *)
@@ -192,7 +192,7 @@ and strip_first_paragraph xs =
     | _ ->
       node :: rest
 
-and render_doc_section (doc : Sem.doc) : Printer.t =
+and render_tree_section (doc : Sem.tree) : Printer.t =
   let title = Sem.sentence_case @@ Option.value ~default:[] doc.title in
   let taxon = Option.value ~default:"" doc.taxon in
   let addr =
@@ -215,7 +215,7 @@ and render_doc_section (doc : Sem.doc) : Printer.t =
 let render_base_url url =
   Format.dprintf {|\ForesterSetup{forestSite = {%s}}|} url
 
-let render_doc_page ~base_url (doc : Sem.doc) : Printer.t =
+let render_tree_page ~base_url (doc : Sem.tree) : Printer.t =
   let trace k =
     match doc.addr with
     | None -> k ()

@@ -1,1 +1,1 @@
-val eval_doc : Syn.doc -> Sem.doc
+val eval_tree : Syn.tree -> Sem.tree

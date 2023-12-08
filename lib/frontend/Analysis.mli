@@ -17,6 +17,8 @@ module Topo : sig
   val fold : (addr -> 'a -> 'a) -> Gph.t -> 'a -> 'a
 end
 
+val build_import_graph : Code.tree Seq.t -> Gph.t
+
 type analysis =
   {transclusion_graph : Gph.t;
    link_graph : Gph.t;
@@ -24,15 +26,5 @@ type analysis =
    author_pages : addr Tbl.t;
    bibliography : addr Tbl.t}
 
-module type S =
-sig
-  (** Populating the import graph by inspecting unexpanded trees *)
-  val plant_tree : addr -> Code.t -> unit
-
-  val import_graph : Gph.t
-
-  (** Populating all the graphs and tables by inspecting evaluated trees *)
-  val analyze_trees : Sem.doc Map.t -> analysis
-end
-
-module Make () : S
+(** Populating all the graphs and tables by inspecting evaluated trees *)
+val analyze_trees : Sem.tree Map.t -> analysis

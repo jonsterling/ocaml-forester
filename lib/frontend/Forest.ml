@@ -7,16 +7,17 @@ module T = Domainslib.Task
 
 module Addr = String
 
-module M = Analysis.Map
-module Tbl = Analysis.Tbl
-module Gph = Analysis.Gph
+module A = Analysis
+module M = A.Map
+module Tbl = A.Tbl
+module Gph = A.Gph
 
 module type S =
 sig
-  val plant_tree : source_path:string option -> addr -> Code.doc -> unit
-  val create_tree : dir:string -> dest:string -> prefix:string -> template:string option -> addr
-  val complete : string -> (addr * string) Seq.t
-  val render_trees : unit -> unit
+  val plant_trees : Code.tree Seq.t -> A.Gph.t
+  val render_trees : import_graph:A.Gph.t -> unit
+  val create_tree : import_graph:A.Gph.t -> dir:string -> dest:string -> prefix:string -> template:string option -> addr
+  val complete : import_graph:A.Gph.t -> string -> (addr * string) Seq.t
 end
 
 
@@ -33,14 +34,14 @@ end
 module Make (I : I) : S =
 struct
   module LaTeX_queue = LaTeX_queue.Make (I)
-  module A = Analysis.Make ()
 
   let size = 100
 
   let frozen = ref false
   let source_paths : (string, string) Hashtbl.t = Hashtbl.create size
+  let unexpanded_trees : (addr, Code.t) Hashtbl.t = Hashtbl.create size
 
-  let run_renderer (docs : Sem.doc M.t) (analysis : Analysis.analysis) (body : unit -> 'a) : 'a =
+  let run_renderer (docs : Sem.tree M.t) (analysis : A.analysis) (body : unit -> 'a) : 'a =
     let module S = Set.Make (String) in
     let module H : Render_effect.Handler =
     struct
@@ -74,7 +75,7 @@ struct
         | Some doc -> Sem.Doc.peek_title doc
         | None -> None
 
-      let get_sorted_trees addrs : Sem.doc list =
+      let get_sorted_trees addrs : Sem.tree list =
         let find addr =
           match M.find_opt addr docs with
           | None -> []
@@ -89,12 +90,12 @@ struct
         get_sorted_trees @@ S.of_list @@ Gph.succ analysis.link_graph scope
 
       let related scope =
-        get_all_links scope |> List.filter @@ fun (doc : Sem.doc) ->
+        get_all_links scope |> List.filter @@ fun (doc : Sem.tree) ->
         doc.taxon <> Some "reference"
 
       let bibliography scope =
         get_sorted_trees @@
-        S.of_list @@ Analysis.Tbl.find_all analysis.bibliography scope
+        S.of_list @@ A.Tbl.find_all analysis.bibliography scope
 
       let parents scope =
         get_sorted_trees @@ S.of_list @@ Gph.succ analysis.transclusion_graph scope
@@ -117,7 +118,7 @@ struct
         let compare = Compare.cascade by_title String.compare in
         List.sort compare @@ S.elements proper_contributors
 
-      let rec test_query query (doc : Sem.doc) =
+      let rec test_query query (doc : Sem.tree) =
         match query with
         | Query.Author [Range.{value = Sem.Text addr; _}] ->
           List.mem addr doc.authors
@@ -145,28 +146,30 @@ struct
     let module Run = Render_effect.Run (H) in
     Run.run body
 
-  let unexpanded_trees : (addr, Code.doc) Hashtbl.t = Hashtbl.create size
 
-  let plant_tree ~(source_path : string option) addr (doc : Code.doc) : unit =
+  let plant_trees trees =
     assert (not !frozen);
-    if Hashtbl.mem unexpanded_trees addr then
-      Reporter.fatalf Duplicate_tree "duplicate tree at address `%s`" addr;
-    source_path |> Option.iter @@ Hashtbl.add source_paths addr;
-    A.plant_tree addr doc;
-    Hashtbl.add unexpanded_trees addr doc
+    begin
+      trees |> Seq.iter @@ fun (tree : Code.tree) ->
+      if Hashtbl.mem unexpanded_trees tree.addr then
+        Reporter.fatalf Duplicate_tree "duplicate tree at address `%s`" tree.addr;
+      tree.source_path |> Option.iter @@ Hashtbl.add source_paths tree.addr;
+      Hashtbl.add unexpanded_trees tree.addr tree.code
+    end;
+    A.build_import_graph trees
 
-  let prepare_forest () : Sem.doc M.t * Analysis.analysis =
+  let evaluate_forest ~import_graph : Sem.tree M.t * A.analysis =
     frozen := true;
 
     let docs =
       begin
         let task addr (units, trees) =
-          let doc = Hashtbl.find unexpanded_trees addr in
-          let units, doc = Expand.expand_doc units addr doc in
-          let doc = Eval.eval_doc doc in
+          let code = Hashtbl.find unexpanded_trees addr in
+          let units, doc = Expand.expand_tree units addr code in
+          let doc = Eval.eval_tree doc in
           units, M.add addr doc trees
         in
-        snd @@ Analysis.Topo.fold task A.import_graph (Expand.UnitMap.empty, M.empty)
+        snd @@ A.Topo.fold task import_graph (Expand.UnitMap.empty, M.empty)
       end
     in
 
@@ -183,8 +186,8 @@ struct
     let next = 1 + Seq.fold_left max 0 keys in
     prefix ^ "-" ^ BaseN.Base36.string_of_int next
 
-  let create_tree ~dir ~dest ~prefix ~template =
-    let docs, _ = prepare_forest () in
+  let create_tree ~import_graph ~dir ~dest ~prefix ~template =
+    let docs, _ = evaluate_forest ~import_graph in
     let next = next_addr docs ~prefix in
     let fname = next ^ ".tree" in
     let now = Date.now () in
@@ -199,8 +202,8 @@ struct
     Eio.Path.save ~create path @@ body ^ template_content;
     next
 
-  let complete prefix =
-    prepare_forest ()
+  let complete ~import_graph prefix =
+    evaluate_forest ~import_graph
     |> fst
     |> M.filter_map (fun _ -> Sem.Doc.peek_title)
     |> M.filter (fun _ -> String.starts_with ~prefix)
@@ -208,7 +211,7 @@ struct
 
   module E = Render_effect.Perform
 
-  let render_doc ~cwd ~docs ~bib_fmt doc =
+  let render_tree ~cwd ~docs ~bib_fmt doc =
     Render_bibtex.render_bibtex ~base_url:I.base_url doc bib_fmt;
     Format.fprintf bib_fmt "\n";
 
@@ -224,7 +227,7 @@ struct
       Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
       let out = Xmlm.make_output @@ `Channel ch in
       (* Eio_util.xmlm_dest_of_writer w in *)
-      Render_xml.render_doc_page ~base_url ~trail:(Some Emp) doc out
+      Render_xml.render_tree_page ~base_url ~trail:(Some Emp) doc out
     end;
     begin
       base_url |> Option.iter @@ fun base_url ->
@@ -232,13 +235,13 @@ struct
       Eio.Path.with_open_out ~create path @@ fun flow ->
       Eio.Buf_write.with_flow flow @@ fun w ->
       let out = Xmlm.make_output @@ Eio_util.xmlm_dest_of_writer w in
-      Render_rss.render_doc_page ~base_url doc out
+      Render_rss.render_tree_page ~base_url doc out
     end;
     begin
       let path = Eio.Path.(cwd / "latex" / (addr ^ ".tex")) in
       Eio.Path.with_open_out ~create path @@ fun flow ->
       Eio.Buf_write.with_flow flow @@ fun w ->
-      Render_latex.render_doc_page ~base_url doc @@ Eio_util.formatter_of_writer w
+      Render_latex.render_tree_page ~base_url doc @@ Eio_util.formatter_of_writer w
     end
 
   let render_json ~cwd docs =
@@ -248,7 +251,7 @@ struct
     Eio.Buf_write.with_flow json_sink @@ fun w ->
     let fmt = Eio_util.formatter_of_writer w in
     let docs = Sem.Doc.sort @@ List.of_seq @@ Seq.map snd @@ M.to_seq docs in
-    Render_json.render_docs docs fmt
+    Render_json.render_trees docs fmt
 
   let copy_theme ~env =
     let cwd = Eio.Stdenv.cwd env in
@@ -289,8 +292,8 @@ struct
     Eio.Buf_write.with_flow bib_sink @@ fun bib_w ->
     kont @@ Eio_util.formatter_of_writer bib_w
 
-  let render_trees () : unit =
-    let docs, analysis = prepare_forest () in
+  let render_trees ~import_graph : unit =
+    let docs, analysis = evaluate_forest ~import_graph in
 
     let env = I.env in
     let cwd = Eio.Stdenv.cwd env in
@@ -301,7 +304,7 @@ struct
 
     run_renderer docs analysis @@ fun () ->
     with_bib_fmt ~cwd @@ fun bib_fmt ->
-    docs |> M.iter (fun _ -> render_doc ~cwd ~docs ~bib_fmt);
+    docs |> M.iter (fun _ -> render_tree ~cwd ~docs ~bib_fmt);
     render_json ~cwd docs;
     copy_assets ~env;
     copy_theme ~env;

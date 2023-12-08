@@ -27,7 +27,7 @@ let render_rfc_822 date =
   in
   Format.asprintf "%i %s %i" day month @@ Date.year date
 
-let render_tree_info ~base_url ~addr (doc : Sem.doc) : printer =
+let render_tree_info ~base_url ~addr (doc : Sem.tree) : printer =
   Printer.seq [
     Printer.tag "title" [] [
       Printer.text @@ Option.value ~default:"Untitled" @@
@@ -48,7 +48,7 @@ let render_tree_info ~base_url ~addr (doc : Sem.doc) : printer =
     end
   ]
 
-let render_item ~base_url (doc : Sem.doc) : printer =
+let render_item ~base_url (doc : Sem.tree) : printer =
   match doc.addr with
   | None -> failwith "render_item: no addr"
   | Some addr ->
@@ -57,7 +57,7 @@ let render_item ~base_url (doc : Sem.doc) : printer =
     ]
 
 
-let render_channel ~base_url (doc : Sem.doc) : printer =
+let render_channel ~base_url (doc : Sem.tree) : printer =
   match doc.addr with
   | None -> failwith "render_channel: no addr"
   | Some addr ->
@@ -67,7 +67,7 @@ let render_channel ~base_url (doc : Sem.doc) : printer =
       Printer.iter (render_item ~base_url) children
     ]
 
-let render_doc_page ~base_url (doc : Sem.doc) : printer =
+let render_tree_page ~base_url (doc : Sem.tree) : printer =
   fun out ->
   Xmlm.output out @@ `Dtd None;
   Printer.tag "rss" ["version", "2.0"] [
