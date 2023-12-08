@@ -32,7 +32,7 @@ let rec add_qedhere (xs : Sem.t) : Sem.t =
     | _ ->
       Bwd.Snoc (Bwd.Snoc (xs', last), qedhere)
 
-let render_date (dates : Date.t list) : Printer.t =
+let render_dates (dates : Date.t list) : Printer.t =
   Printer.seq [
     Format.dprintf {|\date{|};
     Printer.iter ~sep:(Printer.text ", ") (Format.dprintf "%a" Date.pp_human) dates;
@@ -241,7 +241,7 @@ let render_tree_page ~base_url (doc : Sem.tree) : Printer.t =
       Format.dprintf {|\addbibresource{forest.bib}|};
       base_url |> Printer.option render_base_url;
       doc.title |> Printer.option render_title;
-      render_date doc.date;
+      render_dates doc.dates;
       render_authors (doc.authors, contributors);
       Format.dprintf {|\begin{document}|};
       Format.dprintf {|\maketitle|};

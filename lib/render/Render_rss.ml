@@ -41,7 +41,7 @@ let render_tree_info ~base_url ~addr (doc : Sem.tree) : printer =
     Printer.tag "link" [] [
       Printer.text @@ Format.asprintf "%s/%s" base_url @@ E.route Xml addr
     ];
-    doc.date |> Fun.flip List.nth_opt 0 |> Printer.option begin fun date ->
+    doc.dates |> Fun.flip List.nth_opt 0 |> Printer.option begin fun date ->
       Printer.tag "pubDate" [] [
         Printer.text @@ render_rfc_822 date
       ]

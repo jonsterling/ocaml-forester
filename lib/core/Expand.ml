@@ -195,7 +195,7 @@ let rec expand : Code.t -> Syn.t =
     let date = Date.parse str in
     begin
       Fm.modify @@ fun fm ->
-      {fm with date = date :: fm.date}
+      {fm with dates = fm.dates @ [date]}
     end;
     expand rest
 
@@ -276,7 +276,7 @@ end
 
 let expand_tree (units : exports UnitMap.t) (tree : Code.tree) =
   Reporter.tracef "when expanding tree at address `%s`" tree.addr @@ fun () ->
-  let init = Syn.{addr = tree.addr; title = None; taxon = None; date = []; authors = []; tags = []; metas = []; tex_packages = []; source_path = tree.source_path} in
+  let init = Syn.{addr = tree.addr; title = None; taxon = None; dates = []; authors = []; tags = []; metas = []; tex_packages = []; source_path = tree.source_path} in
   Resolver.Scope.run @@ fun () ->
   Builtins.Transclude.alloc_title ();
   Builtins.Transclude.alloc_taxon ();

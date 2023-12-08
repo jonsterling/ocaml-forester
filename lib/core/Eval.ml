@@ -229,7 +229,7 @@ let eval_tree (doc : Syn.tree) : Sem.tree =
    addr = Some fm.addr;
    taxon = fm.taxon;
    authors = fm.authors;
-   date = fm.date;
+   dates = fm.dates;
    tags = fm.tags;
    source_path = fm.source_path;
    metas}
