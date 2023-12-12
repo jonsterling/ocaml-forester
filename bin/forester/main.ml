@@ -17,11 +17,11 @@ let build ~env input_dirs root base_url dev max_fibers ignore_tex_cache =
   let forest = Forest.plant_forest @@ Process.read_trees_in_dirs ~dev input_dirs in
   Forest.render_trees ~cfg ~forest
 
-let new_tree ~env input_dir dest_dir prefix template =
+let new_tree ~env input_dir dest_dir prefix template random =
   let cfg = Forest.{env; root = None; base_url = None; max_fibers = 20; ignore_tex_cache = true} in
   let forest = Process.read_trees_in_dir ~dev:true input_dir in
   let dest_dir = Option.value ~default:input_dir dest_dir in
-  let addr = Forest.create_tree ~cfg ~dir:input_dir ~dest:dest_dir ~prefix ~template ~forest in
+  let addr = Forest.create_tree ~cfg ~dir:input_dir ~dest:dest_dir ~prefix ~template ~forest ~random in
   Core.Reporter.emitf Created_tree "created tree `%s` at `%s/%s.tree`" addr dest_dir addr
 
 let complete ~env input_dirs title =
@@ -95,9 +95,18 @@ let new_tree_cmd ~env =
     Arg.value @@ Arg.opt (Arg.some Arg.file) None @@
     Arg.info ["dest"] ~docv:"DEST" ~doc
   in
+  let arg_random =
+    let doc = "True if the new tree should have id assigned randomly rather than sequentially" in
+    Arg.value @@ Arg.flag @@ Arg.info ["random"] ~doc
+  in
   let doc = "Create a new tree." in
   let info = Cmd.info "new" ~version ~doc in
-  Cmd.v info Term.(const (new_tree ~env) $ arg_input_dir $ arg_dest_dir $ arg_prefix $ arg_template)
+  Cmd.v info Term.(const (new_tree ~env)
+    $ arg_input_dir
+    $ arg_dest_dir
+    $ arg_prefix
+    $ arg_template
+    $ arg_random)
 
 let complete_cmd ~env =
   let arg_title =

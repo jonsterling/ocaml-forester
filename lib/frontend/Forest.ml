@@ -131,7 +131,14 @@ let plant_forest (trees : raw_forest) : forest =
 
   {trees; analysis = lazy (A.analyze_trees trees)}
 
-let next_addr ~prefix (forest : raw_forest) =
+let rec random_not_in keys =
+  let attempt = Random.int (36*36*36*36 - 1) in
+  if Seq.fold_left (fun x y -> x || y) false (Seq.map (fun k -> k == attempt) keys) then
+    random_not_in keys
+  else
+    attempt
+
+let next_addr ~prefix ~random (forest : raw_forest) =
   let keys =
     forest |> Seq.filter_map @@ fun (tree : Code.tree) ->
     match String.split_on_char '-' tree.addr with
@@ -139,11 +146,15 @@ let next_addr ~prefix (forest : raw_forest) =
       BaseN.Base36.int_of_string str
     | _ -> None
   in
-  let next = 1 + Seq.fold_left max 0 keys in
+  let next = if random then
+    random_not_in keys
+  else
+    1 + Seq.fold_left max 0 keys 
+  in
   prefix ^ "-" ^ BaseN.Base36.string_of_int next
 
-let create_tree ~cfg ~forest ~dir ~dest ~prefix ~template =
-  let next = next_addr forest ~prefix in
+let create_tree ~cfg ~forest ~dir ~dest ~prefix ~template ~random =
+  let next = next_addr forest ~prefix ~random in
   let fname = next ^ ".tree" in
   let now = Date.now () in
   let template_content =
