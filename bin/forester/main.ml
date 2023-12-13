@@ -21,7 +21,8 @@ let new_tree ~env input_dir dest_dir prefix template random =
   let cfg = Forest.{env; root = None; base_url = None; max_fibers = 20; ignore_tex_cache = true} in
   let forest = Process.read_trees_in_dir ~dev:true input_dir in
   let dest_dir = Option.value ~default:input_dir dest_dir in
-  let addr = Forest.create_tree ~cfg ~dir:input_dir ~dest:dest_dir ~prefix ~template ~forest ~random in
+  let mode = if random then `Random else `Sequential in
+  let addr = Forest.create_tree ~cfg ~dir:input_dir ~dest:dest_dir ~prefix ~template ~forest ~mode in
   Core.Reporter.emitf Created_tree "created tree `%s` at `%s/%s.tree`" addr dest_dir addr
 
 let complete ~env input_dirs title =

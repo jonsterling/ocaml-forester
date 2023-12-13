@@ -138,7 +138,7 @@ let rec random_not_in keys =
   else
     attempt
 
-let next_addr ~prefix ~random (forest : raw_forest) =
+let next_addr ~prefix ~mode (forest : raw_forest) =
   let keys =
     forest |> Seq.filter_map @@ fun (tree : Code.tree) ->
     match String.split_on_char '-' tree.addr with
@@ -146,15 +146,15 @@ let next_addr ~prefix ~random (forest : raw_forest) =
       BaseN.Base36.int_of_string str
     | _ -> None
   in
-  let next = if random then
-    random_not_in keys
-  else
-    1 + Seq.fold_left max 0 keys 
+  let next =
+    match mode with
+    | `Sequential -> 1 + Seq.fold_left max 0 keys
+    | `Random -> random_not_in keys
   in
   prefix ^ "-" ^ BaseN.Base36.string_of_int next
 
-let create_tree ~cfg ~forest ~dir ~dest ~prefix ~template ~random =
-  let next = next_addr forest ~prefix ~random in
+let create_tree ~cfg ~forest ~dir ~dest ~prefix ~template ~mode =
+  let next = next_addr forest ~prefix ~mode in
   let fname = next ^ ".tree" in
   let now = Date.now () in
   let template_content =

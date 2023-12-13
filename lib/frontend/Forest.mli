@@ -15,6 +15,6 @@ type forest =
 
 val plant_forest : Code.tree Seq.t -> forest
 val render_trees : cfg:config -> forest:forest -> unit
-val create_tree : cfg:config -> forest:raw_forest -> dir:string -> dest:string -> prefix:string -> template:string option -> random:bool -> addr
+val create_tree : cfg:config -> forest:raw_forest -> dir:string -> dest:string -> prefix:string -> template:string option -> mode:[`Sequential | `Random] -> addr
 
 val complete : forest:forest -> string -> (addr * string) Seq.t
