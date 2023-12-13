@@ -101,12 +101,14 @@ let new_tree_cmd ~env =
   in
   let doc = "Create a new tree." in
   let info = Cmd.info "new" ~version ~doc in
-  Cmd.v info Term.(const (new_tree ~env)
-    $ arg_input_dir
-    $ arg_dest_dir
-    $ arg_prefix
-    $ arg_template
-    $ arg_random)
+  Cmd.v info
+    Term
+    .(const (new_tree ~env)
+      $ arg_input_dir
+      $ arg_dest_dir
+      $ arg_prefix
+      $ arg_template
+      $ arg_random)
 
 let complete_cmd ~env =
   let arg_title =
