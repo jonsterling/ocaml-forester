@@ -12,13 +12,13 @@ let version =
   | Some v -> Build_info.V1.Version.to_string v
 
 
-let build ~env input_dirs root base_url dev max_fibers ignore_tex_cache =
-  let cfg = Forest.{env; root; base_url; max_fibers; ignore_tex_cache} in
+let build ~env input_dirs assets_dirs root base_url dev max_fibers ignore_tex_cache =
+  let cfg = Forest.{env; root; base_url; assets_dirs; max_fibers; ignore_tex_cache} in
   let forest = Forest.plant_forest @@ Process.read_trees_in_dirs ~dev input_dirs in
   Forest.render_trees ~cfg ~forest
 
 let new_tree ~env input_dir dest_dir prefix template random =
-  let cfg = Forest.{env; root = None; base_url = None; max_fibers = 20; ignore_tex_cache = true} in
+  let cfg = Forest.{env; root = None; base_url = None; assets_dirs = []; max_fibers = 20; ignore_tex_cache = true} in
   let forest = Process.read_trees_in_dir ~dev:true input_dir in
   let dest_dir = Option.value ~default:input_dir dest_dir in
   let mode = if random then `Random else `Sequential in
@@ -34,8 +34,14 @@ let complete ~env input_dirs title =
 let build_cmd ~env =
 
   let arg_input_dirs =
-    Arg.non_empty @@ Arg.pos_all Arg.file [] @@
+    Arg.non_empty @@ Arg.pos_all Arg.dir [] @@
     Arg.info [] ~docv:"INPUT_DIR"
+  in
+
+  let arg_assets_dirs =
+    let doc = "The contents of the $(i,ASSET_DIR) directories will be copied into the rendered forest." in
+    Arg.value @@ Arg.opt (Arg.list Arg.dir) ["assets"] @@
+    Arg.info ["assets-dirs"] ~docv:"ASSET_DIR" ~doc
   in
 
   let arg_root =
@@ -73,7 +79,16 @@ let build_cmd ~env =
   ]
   in
   let info = Cmd.info "build" ~version ~doc ~man in
-  Cmd.v info Term.(const (build ~env) $ arg_input_dirs $ arg_root $ arg_base_url $ arg_dev $ arg_max_fibers $ arg_ignore_tex_cache)
+  Cmd.v info
+    Term
+    .(const (build ~env)
+      $ arg_input_dirs
+      $ arg_assets_dirs
+      $ arg_root
+      $ arg_base_url
+      $ arg_dev
+      $ arg_max_fibers
+      $ arg_ignore_tex_cache)
 
 let new_tree_cmd ~env =
   let arg_prefix =

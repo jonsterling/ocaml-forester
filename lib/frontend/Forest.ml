@@ -10,6 +10,7 @@ module Gph = A.Gph
 
 type config =
   {env : Eio_unix.Stdenv.base;
+   assets_dirs : string list;
    root : addr option;
    base_url : string option;
    ignore_tex_cache : bool;
@@ -225,9 +226,10 @@ let copy_theme ~env =
   let source = "theme/" ^ fname in
   Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"output"
 
-let copy_assets ~env =
+let copy_assets ~env ~assets_dirs =
   let cwd = Eio.Stdenv.cwd env in
-  Eio.Path.with_open_dir Eio.Path.(cwd / "assets") @@ fun assets ->
+  assets_dirs |> List.iter @@ fun assets_dir ->
+  Eio.Path.with_open_dir Eio.Path.(cwd / assets_dir) @@ fun assets ->
   Eio.Path.read_dir assets |> List.iter @@ fun fname ->
   let source = "assets/" ^ fname in
   Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"build";
@@ -269,7 +271,7 @@ let render_trees ~cfg ~forest : unit =
   with_bib_fmt ~cwd @@ fun bib_fmt ->
   forest.trees |> M.iter (fun _ -> render_tree ~cfg ~cwd ~bib_fmt);
   render_json ~cwd forest.trees;
-  copy_assets ~env;
+  copy_assets ~env ~assets_dirs:cfg.assets_dirs;
   copy_theme ~env;
   let _ = LaTeX_queue.process ~env ~max_fibers:cfg.max_fibers ~ignore_tex_cache:cfg.ignore_tex_cache in
   copy_resources ~env

@@ -2,6 +2,7 @@ open Core
 
 type config =
   {env : Eio_unix.Stdenv.base;
+   assets_dirs : string list;
    root : addr option;
    base_url : string option;
    ignore_tex_cache : bool;
