@@ -145,13 +145,17 @@ let rec expand : Code.t -> Syn.t =
     {value = Syn.Xml_tag (title, attrs, body); loc} :: expand rest
 
   | {value = Import (vis, dep); loc} :: rest ->
-    let import = UnitMap.find dep @@ U.read () in
+    let import = UnitMap.find_opt dep @@ U.read () in
     begin
-      match vis with
-      | Public -> Resolver.Scope.include_subtree ([], import)
-      | Private -> Resolver.Scope.import_subtree ([], import)
+      match import with
+      | None -> Reporter.emitf ?loc:loc Tree_not_found "Could not find tree %s" dep; expand rest
+      | Some tree -> begin
+        match vis with
+        | Public -> Resolver.Scope.include_subtree ([], tree)
+        | Private -> Resolver.Scope.import_subtree ([], tree)
+      end; 
+      expand rest
     end;
-    expand rest
 
   | {value = Def (path, xs, body); loc} :: rest ->
     let lam = expand_lambda loc (xs, body) in

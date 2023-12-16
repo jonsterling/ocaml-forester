@@ -122,12 +122,15 @@ let plant_forest (trees : raw_forest) : forest =
   let _, trees =
     let import_graph = A.build_import_graph trees in
     let task addr (units, trees) =
-      let tree = M.find addr unexpanded_trees in
-      let units, syn = Expand.expand_tree units tree in
-      let sem = Eval.eval_tree syn in
-      units, M.add addr sem trees
-    in
-    A.Topo.fold task import_graph (Expand.UnitMap.empty, M.empty)
+      let tree = M.find_opt addr unexpanded_trees in
+      match tree with
+      | None -> units, trees
+      | Some tree ->
+        let units, syn = Expand.expand_tree units tree in
+        let sem = Eval.eval_tree syn in
+        units, M.add addr sem trees
+      in
+      A.Topo.fold task import_graph (Expand.UnitMap.empty, M.empty)
   in
 
   {trees; analysis = lazy (A.analyze_trees trees)}
