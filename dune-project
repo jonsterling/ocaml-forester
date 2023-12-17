@@ -38,8 +38,6 @@
   (cmdliner
    (>= 1.2.0))
   dune-build-info
-  (domainslib
-   (>= 0.5.0))
   (eio_main
    (>= 0.12))
   (ptime
