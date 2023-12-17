@@ -8,8 +8,10 @@ license: "GPL-3.0-or-later"
 homepage: "https://sr.ht/~jonsterling/forester/"
 bug-reports: "https://todo.sr.ht/~jonsterling/forester"
 depends: [
+  "alcotest" {= "1.7.0"}
   "algaeff" {= "2.0.0"}
   "asai" {= "0.3.0"}
+  "astring" {= "0.8.5"}
   "base-bigarray" {= "base"}
   "base-domains" {= "base"}
   "base-nnp" {= "base"}
@@ -23,27 +25,28 @@ depends: [
   "cstruct" {= "6.2.0"}
   "domain-local-await" {= "1.0.0"}
   "domain_shims" {= "0.1.0"}
-  "domainslib" {= "0.5.1"}
-  "dune" {= "3.11.1"}
-  "dune-build-info" {= "3.11.1"}
-  "dune-configurator" {= "3.11.1"}
+  "domainslib" {= "0.5.0"}
+  "dune" {= "3.12.1"}
+  "dune-build-info" {= "3.12.1"}
+  "dune-configurator" {= "3.12.1"}
   "eio" {= "0.13"}
   "eio_main" {= "0.13"}
   "eio_posix" {= "0.13"}
   "fmt" {= "0.9.0"}
   "hmap" {= "0.8.1"}
   "iomux" {= "0.3"}
-  "logs" {= "0.7.0"}
+  "lockfree" {= "0.3.1"}
   "lwt-dllist" {= "1.0.1"}
   "menhir" {= "20230608"}
   "menhirLib" {= "20230608"}
   "menhirSdk" {= "20230608"}
   "mtime" {= "2.0.0"}
-  "ocaml" {= "5.1.0"}
-  "ocaml-base-compiler" {= "5.1.0"}
+  "ocaml" {= "5.1.1"}
+  "ocaml-base-compiler" {= "5.1.1"}
   "ocaml-compiler-libs" {= "v0.12.4"}
   "ocaml-config" {= "3"}
   "ocaml-options-vanilla" {= "1"}
+  "ocaml-syntax-shims" {= "1.0.0"}
   "ocamlbuild" {= "0.14.2"}
   "ocamlfind" {= "1.9.6"}
   "ocamlgraph" {= "2.1.0"}
@@ -53,15 +56,16 @@ depends: [
   "ppxlib" {= "0.31.0"}
   "psq" {= "0.2.1"}
   "ptime" {= "1.1.0"}
+  "re" {= "1.11.0"}
   "result" {= "1.5"}
-  "saturn" {= "0.4.0"}
-  "saturn_lockfree" {= "0.4.0"}
   "seq" {= "base"}
   "sexplib0" {= "v0.16.0"}
   "stdlib-shims" {= "0.3.0"}
   "thread-table" {= "1.0.0"}
   "topkg" {= "1.0.7"}
+  "uutf" {= "1.0.3"}
   "xmlm" {= "1.4.0"}
+  "yojson" {= "2.1.2"}
   "yuujinchou" {= "5.2.0"}
 ]
 build: [
