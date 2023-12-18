@@ -12,13 +12,14 @@ let version =
   | Some v -> Build_info.V1.Version.to_string v
 
 
-let build ~env input_dirs assets_dirs root base_url dev max_fibers ignore_tex_cache =
-  let cfg = Forest.{env; root; base_url; assets_dirs; max_fibers; ignore_tex_cache} in
+let build ~env input_dirs assets_dirs root base_url dev max_fibers ignore_tex_cache no_assets no_theme =
+  let assets_dirs = if no_assets then [] else assets_dirs in
+  let cfg = Forest.{env; root; base_url; assets_dirs; max_fibers; ignore_tex_cache; no_assets; no_theme} in
   let forest = Forest.plant_forest @@ Process.read_trees_in_dirs ~dev input_dirs in
   Forest.render_trees ~cfg ~forest
 
 let new_tree ~env input_dir dest_dir prefix template random =
-  let cfg = Forest.{env; root = None; base_url = None; assets_dirs = []; max_fibers = 20; ignore_tex_cache = true} in
+  let cfg = Forest.{env; root = None; base_url = None; assets_dirs = []; max_fibers = 20; ignore_tex_cache = true; no_assets = true; no_theme = true;} in
   let forest = Process.read_trees_in_dir ~dev:true input_dir in
   let dest_dir = Option.value ~default:input_dir dest_dir in
   let mode = if random then `Random else `Sequential in
@@ -72,6 +73,16 @@ let build_cmd ~env =
     Arg.value @@ Arg.flag @@ Arg.info ["ignore-tex-cache"] ~doc
   in
 
+  let arg_no_assets =
+    let doc = "Build without copying the asset directory" in
+    Arg.value @@ Arg.flag @@ Arg.info ["no-assets"] ~doc
+  in
+
+  let arg_no_theme =
+    let doc = "Build without copying the theme directory" in
+    Arg.value @@ Arg.flag @@ Arg.info ["no-theme"] ~doc
+  in
+
   let doc = "Build the forest" in
   let man = [
     `S Manpage.s_description;
@@ -88,7 +99,9 @@ let build_cmd ~env =
       $ arg_base_url
       $ arg_dev
       $ arg_max_fibers
-      $ arg_ignore_tex_cache)
+      $ arg_ignore_tex_cache
+      $ arg_no_assets
+      $ arg_no_theme)
 
 let new_tree_cmd ~env =
   let arg_prefix =

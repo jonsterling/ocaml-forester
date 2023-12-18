@@ -14,6 +14,8 @@ type config =
    root : addr option;
    base_url : string option;
    ignore_tex_cache : bool;
+   no_assets: bool;
+   no_theme: bool;
    max_fibers : int}
 
 type raw_forest = Code.tree Seq.t
@@ -274,7 +276,9 @@ let render_trees ~cfg ~forest : unit =
   with_bib_fmt ~cwd @@ fun bib_fmt ->
   forest.trees |> M.iter (fun _ -> render_tree ~cfg ~cwd ~bib_fmt);
   render_json ~cwd forest.trees;
-  copy_assets ~env ~assets_dirs:cfg.assets_dirs;
-  copy_theme ~env;
+  if not cfg.no_assets then
+    copy_assets ~env ~assets_dirs:cfg.assets_dirs;
+  if not cfg.no_theme then
+    copy_theme ~env;
   let _ = LaTeX_queue.process ~env ~max_fibers:cfg.max_fibers ~ignore_tex_cache:cfg.ignore_tex_cache in
   copy_resources ~env

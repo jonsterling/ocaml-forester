@@ -6,6 +6,8 @@ type config =
    root : addr option;
    base_url : string option;
    ignore_tex_cache : bool;
+   no_assets: bool;
+   no_theme: bool;
    max_fibers : int}
 
 type raw_forest = Code.tree Seq.t
