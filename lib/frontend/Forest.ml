@@ -131,8 +131,8 @@ let plant_forest (trees : raw_forest) : forest =
         let units, syn = Expand.expand_tree units tree in
         let sem = Eval.eval_tree syn in
         units, M.add addr sem trees
-      in
-      A.Topo.fold task import_graph (Expand.UnitMap.empty, M.empty)
+    in
+    A.Topo.fold task import_graph (Expand.UnitMap.empty, M.empty)
   in
 
   {trees; analysis = lazy (A.analyze_trees trees)}
@@ -179,6 +179,27 @@ let complete ~forest prefix =
   |> M.filter_map (fun _ -> Sem.Util.peek_title)
   |> M.filter (fun _ -> String.starts_with ~prefix)
   |> M.to_seq
+
+let extract_prefixes (strings : string Seq.t) : string list =
+  let prefix addr =
+    match String.split_on_char '-' addr with
+    | [] | [_] -> None
+    | prefix :: _ -> Some prefix
+  in
+  let prefixes =
+    strings
+    |> Seq.map prefix
+    |> Seq.filter_map Fun.id
+    |> List.of_seq
+    |> List.sort_uniq String.compare
+  in
+  prefixes
+
+let prefixes ~forest =
+  forest.trees
+  |> M.to_seq
+  |> Seq.map fst
+  |> extract_prefixes
 
 module E = Render_effect.Perform
 

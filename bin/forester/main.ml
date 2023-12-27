@@ -24,13 +24,19 @@ let new_tree ~env input_dir dest_dir prefix template random =
   let dest_dir = Option.value ~default:input_dir dest_dir in
   let mode = if random then `Random else `Sequential in
   let addr = Forest.create_tree ~cfg ~dir:input_dir ~dest:dest_dir ~prefix ~template ~forest ~mode in
-  Core.Reporter.emitf Created_tree "created tree `%s` at `%s/%s.tree`" addr dest_dir addr
+  Format.printf "%s/%s.tree\n" dest_dir addr
 
 let complete ~env input_dirs title =
   let forest = Forest.plant_forest @@ Process.read_trees_in_dirs ~dev:true input_dirs in
   let completions = Forest.complete ~forest title in
   completions |> Seq.iter @@ fun (addr, title) ->
   Format.printf "%s, %s\n" addr title
+
+let query_prefixes ~env input_dirs =
+  let forest = Forest.plant_forest @@ Process.read_trees_in_dirs ~dev:true input_dirs in
+  let prefixes = Forest.prefixes ~forest in
+  prefixes |> List.iter @@ fun addr ->
+  Format.printf "%s\n" addr 
 
 let build_cmd ~env =
 
@@ -153,6 +159,22 @@ let complete_cmd ~env =
   let info = Cmd.info "complete" ~version ~doc in
   Cmd.v info Term.(const (complete ~env) $ arg_input_dirs $ arg_title)
 
+
+let query_prefixes_cmd ~env =
+  let arg_input_dirs =
+    Arg.non_empty @@ Arg.pos_all Arg.file [] @@
+    Arg.info [] ~docv:"INPUT_DIR"
+  in
+  let doc = "Get all prefixes of a forest" in
+  let info = Cmd.info "prefix" ~version ~doc in
+  Cmd.v info Term.(const (query_prefixes ~env) $ arg_input_dirs)
+
+let query_cmd ~env =
+  let doc = "Query your forest" in
+  let info = Cmd.info "query" ~version ~doc in
+  Cmd.group info [query_prefixes_cmd ~env]
+
+
 let cmd ~env =
   let doc = "a tool for tending mathematical forests" in
   let man = [
@@ -164,7 +186,7 @@ let cmd ~env =
   in
 
   let info = Cmd.info "forester" ~version ~doc ~man in
-  Cmd.group info [build_cmd ~env; new_tree_cmd ~env; complete_cmd ~env]
+  Cmd.group info [build_cmd ~env; new_tree_cmd ~env; complete_cmd ~env; query_cmd ~env]
 
 let () =
   let fatal diagnostics =

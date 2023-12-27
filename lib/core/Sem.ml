@@ -121,6 +121,9 @@ struct
     | Some ({value = Text txt; _} :: _) -> Some txt
     | _ -> None
 
+  let peek_addr (tree : tree) =
+    tree.addr 
+
   let sort =
     let by_date = Fun.flip @@ Compare.under (fun x -> List.nth_opt x.dates 0) @@ Compare.option Date.compare in
     let by_title = Compare.under peek_title @@ Compare.option String.compare in
