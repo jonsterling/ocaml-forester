@@ -247,15 +247,17 @@ let render_json ~cwd docs =
 
 let copy_theme ~env =
   let cwd = Eio.Stdenv.cwd env in
-  Eio.Path.with_open_dir Eio.Path.(cwd / "theme") @@ fun theme ->
+  let fs = Eio.Stdenv.fs env in
+  Eio.Path.with_open_dir Eio.Path.(fs / "theme") @@ fun theme ->
   Eio.Path.read_dir theme |> List.iter @@ fun fname ->
   let source = "theme/" ^ fname in
   Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"output"
 
 let copy_assets ~env ~assets_dirs =
   let cwd = Eio.Stdenv.cwd env in
+  let fs = Eio.Stdenv.fs env in
   assets_dirs |> List.iter @@ fun assets_dir ->
-  Eio.Path.with_open_dir Eio.Path.(cwd / assets_dir) @@ fun assets ->
+  Eio.Path.with_open_dir Eio.Path.(fs / assets_dir) @@ fun assets ->
   Eio.Path.read_dir assets |> List.iter @@ fun fname ->
   let source = "assets/" ^ fname in
   Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"build";
