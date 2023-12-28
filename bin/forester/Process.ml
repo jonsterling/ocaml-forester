@@ -10,7 +10,9 @@ let rec process_file ~dev fp =
     Eio.Path.split fp |> Option.iter @@ fun (dir, basename) ->
     if Filename.extension basename = ".tree" then
       let addr = Filename.chop_extension basename in
-      let source_path = if dev then Eio.Path.native fp else None in
+      let source_path =
+        if dev then Option.map Unix.realpath @@ Eio.Path.native fp else None
+      in
       let code = Parse.parse_file fp in
       S.yield {source_path; addr; code}
 
