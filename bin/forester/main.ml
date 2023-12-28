@@ -11,32 +11,44 @@ let version =
   | None -> "n/a"
   | Some v -> Build_info.V1.Version.to_string v
 
+let make_dir ~env dir =
+  Eio.Path.(Eio.Stdenv.fs env / dir)
+
+let make_dirs ~env =
+  List.map (make_dir ~env)
 
 let build ~env input_dirs assets_dirs root base_url dev max_fibers ignore_tex_cache no_assets no_theme =
-  let assets_dirs = if no_assets then [] else assets_dirs in
+  let assets_dirs = if no_assets then [] else make_dirs ~env assets_dirs in
   let cfg = Forest.{env; root; base_url; assets_dirs; max_fibers; ignore_tex_cache; no_assets; no_theme} in
-  let forest = Forest.plant_forest @@ Process.read_trees_in_dirs ~dev input_dirs in
+  let forest = Forest.plant_forest @@ Process.read_trees_in_dirs ~dev @@ make_dirs ~env input_dirs in
   Forest.render_trees ~cfg ~forest
 
-let new_tree ~env input_dir dest_dir prefix template random =
+let new_tree ~env input_dirs dest_dir prefix template random =
   let cfg = Forest.{env; root = None; base_url = None; assets_dirs = []; max_fibers = 20; ignore_tex_cache = true; no_assets = true; no_theme = true;} in
-  let forest = Process.read_trees_in_dir ~dev:true input_dir in
-  let dest_dir = Option.value ~default:input_dir dest_dir in
+  let forest = Process.read_trees_in_dirs ~dev:true @@ make_dirs ~env input_dirs in
   let mode = if random then `Random else `Sequential in
-  let addr = Forest.create_tree ~cfg ~dir:input_dir ~dest:dest_dir ~prefix ~template ~forest ~mode in
+  let addr = Forest.create_tree ~cfg ~dest:(make_dir ~env dest_dir) ~prefix ~template ~forest ~mode in
   Format.printf "%s/%s.tree\n" dest_dir addr
 
 let complete ~env input_dirs title =
-  let forest = Forest.plant_forest @@ Process.read_trees_in_dirs ~dev:true input_dirs in
+  let forest =
+    Forest.plant_forest @@
+    Process.read_trees_in_dirs ~dev:true @@
+    make_dirs ~env input_dirs
+  in
   let completions = Forest.complete ~forest title in
   completions |> Seq.iter @@ fun (addr, title) ->
   Format.printf "%s, %s\n" addr title
 
 let query_prefixes ~env input_dirs =
-  let forest = Forest.plant_forest @@ Process.read_trees_in_dirs ~dev:true input_dirs in
+  let forest =
+    Forest.plant_forest @@
+    Process.read_trees_in_dirs ~dev:true @@
+    make_dirs ~env input_dirs
+  in
   let prefixes = Forest.prefixes ~forest in
   prefixes |> List.iter @@ fun addr ->
-  Format.printf "%s\n" addr 
+  Format.printf "%s\n" addr
 
 let build_cmd ~env =
 
@@ -46,9 +58,9 @@ let build_cmd ~env =
   in
 
   let arg_assets_dirs =
-    let doc = "The contents of the $(i,ASSET_DIR) directories will be copied into the rendered forest." in
+    let doc = "The contents of the $(i,ASSETS_DIRS) directories will be copied into the rendered forest." in
     Arg.value @@ Arg.opt (Arg.list Arg.dir) ["assets"] @@
-    Arg.info ["assets-dirs"] ~docv:"ASSET_DIR" ~doc
+    Arg.info ["assets-dirs"] ~docv:"ASSETS_DIRS" ~doc
   in
 
   let arg_root =
@@ -120,14 +132,14 @@ let new_tree_cmd ~env =
     Arg.value @@ Arg.opt (Arg.some Arg.string) None @@
     Arg.info ["template"] ~docv:"XXX" ~doc
   in
-  let arg_input_dir =
-    let doc = "The directory in which to scan tree identifiers." in
-    Arg.value @@ Arg.opt Arg.file "." @@
-    Arg.info ["dir"] ~docv:"DIR" ~doc
+  let arg_input_dirs =
+    let doc = "The directories in which to scan tree identifiers. In the future, the $(i,--dir) spelling of this argument will be removed and $(i,--dirs) will be required." in
+    Arg.value @@ Arg.opt (Arg.list Arg.dir) [] @@
+    Arg.info ["dirs";"dir"] ~docv:"DIRS" ~doc
   in
   let arg_dest_dir =
     let doc = "The directory in which to deposit created tree." in
-    Arg.value @@ Arg.opt (Arg.some Arg.file) None @@
+    Arg.required @@ Arg.opt (Arg.some Arg.dir) None @@
     Arg.info ["dest"] ~docv:"DEST" ~doc
   in
   let arg_random =
@@ -139,7 +151,7 @@ let new_tree_cmd ~env =
   Cmd.v info
     Term
     .(const (new_tree ~env)
-      $ arg_input_dir
+      $ arg_input_dirs
       $ arg_dest_dir
       $ arg_prefix
       $ arg_template

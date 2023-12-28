@@ -10,7 +10,7 @@ module Gph = A.Gph
 
 type config =
   {env : Eio_unix.Stdenv.base;
-   assets_dirs : string list;
+   assets_dirs : Eio.Fs.dir_ty Eio.Path.t list;
    root : addr option;
    base_url : string option;
    ignore_tex_cache : bool;
@@ -159,7 +159,7 @@ let next_addr ~prefix ~mode (forest : raw_forest) =
   in
   prefix ^ "-" ^ BaseN.Base36.string_of_int next
 
-let create_tree ~cfg ~forest ~dir ~dest ~prefix ~template ~mode =
+let create_tree ~cfg ~forest ~dest ~prefix ~template ~mode =
   let next = next_addr forest ~prefix ~mode in
   let fname = next ^ ".tree" in
   let now = Date.now () in
@@ -170,7 +170,7 @@ let create_tree ~cfg ~forest ~dir ~dest ~prefix ~template ~mode =
   in
   let body = Format.asprintf "\\date{%a}\n" Date.pp now in
   let create = `Exclusive 0o644 in
-  let path = Eio.Path.(Eio.Stdenv.cwd cfg.env / dest / fname) in
+  let path = Eio.Path.(dest / fname) in
   Eio.Path.save ~create path @@ body ^ template_content;
   next
 
@@ -255,11 +255,11 @@ let copy_theme ~env =
 
 let copy_assets ~env ~assets_dirs =
   let cwd = Eio.Stdenv.cwd env in
-  let fs = Eio.Stdenv.fs env in
   assets_dirs |> List.iter @@ fun assets_dir ->
-  Eio.Path.with_open_dir Eio.Path.(fs / assets_dir) @@ fun assets ->
+  Eio.Path.with_open_dir assets_dir @@ fun assets ->
   Eio.Path.read_dir assets |> List.iter @@ fun fname ->
-  let source = "assets/" ^ fname in
+  let path = Eio.Path.(assets_dir / fname) in
+  let source = Eio.Path.native_exn path in
   Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"build";
   Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"output";
   Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"latex"

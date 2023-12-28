@@ -15,7 +15,9 @@ let parse_channel filename ch =
     Reporter.fatalf ~loc Parse_error "unrecognized token `%s`" @@
     String.escaped token
 
-let parse_file filename =
+let parse_file fp =
+  let filename = Eio.Path.native_exn fp in
   let ch = open_in filename in
   Fun.protect ~finally:(fun _ -> close_in ch) @@ fun _ ->
   parse_channel filename ch
+

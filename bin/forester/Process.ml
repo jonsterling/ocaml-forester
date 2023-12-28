@@ -3,25 +3,22 @@ open Core
 
 module S = Algaeff.Sequencer.Make (struct type t = Code.tree end)
 
-(* I would like to convert this code to use Eio's path primitives, but I don't see how to get around the need for 'realpath', etc. *)
+let rec process_file ~dev fp =
+  if Eio.Path.is_directory fp then
+    process_dir ~dev fp
+  else
+    Eio.Path.split fp |> Option.iter @@ fun (dir, basename) ->
+    if Filename.extension basename = ".tree" then
+      let addr = Filename.chop_extension basename in
+      let source_path = if dev then Eio.Path.native fp else None in
+      let code = Parse.parse_file fp in
+      S.yield {source_path; addr; code}
 
-let rec process_file ~dev filename =
-  if Filename.extension filename = ".tree" then
-    let addr = Filename.chop_extension @@ Filename.basename filename in
-    let source_path = if dev then Some (Eio_posix.Low_level.realpath filename) else None in
-    let code = Parse.parse_file filename in
-    S.yield {source_path; addr; code}
-  else if Sys.is_directory filename then
-    process_dir ~dev filename
-
-and process_dir ~dev dir =
-  Sys.readdir dir |> Array.iter @@ fun filename ->
-  process_file ~dev @@ dir ^ "/" ^ filename
-
+and process_dir ~dev fp =
+  Eio.Path.with_open_dir fp @@ fun dir ->
+  Eio.Path.read_dir dir |> List.iter @@ fun fp ->
+  process_file ~dev Eio.Path.(dir / fp)
 
 let read_trees_in_dirs ~dev dirs =
   S.run @@ fun () ->
   dirs |> List.iter (process_dir ~dev)
-
-let read_trees_in_dir ~dev dir =
-  read_trees_in_dirs ~dev [dir]

@@ -2,7 +2,7 @@ open Core
 
 type config =
   {env : Eio_unix.Stdenv.base;
-   assets_dirs : string list;
+   assets_dirs : Eio.Fs.dir_ty Eio.Path.t list;
    root : addr option;
    base_url : string option;
    ignore_tex_cache : bool;
@@ -18,7 +18,7 @@ type forest =
 
 val plant_forest : Code.tree Seq.t -> forest
 val render_trees : cfg:config -> forest:forest -> unit
-val create_tree : cfg:config -> forest:raw_forest -> dir:string -> dest:string -> prefix:string -> template:string option -> mode:[`Sequential | `Random] -> addr
+val create_tree : cfg:config -> forest:raw_forest -> dest:Eio.Fs.dir_ty Eio.Path.t -> prefix:string -> template:string option -> mode:[`Sequential | `Random] -> addr
 
 val complete : forest:forest -> string -> (addr * string) Seq.t
 val prefixes : forest:forest -> string list
