@@ -41,7 +41,7 @@ depends: [
   "ocaml-compiler-libs" {= "v0.12.4"}
   "ocaml-config" {= "3"}
   "ocaml-options-vanilla" {= "1"}
-  "ocamlbuild" {= "0.14.2"}
+  "ocamlbuild" {= "0.14.3"}
   "ocamlfind" {= "1.9.6"}
   "ocamlgraph" {= "2.1.0"}
   "optint" {= "0.3.0"}
