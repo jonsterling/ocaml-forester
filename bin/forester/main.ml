@@ -20,20 +20,31 @@ let make_dirs ~env =
 let build ~env input_dirs assets_dirs root base_url dev max_fibers ignore_tex_cache no_assets no_theme =
   let assets_dirs = if no_assets then [] else make_dirs ~env assets_dirs in
   let cfg = Forest.{env; root; base_url; assets_dirs; max_fibers; ignore_tex_cache; no_assets; no_theme} in
-  let forest = Forest.plant_forest @@ Process.read_trees_in_dirs ~dev @@ make_dirs ~env input_dirs in
+  let forest =
+    Forest.plant_forest @@
+    Process.read_trees_in_dirs ~dev @@
+    make_dirs ~env input_dirs
+  in
   Forest.render_trees ~cfg ~forest
 
 let new_tree ~env input_dirs dest_dir prefix template random =
   let cfg = Forest.{env; root = None; base_url = None; assets_dirs = []; max_fibers = 20; ignore_tex_cache = true; no_assets = true; no_theme = true;} in
-  let forest = Process.read_trees_in_dirs ~dev:true @@ make_dirs ~env input_dirs in
+  let input_dirs =
+    make_dirs ~env @@
+    if List.mem dest_dir input_dirs then
+      input_dirs
+    else
+      dest_dir :: input_dirs
+  in
+  let addrs = Process.read_addrs_in_dirs input_dirs in
   let mode = if random then `Random else `Sequential in
-  let addr = Forest.create_tree ~cfg ~dest:(make_dir ~env dest_dir) ~prefix ~template ~forest ~mode in
+  let addr = Forest.create_tree ~cfg ~dest:(make_dir ~env dest_dir) ~prefix ~template ~addrs ~mode in
   Format.printf "%s/%s.tree\n" dest_dir addr
 
 let complete ~env input_dirs title =
   let forest =
     Forest.plant_forest @@
-    Process.read_trees_in_dirs ~dev:true @@
+    Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true @@
     make_dirs ~env input_dirs
   in
   let completions = Forest.complete ~forest title in
@@ -41,12 +52,8 @@ let complete ~env input_dirs title =
   Format.printf "%s, %s\n" addr title
 
 let query_prefixes ~env input_dirs =
-  let forest =
-    Forest.plant_forest @@
-    Process.read_trees_in_dirs ~dev:true @@
-    make_dirs ~env input_dirs
-  in
-  let prefixes = Forest.prefixes ~forest in
+  let addrs = Process.read_addrs_in_dirs @@ make_dirs ~env input_dirs in
+  let prefixes = Forest.prefixes ~addrs in
   prefixes |> List.iter @@ fun addr ->
   Format.printf "%s\n" addr
 

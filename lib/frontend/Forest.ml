@@ -144,10 +144,10 @@ let rec random_not_in keys =
   else
     attempt
 
-let next_addr ~prefix ~mode (forest : raw_forest) =
+let next_addr ~prefix ~mode (forest : addr Seq.t) =
   let keys =
-    forest |> Seq.filter_map @@ fun (tree : Code.tree) ->
-    match String.split_on_char '-' tree.addr with
+    forest |> Seq.filter_map @@ fun addr ->
+    match String.split_on_char '-' addr with
     | [prefix'; str] when prefix' = prefix ->
       BaseN.Base36.int_of_string str
     | _ -> None
@@ -159,8 +159,8 @@ let next_addr ~prefix ~mode (forest : raw_forest) =
   in
   prefix ^ "-" ^ BaseN.Base36.string_of_int next
 
-let create_tree ~cfg ~forest ~dest ~prefix ~template ~mode =
-  let next = next_addr forest ~prefix ~mode in
+let create_tree ~cfg ~addrs ~dest ~prefix ~template ~mode =
+  let next = next_addr addrs ~prefix ~mode in
   let fname = next ^ ".tree" in
   let now = Date.now () in
   let template_content =
@@ -180,26 +180,20 @@ let complete ~forest prefix =
   |> M.filter (fun _ -> String.starts_with ~prefix)
   |> M.to_seq
 
-let extract_prefixes (strings : string Seq.t) : string list =
+let prefixes ~(addrs : addr Seq.t) : string list =
   let prefix addr =
     match String.split_on_char '-' addr with
     | [] | [_] -> None
     | prefix :: _ -> Some prefix
   in
   let prefixes =
-    strings
+    addrs
     |> Seq.map prefix
     |> Seq.filter_map Fun.id
     |> List.of_seq
     |> List.sort_uniq String.compare
   in
   prefixes
-
-let prefixes ~forest =
-  forest.trees
-  |> M.to_seq
-  |> Seq.map fst
-  |> extract_prefixes
 
 module E = Render_effect.Perform
 
