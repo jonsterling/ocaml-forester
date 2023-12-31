@@ -31,6 +31,7 @@ let text = [^ ' ' '%' '#' '\\' '{' '}' '[' ']' '(' ')' '\r' '\n']+
 
 rule token =
   parse
+  | "\\%" { return lexbuf @@ Grammar.TEXT "%"}
   | "%" { comment lexbuf }
   | "##{" { return lexbuf @@ Grammar.HASH_HASH_LBRACE }
   | "#{" { return lexbuf @@ Grammar.HASH_LBRACE }
