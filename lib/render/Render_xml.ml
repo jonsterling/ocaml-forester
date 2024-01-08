@@ -158,7 +158,7 @@ and render_internal_link ~cfg ~title ~modifier ~addr =
   let title = Option.map (Sem.apply_modifier modifier) title in
   let title = Option.value ~default:[Range.locate_opt None @@ Sem.Text addr] title in
   Printer.tag "link"
-    (["href", url; "type", "local"] @ target_title_attr)
+    (["href", url; "type", "local"; "addr", addr] @ target_title_attr)
     [render ~cfg title]
 
 and render_external_link ~cfg ~title ~modifier ~url =
@@ -184,7 +184,7 @@ and render_author (author : string) =
       | Some addr ->
         let url = E.route Xml addr in
         Printer.tag "link"
-          ["href", url; "type", "local"]
+          ["href", url; "type", "local"; addr, "addr"]
           [match bio.title with
            | Some title ->
              gcount := !gcount + 1;
