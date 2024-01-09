@@ -288,7 +288,7 @@ and render_mainmatter ~cfg (doc : Sem.tree) =
   ]
 
 and render_backmatter ~cfg (doc : Sem.tree) =
-  let cfg = {cfg with in_backmatter = true; top = false} in
+  let cfg = {cfg with trail = None; counter = ref 0; in_backmatter = true; top = false} in
   let opts = Sem.{title_override = None; taxon_override = None; toc = false; show_heading = true; expanded = false; numbered = false; show_metadata = true} in
 
   with_addr doc @@ fun addr fmt ->
