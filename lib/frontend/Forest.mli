@@ -22,3 +22,5 @@ val create_tree : cfg:config -> addrs:addr Seq.t -> dest:Eio.Fs.dir_ty Eio.Path.
 
 val complete : forest:forest -> string -> (addr * string) Seq.t
 val prefixes : addrs:addr Seq.t -> string list
+val taxa : forest:forest-> (addr * string) Seq.t
+val tags : forest:forest -> (addr * string list) Seq.t

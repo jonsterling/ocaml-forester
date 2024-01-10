@@ -126,6 +126,15 @@ struct
   let peek_addr (tree : tree) =
     tree.addr
 
+  let tags (tree : tree) =
+    tree.tags
+
+  let taxon (tree : tree) =
+    tree.taxon
+
+  let authors (tree : tree) = 
+    tree.authors
+
   let sort =
     let by_date = Fun.flip @@ Compare.under (fun x -> List.nth_opt x.dates 0) @@ Compare.option Date.compare in
     let by_title = Compare.under peek_title @@ Compare.option String.compare in

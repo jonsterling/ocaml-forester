@@ -195,6 +195,17 @@ let prefixes ~(addrs : addr Seq.t) : string list =
   in
   prefixes
 
+let taxa ~forest =
+  forest.trees
+  |> M.filter_map (fun _ -> Sem.Util.taxon)
+  |> M.to_seq
+
+let tags ~forest =
+  forest.trees
+  |> M.map Sem.Util.tags
+  |> M.filter (fun _ -> fun tags -> not @@ List.is_empty tags)
+  |> M.to_seq
+
 module E = Render_effect.Perform
 
 let render_tree ~cfg ~cwd ~bib_fmt doc =

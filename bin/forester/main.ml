@@ -57,6 +57,30 @@ let query_prefixes ~env input_dirs =
   prefixes |> List.iter @@ fun addr ->
   Format.printf "%s\n" addr
 
+let query_taxon ~env taxon input_dirs =
+  let forest =
+    Forest.plant_forest @@
+    Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true @@
+    make_dirs ~env input_dirs
+  in
+  let taxa = Forest.taxa ~forest in
+  taxa |> Seq.iter @@ fun (addr, taxon) ->
+  Format.printf "%s, %s\n" addr taxon
+
+let query_tag ~env input_dirs =
+  let forest =
+    Forest.plant_forest @@
+    Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true @@
+    make_dirs ~env input_dirs
+  in
+  let tags = Forest.tags ~forest in
+  tags |> Seq.iter @@ fun (addr, tags) ->
+  let rec tag_string = function
+    | [] -> ""
+    | hd :: tl -> ", " ^ hd ^ tag_string tl
+  in
+  Format.printf "%s%s\n" addr (tag_string tags)
+
 let build_cmd ~env =
 
   let arg_input_dirs =
@@ -188,10 +212,32 @@ let query_prefixes_cmd ~env =
   let info = Cmd.info "prefix" ~version ~doc in
   Cmd.v info Term.(const (query_prefixes ~env) $ arg_input_dirs)
 
+let query_taxon_cmd ~env =
+  let arg_input_dirs =
+    Arg.non_empty @@ Arg.pos_all Arg.file [] @@
+    Arg.info [] ~docv:"INPUT_DIR"
+  in
+  let arg_taxon =
+    Arg.non_empty @@ Arg.pos_all Arg.file [] @@
+    Arg.info [] ~docv:"TAXON"
+  in
+  let doc = "List all trees of taxon TAXON" in
+  let info = Cmd.info "taxon" ~version ~doc in
+  Cmd.v info Term.(const (query_taxon ~env) $ arg_taxon $ arg_input_dirs)
+
+let query_tag_cmd ~env =
+  let arg_input_dirs =
+    Arg.non_empty @@ Arg.pos_all Arg.file [] @@
+    Arg.info [] ~docv:"INPUT_DIR"
+  in
+  let doc = "List all trees with tag TAG" in
+  let info = Cmd.info "tag" ~version ~doc in
+  Cmd.v info Term.(const (query_tag ~env) $ arg_input_dirs)
+
 let query_cmd ~env =
   let doc = "Query your forest" in
   let info = Cmd.info "query" ~version ~doc in
-  Cmd.group info [query_prefixes_cmd ~env]
+  Cmd.group info [query_prefixes_cmd ~env; query_taxon_cmd ~env; query_tag_cmd ~env;]
 
 
 let cmd ~env =
