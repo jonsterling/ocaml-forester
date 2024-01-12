@@ -11,7 +11,6 @@ let gcount = ref 0
 
 type cfg =
   {base_url : string option;
-   trail : int bwd option;
    counter : int ref;
    in_backmatter : bool;
    top : bool;
@@ -129,13 +128,8 @@ and render_transclusion ~cfg ~opts doc =
     let ctr = cfg.counter in
     let ix = if opts.numbered then !ctr + 1 else !ctr in
     ctr := ix;
-    let trail =
-      match opts.numbered with
-      | true -> cfg.trail |> Option.map @@ fun tr -> Snoc (tr, ix)
-      | false -> None
-    in
     let counter = ref 0 in
-    {cfg with trail; counter; top = false}
+    {cfg with counter; top = false}
   in
   render_tree ~cfg ~opts doc
 
@@ -173,7 +167,7 @@ and render ~cfg : Sem.t -> printer =
   Printer.iter (render_node ~cfg)
 
 and render_author (author : string) =
-  let cfg = {base_url = None; top = false; trail = Some Emp; counter = ref 0; in_backmatter = false; seen = []} in
+  let cfg = {base_url = None; top = false; counter = ref 0; in_backmatter = false; seen = []} in
   (* If the author string is an address to a biographical page, then link to it *)
   match E.get_doc author with
   | Some bio ->
@@ -251,7 +245,6 @@ and render_rss_link ~cfg doc =
 and render_frontmatter ~cfg ?(toc = true) (doc : Sem.tree) =
   let anchor = string_of_int @@ Oo.id (object end) in
   Printer.tag "frontmatter" [] [
-    if toc then render_trail cfg.trail else Printer.nil;
     Printer.tag "anchor" [] [Printer.text anchor];
     render_rss_link ~cfg doc;
     doc.taxon |> Printer.option begin fun taxon ->
@@ -288,7 +281,7 @@ and render_mainmatter ~cfg (doc : Sem.tree) =
   ]
 
 and render_backmatter ~cfg (doc : Sem.tree) =
-  let cfg = {cfg with trail = None; counter = ref 0; in_backmatter = true; top = false} in
+  let cfg = {cfg with counter = ref 0; in_backmatter = true; top = false} in
   let opts = Sem.{title_override = None; taxon_override = None; toc = false; show_heading = true; expanded = false; numbered = false; show_metadata = true} in
 
   with_addr doc @@ fun addr fmt ->
@@ -316,26 +309,10 @@ and render_backmatter ~cfg (doc : Sem.tree) =
     ];
   ] fmt
 
-and render_trail trail =
-  match trail with
-  | None -> Printer.nil
-  | Some trail ->
-    let render_crumb i = Printer.tag "crumb" [] [Printer.text @@ string_of_int i] in
-    Printer.tag "trail" [] @@
-    List.map render_crumb @@
-    Bwd.to_list trail
-
 and bool_to_string =
   function
   | true -> "true"
   | false -> "false"
-
-
-and trail_to_string =
-  function
-  | Emp -> ""
-  | Snoc (trail, i) ->
-    Format.sprintf "%s.%i" (trail_to_string trail) i
 
 and render_tree ~cfg ~opts (doc : Sem.tree) : printer =
   let doc =
@@ -353,6 +330,7 @@ and render_tree ~cfg ~opts (doc : Sem.tree) : printer =
      "show-heading", string_of_bool opts.show_heading;
      "show-metadata", string_of_bool opts.show_metadata;
      "toc", string_of_bool opts.toc;
+     "numbered", string_of_bool opts.numbered;
      "root", string_of_bool @@ Option.fold doc.addr ~none:false ~some:(fun addr -> E.is_root addr)]
   in
   let seen =
@@ -385,7 +363,7 @@ and render_tree ~cfg ~opts (doc : Sem.tree) : printer =
          | _ -> Printer.nil
         ] fmt
 
-let render_tree_page ~base_url ~trail (doc : Sem.tree) : printer =
-  let cfg = {base_url; trail; top = true; counter = ref 0; seen = []; in_backmatter = false} in
-  let opts = Sem.{title_override = None; taxon_override = None; toc = false; show_heading = true; expanded = true; numbered = true; show_metadata = true} in
+let render_tree_page ~base_url (doc : Sem.tree) : printer =
+  let cfg = {base_url; top = true; counter = ref 0; seen = []; in_backmatter = false} in
+  let opts = Sem.{title_override = None; taxon_override = None; toc = false; show_heading = true; expanded = true; numbered = false; show_metadata = true} in
   Printer.with_xsl "forest.xsl" @@ render_tree ~cfg ~opts doc

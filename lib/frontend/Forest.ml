@@ -213,7 +213,7 @@ let render_tree ~cfg ~cwd ~bib_fmt doc =
     Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
     let out = Xmlm.make_output @@ `Channel ch in
     (* Eio_util.xmlm_dest_of_writer w in *)
-    Render_xml.render_tree_page ~base_url ~trail:(Some Emp) doc out
+    Render_xml.render_tree_page ~base_url doc out
   end;
   begin
     base_url |> Option.iter @@ fun base_url ->
