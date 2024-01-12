@@ -9,7 +9,7 @@
 %token <Core.Prim.t> PRIM
 %token TITLE IMPORT EXPORT DEF TAXON AUTHOR TEX_PACKAGE TAG DATE NAMESPACE LET TEX BLOCK META OPEN
 %token OBJECT PATCH CALL
-%token TRANSCLUDE SCOPE PUT GET DEFAULT ALLOC IF_TEX XML_TAG
+%token TRANSCLUDE SCOPE PUT GET DEFAULT ALLOC IF_TEX XML_TAG REF
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token QUERY_AND QUERY_OR QUERY_AUTHOR QUERY_TAG QUERY_TAXON QUERY_META
 %token QUERY_TREE
@@ -75,6 +75,7 @@ let head_node :=
 | PATCH; obj = braces(code_expr); self = option(squares(bvar)); methods = braces(ws_list(method_decl)); { Code.Patch {obj; self; methods} }
 | CALL; ~ = braces(code_expr); ~ = txt_arg; <Code.Call>
 | ~ = PRIM; ~ = arg; <Code.Prim>
+| REF; ~ = arg; <Code.Ref>
 | ~ = delimited(HASH_LBRACE, textual_expr, RBRACE); <Code.inline_math>
 | ~ = delimited(HASH_HASH_LBRACE, textual_expr, RBRACE); <Code.display_math>
 | ~ = braces(textual_expr); <Code.braces>

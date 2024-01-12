@@ -22,6 +22,7 @@ type node =
   | Object of {self : Symbol.t; methods: (string * t) list}
   | Patch of {obj : t; self : Symbol.t; super : Symbol.t; methods : (string * t) list}
   | Call of t * string
+  | Ref of t
 [@@deriving show]
 
 and t = node Range.located list

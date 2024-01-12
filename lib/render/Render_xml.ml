@@ -41,6 +41,22 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
       | None ->
         render_external_link ~cfg ~title ~modifier ~url:dest
     end
+  | Sem.Ref {addr} ->
+    begin
+      match E.get_doc addr with
+      | None ->
+        Reporter.fatalf ?loc:located.loc Tree_not_found "could not find tree at address `%s` for reference" addr
+      | Some tree ->
+        let url = E.route Xml addr in
+        let attrs =
+          ("addr", addr) ::
+          ("href", url) ::
+          match tree.taxon with
+          | None -> []
+          | Some taxon -> ["taxon", String_util.sentence_case taxon]
+        in
+        Printer.tag "ref" attrs []
+    end
   | Sem.Xml_tag (name, attrs, xs) ->
     let attrs =
       attrs |> List.map @@ fun (k, v) ->

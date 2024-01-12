@@ -58,6 +58,7 @@ rule token =
   | "\\put?" { return lexbuf @@ Grammar.DEFAULT }
   | "\\get" { return lexbuf @@ Grammar.GET }
   | "\\tag" { return lexbuf @@ Grammar.TAG }
+  | "\\ref" { return lexbuf @@ Grammar.REF }
   | "\\date" { return lexbuf @@ Grammar.DATE }
   | "\\import" { return lexbuf @@ Grammar.IMPORT }
   | "\\export" { return lexbuf @@ Grammar.EXPORT }

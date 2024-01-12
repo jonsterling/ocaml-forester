@@ -62,6 +62,8 @@ and render_node : Sem.node Range.located -> Printer.t =
     Format.dprintf {|\%s|} name
   | Prim (p, body) ->
     render_prim p body
+  | Ref {addr} ->
+    Format.dprintf {|\cref{%s}|} addr
   | Link {title; dest; modifier} ->
     begin
       match E.get_doc dest with

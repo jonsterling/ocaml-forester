@@ -40,6 +40,9 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     let title = Option.map eval title in
     let dest = Sem.string_of_nodes @@ eval_textual [] dest in
     {node with value = Sem.Link {dest; title; modifier = None}} :: eval rest
+  | Ref dest ->
+    let addr = Sem.string_of_nodes @@ eval_textual [] dest in
+    {node with value = Sem.Ref {addr}} :: eval rest
   | Math (mmode, e) ->
     {node with value = Sem.Math (mmode, eval e)} :: eval rest
   | Prim (p, body) ->

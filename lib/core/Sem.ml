@@ -17,6 +17,7 @@ type node =
   | If_tex of t * t
   | Prim of Prim.t * t
   | Object of Symbol.t
+  | Ref of {addr : string}
 [@@deriving show]
 
 and transclusion_opts =
@@ -106,6 +107,7 @@ let string_of_nodes =
     | Text s -> Some s
     | Link {title = Some title; _} -> Some (render title)
     | Link {title = None; dest; _} -> Some dest
+    | Ref {addr} -> Some addr
     | Xml_tag (_, _, bdy) | Math (_, bdy) -> Some (render bdy)
     | Embed_tex {source; _} -> Some (render source)
     | If_tex (_, x) -> Some (render x)
@@ -122,7 +124,7 @@ struct
     | _ -> None
 
   let peek_addr (tree : tree) =
-    tree.addr 
+    tree.addr
 
   let sort =
     let by_date = Fun.flip @@ Compare.under (fun x -> List.nth_opt x.dates 0) @@ Compare.option Date.compare in

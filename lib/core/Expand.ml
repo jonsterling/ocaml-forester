@@ -81,6 +81,9 @@ let rec expand : Code.t -> Syn.t =
     in
     loop (expand_ident loc path) methods @ expand rest
 
+  | {value = Ref x; loc} :: rest ->
+    {value = Syn.Ref (expand x); loc} :: expand rest
+
   | {value = Scope body; _} :: rest ->
     let body =
       Scope.section [] @@ fun () ->
@@ -150,11 +153,11 @@ let rec expand : Code.t -> Syn.t =
       match import with
       | None -> Reporter.emitf ?loc:loc Tree_not_found "Could not find tree %s" dep; expand rest
       | Some tree -> begin
-        match vis with
-        | Public -> Resolver.Scope.include_subtree ([], tree)
-        | Private -> Resolver.Scope.import_subtree ([], tree)
-      end; 
-      expand rest
+          match vis with
+          | Public -> Resolver.Scope.include_subtree ([], tree)
+          | Private -> Resolver.Scope.import_subtree ([], tree)
+        end;
+        expand rest
     end;
 
   | {value = Def (path, xs, body); loc} :: rest ->

@@ -44,6 +44,8 @@ let rec analyze_nodes ~analysis scope : Sem.t -> unit =
   | Sem.Link {title; dest; _} ->
     Option.iter (analyze_nodes ~analysis scope) title;
     Gph.add_edge analysis.link_graph dest scope
+  | Sem.Ref {addr} ->
+    Gph.add_edge analysis.link_graph addr scope
   | Sem.Xml_tag (_, attrs, xs) ->
     begin
       attrs |> List.iter @@ fun (k, v) ->
