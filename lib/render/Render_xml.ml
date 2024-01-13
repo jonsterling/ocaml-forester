@@ -7,11 +7,8 @@ module E = Render_effect.Perform
 module Printer = Xml_printer
 type printer = Printer.printer
 
-let gcount = ref 0
-
 type cfg =
   {base_url : string option;
-   counter : int ref;
    in_backmatter : bool;
    top : bool;
    seen : addr list}
@@ -141,11 +138,7 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
 
 and render_transclusion ~cfg ~opts doc =
   let cfg =
-    let ctr = cfg.counter in
-    let ix = if opts.numbered then !ctr + 1 else !ctr in
-    ctr := ix;
-    let counter = ref 0 in
-    {cfg with counter; top = false}
+    {cfg with top = false}
   in
   render_tree ~cfg ~opts doc
 
@@ -183,7 +176,7 @@ and render ~cfg : Sem.t -> printer =
   Printer.iter (render_node ~cfg)
 
 and render_author (author : string) =
-  let cfg = {base_url = None; top = false; counter = ref 0; in_backmatter = false; seen = []} in
+  let cfg = {base_url = None; top = false; in_backmatter = false; seen = []} in
   (* If the author string is an address to a biographical page, then link to it *)
   match E.get_doc author with
   | Some bio ->
@@ -197,9 +190,6 @@ and render_author (author : string) =
           ["href", url; "type", "local"; addr, "addr"]
           [match bio.title with
            | Some title ->
-             gcount := !gcount + 1;
-             (* for some reason, this throws an exception if I render anything that is a sufficiently long string here!!! *)
-             (* Eio.traceln "author %i: %s" (!gcount) str; *)
              render ~cfg title
            | _ -> Printer.text "Untitled"
           ]
@@ -297,7 +287,7 @@ and render_mainmatter ~cfg (doc : Sem.tree) =
   ]
 
 and render_backmatter ~cfg (doc : Sem.tree) =
-  let cfg = {cfg with counter = ref 0; in_backmatter = true; top = false} in
+  let cfg = {cfg with in_backmatter = true; top = false} in
   let opts = Sem.{title_override = None; taxon_override = None; toc = false; show_heading = true; expanded = false; numbered = false; show_metadata = true} in
 
   with_addr doc @@ fun addr fmt ->
@@ -380,6 +370,6 @@ and render_tree ~cfg ~opts (doc : Sem.tree) : printer =
         ] fmt
 
 let render_tree_page ~base_url (doc : Sem.tree) : printer =
-  let cfg = {base_url; top = true; counter = ref 0; seen = []; in_backmatter = false} in
+  let cfg = {base_url; top = true; seen = []; in_backmatter = false} in
   let opts = Sem.{title_override = None; taxon_override = None; toc = false; show_heading = true; expanded = true; numbered = false; show_metadata = true} in
   Printer.with_xsl "forest.xsl" @@ render_tree ~cfg ~opts doc
