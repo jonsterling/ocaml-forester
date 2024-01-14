@@ -22,7 +22,7 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
     let attrs =
       match mode with
       | Inline -> []
-      | Display -> ["display", "block"]
+      | Display -> [Printer.attr "display" "block"]
     in
     let module TP = Render_verbatim.Printer in
     Printer.tag "tex" attrs [
@@ -46,11 +46,11 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
       | Some tree ->
         let url = E.route Xml addr in
         let attrs =
-          ("addr", addr) ::
-          ("href", url) ::
+          (Printer.attr "addr" addr) ::
+          (Printer.attr "href" url) ::
           match tree.taxon with
           | None -> []
-          | Some taxon -> ["taxon", String_util.sentence_case taxon]
+          | Some taxon -> [Printer.attr "taxon" @@ String_util.sentence_case taxon]
         in
         Printer.tag "ref" attrs []
     end
@@ -61,7 +61,7 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
         Render_verbatim.Printer.contents @@
         Render_verbatim.render ~cfg:{tex = true} v
       in
-      k, txt
+      Printer.attr k txt
     in
     Printer.tag name attrs [render ~cfg xs]
   | Sem.Unresolved name ->
@@ -109,11 +109,11 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
     let hash = Digest.to_hex @@ Digest.string code in
     E.enqueue_latex ~name:hash ~packages ~source:code;
     let path = Format.sprintf "resources/%s-web.svg" hash in
-    Printer.tag "img" ["src", path] []
+    Printer.tag "img" [Printer.attr "src" path] []
   | Sem.Img {path} ->
-    Printer.tag "img" ["src", path] []
+    Printer.tag "img" [Printer.attr "src" path] []
   | Sem.Block (title, body) ->
-    Printer.tag "block" ["open", "open"] @@
+    Printer.tag "block" [Printer.attr "open" "open"] @@
     [Printer.tag "headline" [] [render ~cfg title];
      render ~cfg body]
   | Sem.If_tex (_, x) ->
@@ -156,19 +156,19 @@ and render_internal_link ~cfg ~title ~modifier ~addr =
         Render_text.Printer.contents @@
         Render_text.render t
       in
-      ["title", title_string]
+      [Printer.attr "title" title_string]
   in
   let title = Option.map (Sem.apply_modifier modifier) title in
   let title = Option.value ~default:[Range.locate_opt None @@ Sem.Text addr] title in
   Printer.tag "link"
-    (["href", url; "type", "local"; "addr", addr] @ target_title_attr)
+    ([Printer.attr "href" url; Printer.attr "type" "local"; Printer.attr "addr" addr] @ target_title_attr)
     [render ~cfg title]
 
 and render_external_link ~cfg ~title ~modifier ~url =
   let title = Option.map (Sem.apply_modifier modifier) title in
   let title = Option.value ~default:[Range.locate_opt None @@ Sem.Text url] title in
   Printer.tag "link"
-    ["href", url; "type", "external"]
+    [Printer.attr "href" url; Printer.attr "type" "external"]
     [render ~cfg title]
 
 
@@ -187,7 +187,7 @@ and render_author (author : string) =
       | Some addr ->
         let url = E.route Xml addr in
         Printer.tag "link"
-          ["href", url; "type", "local"; addr, "addr"]
+          [Printer.attr "href" url; Printer.attr "type" "local"; Printer.attr addr "addr"]
           [match bio.title with
            | Some title ->
              render ~cfg title
@@ -203,7 +203,7 @@ and render_date (doc : Sem.tree) =
     let attrs =
       match E.get_doc date_addr with
       | None -> []
-      | Some _ -> ["href", E.route Xml date_addr]
+      | Some _ -> [Printer.attr "href" @@ E.route Xml date_addr]
     in
     Printer.tag "date" attrs [
       Printer.tag "year" [] [Printer.text @@ string_of_int @@ Date.year date];
@@ -277,7 +277,7 @@ and render_frontmatter ~cfg ?(toc = true) (doc : Sem.tree) =
     end;
     begin
       doc.metas |> Printer.iter @@ fun (key, body) ->
-      Printer.tag "meta" ["name", key] [render ~cfg body]
+      Printer.tag "meta" [Printer.attr "name" key] [render ~cfg body]
     end
   ]
 
@@ -332,12 +332,12 @@ and render_tree ~cfg ~opts (doc : Sem.tree) : printer =
     | None -> doc
   in
   let attrs =
-    ["expanded", string_of_bool opts.expanded;
-     "show-heading", string_of_bool opts.show_heading;
-     "show-metadata", string_of_bool opts.show_metadata;
-     "toc", string_of_bool opts.toc;
-     "numbered", string_of_bool opts.numbered;
-     "root", string_of_bool @@ Option.fold doc.addr ~none:false ~some:(fun addr -> E.is_root addr)]
+    [Printer.attr "expanded" @@ string_of_bool opts.expanded;
+     Printer.attr "show-heading" @@ string_of_bool opts.show_heading;
+     Printer.attr "show-metadata" @@ string_of_bool opts.show_metadata;
+     Printer.attr "toc" @@ string_of_bool opts.toc;
+     Printer.attr "numbered" @@ string_of_bool opts.numbered;
+     Printer.attr "root" @@ string_of_bool @@ Option.fold doc.addr ~none:false ~some:(fun addr -> E.is_root addr)]
   in
   let seen =
     match doc.addr with

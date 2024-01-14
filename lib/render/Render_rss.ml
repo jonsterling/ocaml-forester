@@ -68,8 +68,7 @@ let render_channel ~base_url (doc : Sem.tree) : printer =
     ]
 
 let render_tree_page ~base_url (doc : Sem.tree) : printer =
-  fun out ->
-  Xmlm.output out @@ `Dtd None;
-  Printer.tag "rss" ["version", "2.0"] [
+  Printer.document @@
+  Printer.tag "rss" [Printer.attr "version" "2.0"] [
     render_channel ~base_url doc
-  ] out
+  ]
