@@ -53,6 +53,7 @@ rule token =
   | "\\title" { return lexbuf @@ Grammar.TITLE }
   | "\\taxon" { return lexbuf @@ Grammar.TAXON }
   | "\\author" { return lexbuf @@ Grammar.AUTHOR }
+  | "\\contributor" { return lexbuf @@ Grammar.CONTRIBUTOR }
   | "\\scope" { return lexbuf @@ Grammar.SCOPE }
   | "\\put" { return lexbuf @@ Grammar.PUT }
   | "\\put?" { return lexbuf @@ Grammar.DEFAULT }

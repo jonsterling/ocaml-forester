@@ -34,6 +34,7 @@ type node =
   | Taxon of string
   | Meta of string * t
   | Author of string
+  | Contributor of string
   | Tag of string
   | TeX_package of string
   | Date of string

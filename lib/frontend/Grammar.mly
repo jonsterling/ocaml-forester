@@ -7,7 +7,7 @@
 %token <string> WHITESPACE
 %token <string> IDENT
 %token <Core.Prim.t> PRIM
-%token TITLE IMPORT EXPORT DEF TAXON AUTHOR TEX_PACKAGE TAG DATE NAMESPACE LET TEX BLOCK META OPEN
+%token TITLE IMPORT EXPORT DEF TAXON AUTHOR CONTRIBUTOR TEX_PACKAGE TAG DATE NAMESPACE LET TEX BLOCK META OPEN
 %token OBJECT PATCH CALL
 %token TRANSCLUDE SCOPE PUT GET DEFAULT ALLOC IF_TEX XML_TAG REF
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
@@ -48,6 +48,7 @@ let textual_expr == list(locate(textual_node))
 let head_node :=
 | TITLE; ~ = arg; <Code.Title>
 | AUTHOR; ~ = txt_arg; <Code.Author>
+| CONTRIBUTOR; ~ = txt_arg; <Code.Contributor>
 | DATE; ~ = txt_arg; <Code.Date>
 | TEX_PACKAGE; ~ = txt_arg; <Code.TeX_package>
 | DEF; (~,~,~) = fun_spec; <Code.Def>

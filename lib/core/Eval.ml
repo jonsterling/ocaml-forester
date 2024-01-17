@@ -232,6 +232,7 @@ let eval_tree (doc : Syn.tree) : Sem.tree =
    addr = Some fm.addr;
    taxon = fm.taxon;
    authors = fm.authors;
+   contributors = fm.contributors;
    dates = fm.dates;
    tags = fm.tags;
    source_path = fm.source_path;

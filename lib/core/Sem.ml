@@ -89,6 +89,7 @@ type tree =
   {title : t option;
    taxon : string option;
    authors : addr list;
+   contributors : addr list;
    dates : Date.t list;
    addr : addr option;
    metas : (string * t) list;
@@ -132,7 +133,7 @@ struct
   let taxon (tree : tree) =
     tree.taxon
 
-  let authors (tree : tree) = 
+  let authors (tree : tree) =
     tree.authors
 
   let sort =

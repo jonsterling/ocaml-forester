@@ -33,6 +33,7 @@ type frontmatter =
    addr : addr;
    taxon : string option;
    authors : addr list;
+   contributors : addr list;
    tags : addr list;
    dates : Date.t list;
    metas : (string * t) list;
