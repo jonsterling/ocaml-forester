@@ -63,7 +63,19 @@ and render_node : Sem.node Range.located -> Printer.t =
   | Prim (p, body) ->
     render_prim p body
   | Ref {addr} ->
-    Format.dprintf {|\cref{%s}|} addr
+    begin
+      match E.get_doc addr with
+      | None ->
+        Reporter.fatalf ?loc:located.loc Tree_not_found "could not find tree at address `%s` for reference" addr
+      | Some doc ->
+        let taxon =
+          Option.fold
+            ~some:String_util.sentence_case
+            ~none:"§"
+            doc.taxon
+        in
+        Format.dprintf {|%s~\ref{%s}|} taxon addr
+    end
   | Link {title; dest; modifier} ->
     begin
       match E.get_doc dest with
