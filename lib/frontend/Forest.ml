@@ -308,7 +308,12 @@ let render_trees ~cfg ~forest : unit =
 
   run_renderer ~cfg forest @@ fun () ->
   with_bib_fmt ~cwd @@ fun bib_fmt ->
-  forest.trees |> M.iter (fun _ -> render_tree ~cfg ~cwd ~bib_fmt);
+  forest.trees
+  |> M.to_seq
+  |> Seq.map snd
+  |> List.of_seq
+  |> Sem.Util.sort
+  |> List.iter (render_tree ~cfg ~cwd ~bib_fmt);
   render_json ~cwd forest.trees;
   if not cfg.no_assets then
     copy_assets ~env ~assets_dirs:cfg.assets_dirs;
