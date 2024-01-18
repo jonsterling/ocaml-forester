@@ -74,7 +74,7 @@ and render_node : Sem.node Range.located -> Printer.t =
             ~none:"§"
             doc.taxon
         in
-        Format.dprintf {|%s~\ref{%s}|} taxon addr
+        Format.dprintf {|%s~\ForesterNumberedRef{%s}|} taxon addr
     end
   | Link {title; dest; modifier} ->
     begin
