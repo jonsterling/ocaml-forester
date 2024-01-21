@@ -80,6 +80,10 @@ let analyze_doc ~analysis scope (doc : Sem.tree) =
     Tbl.add analysis.author_pages author scope
   end;
   begin
+    doc.contributors |> List.iter @@ fun author ->
+    Tbl.add analysis.author_pages author scope
+  end;
+  begin
     doc.metas |> List.iter @@ fun (_, meta) ->
     analyze_nodes ~analysis scope meta
   end

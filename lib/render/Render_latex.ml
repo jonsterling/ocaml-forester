@@ -246,7 +246,7 @@ let render_tree_page ~base_url (doc : Sem.tree) : Printer.t =
   let contributors =
     match doc.addr with
     | Some addr -> E.contributors addr
-    | None -> []
+    | None -> doc.contributors
   in
   let printer =
     Printer.seq ~sep:(Printer.text "\n") [
