@@ -46,14 +46,14 @@ and render_node : Sem.node Range.located -> Printer.t =
   fun located ->
   match located.value with
   | Text txt -> Printer.text txt
-  | Transclude (_, addr) ->
+  | Transclude (opts, addr) ->
     begin
       match E.get_doc addr with
       | None ->
         Reporter.emitf ?loc:located.loc Tree_not_found "could not find tree at address `%s` for transclusion" addr;
         Printer.nil
       | Some doc ->
-        render_tree_section doc
+        render_tree_section ~opts doc
     end
   | Xml_tag (name, _, body) ->
     (* Best effort: maybe turn into a warning or an error  *)
@@ -210,25 +210,28 @@ and strip_first_paragraph xs =
     | _ ->
       node :: rest
 
-and render_tree_section (doc : Sem.tree) : Printer.t =
-  let title = Sem.sentence_case @@ Option.value ~default:[] doc.title in
-  let taxon = Option.value ~default:"" doc.taxon in
-  let addr =
-    match doc.addr with
-    | Some addr -> addr
-    | None -> string_of_int @@ Oo.id @@ object end
-  in
-  Printer.seq ~sep:(Printer.text "\n") [
-    Printer.nil;
-    Format.dprintf
-      {|\begin{tree}{title={%a}, taxon={%s}, slug={%s}}|}
-      (Fun.flip render) title
-      taxon
-      addr;
-    render @@ strip_first_paragraph doc.body;
-    Format.dprintf {|\end{tree}|};
-    Printer.nil;
-  ]
+and render_tree_section ~opts (doc : Sem.tree) : Printer.t =
+  if opts.show_heading then
+    let title = Sem.sentence_case @@ Option.value ~default:[] doc.title in
+    let taxon = Option.value ~default:"" doc.taxon in
+    let addr =
+      match doc.addr with
+      | Some addr -> addr
+      | None -> string_of_int @@ Oo.id @@ object end
+    in
+    Printer.seq ~sep:(Printer.text "\n") [
+      Printer.nil;
+      Format.dprintf
+        {|\begin{tree}{title={%a}, taxon={%s}, slug={%s}}|}
+        (Fun.flip render) title
+        taxon
+        addr;
+      render @@ strip_first_paragraph doc.body;
+      Format.dprintf {|\end{tree}|};
+      Printer.nil;
+    ]
+  else
+    render doc.body
 
 let render_base_url url =
   Format.dprintf {|\ForesterSetup{forestSite = {%s}}|} url
