@@ -93,7 +93,7 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
     let contributors scope =
       let tree = M.find scope forest.trees in
       let authors = S.of_list tree.authors in
-      let contributors = S.of_list @@ Tbl.find_all analysis.contributors scope in
+      let contributors = S.union (S.of_list tree.contributors) @@ S.of_list @@ Tbl.find_all analysis.contributors scope in
       let proper_contributors =
         contributors |> S.filter @@ fun contr ->
         not @@ S.mem contr authors

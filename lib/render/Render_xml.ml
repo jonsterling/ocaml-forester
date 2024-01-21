@@ -220,7 +220,6 @@ and render_date (doc : Sem.tree) =
 
 and render_authors (doc : Sem.tree) =
   let contributors =
-    doc.contributors @
     match doc.addr with
     | Some addr -> E.contributors addr
     | None -> []
