@@ -194,7 +194,7 @@ and render_contributors =
   | [] -> Printer.nil
   | contributors ->
     let pp_sep fmt () = Format.fprintf fmt {|, |} in
-    Format.dprintf {|\thanks{With contributions from %a.}|}
+    Format.dprintf {|\\ {\small With contributions from %a}.|}
       (Format.pp_print_list ~pp_sep (Fun.flip render_author))
       contributors
 
