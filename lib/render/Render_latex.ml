@@ -112,7 +112,7 @@ and render_node : Sem.node Range.located -> Printer.t =
     in
     let hash = Digest.to_hex @@ Digest.string code in
     E.enqueue_latex ~name:hash ~packages ~source:code;
-    let path = Format.sprintf "resources/%s-print.pdf" hash in
+    let path = Format.sprintf "resources/%s.pdf" hash in
     Format.dprintf {|\[\includegraphics{%s}\]%s|} path "\n"
   | Img {path} ->
     Format.dprintf {|\includegraphics{%s}%s|} path "\n"

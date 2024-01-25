@@ -68,17 +68,16 @@ let render_svg_file ~env ~name ~source =
 
 let build_latex ~env ~ignore_tex_cache ~name ~packages ~source : Eio.Fs.dir_ty Eio.Path.t list =
   let cwd = Eio.Stdenv.cwd env in
-  let web_name = name ^ "-web" in
-  let print_name = name ^ "-print" in
-  let svg_path = Eio.Path.(build_dir cwd / (web_name ^ ".svg")) in
-  let pdf_path = Eio.Path.(build_dir cwd / (print_name ^ ".pdf")) in
+  let svg_path = Eio.Path.(build_dir cwd / (name ^ ".svg")) in
+  let pdf_path = Eio.Path.(build_dir cwd / (name ^ ".pdf")) in
+
+  write_tex_file ~env ~name ~packages ~source;
 
   let svg_task () =
     if ignore_tex_cache || not @@ Eio_util.file_exists svg_path then
       begin
-        write_tex_file ~env ~name:web_name ~packages ~source;
-        render_dvi_file ~env ~name:web_name ~source;
-        render_svg_file ~env ~name:web_name ~source;
+        render_dvi_file ~env ~name ~source;
+        render_svg_file ~env ~name ~source;
         Some svg_path
       end
     else
@@ -87,8 +86,7 @@ let build_latex ~env ~ignore_tex_cache ~name ~packages ~source : Eio.Fs.dir_ty E
   let pdf_task () =
     if ignore_tex_cache || not @@ Eio_util.file_exists pdf_path then
       begin
-        write_tex_file ~env ~name:print_name ~packages:(packages @ ["newpxtext"; "newpxmath"]) ~source;
-        render_pdf_file ~env ~name:print_name ~source;
+        render_pdf_file ~env ~name ~source;
         Some pdf_path
       end
     else
