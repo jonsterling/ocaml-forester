@@ -72,7 +72,6 @@ rule token =
   | "\\tex" { return lexbuf @@ Grammar.TEX }
   | "\\block" { return lexbuf @@ Grammar.BLOCK }
   | "\\iftex" { return lexbuf @@ Grammar.IF_TEX }
-  | "\\texpackage" { return lexbuf @@ Grammar.TEX_PACKAGE }
   | "\\transclude" { return lexbuf @@ Grammar.TRANSCLUDE }
   | "\\query/and" {return lexbuf @@ Grammar.QUERY_AND }
   | "\\query/or" {return lexbuf @@ Grammar.QUERY_OR }

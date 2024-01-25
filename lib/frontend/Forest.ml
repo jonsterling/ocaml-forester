@@ -51,8 +51,8 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
     let get_doc addr =
       M.find_opt addr forest.trees
 
-    let enqueue_latex ~name ~packages ~source =
-      LaTeX_queue.enqueue ~name ~packages ~source
+    let enqueue_latex ~name ~preamble ~source =
+      LaTeX_queue.enqueue ~name ~preamble ~source
 
     let addr_peek_title scope =
       match M.find_opt scope forest.trees with

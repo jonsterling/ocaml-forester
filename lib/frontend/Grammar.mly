@@ -7,7 +7,7 @@
 %token <string> WHITESPACE
 %token <string> IDENT
 %token <Core.Prim.t> PRIM
-%token TITLE IMPORT EXPORT DEF TAXON AUTHOR CONTRIBUTOR TEX_PACKAGE TAG DATE NAMESPACE LET TEX BLOCK META OPEN
+%token TITLE IMPORT EXPORT DEF TAXON AUTHOR CONTRIBUTOR TAG DATE NAMESPACE LET TEX BLOCK META OPEN
 %token OBJECT PATCH CALL
 %token TRANSCLUDE SCOPE PUT GET DEFAULT ALLOC IF_TEX XML_TAG REF
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
@@ -50,7 +50,6 @@ let head_node :=
 | AUTHOR; ~ = txt_arg; <Code.Author>
 | CONTRIBUTOR; ~ = txt_arg; <Code.Contributor>
 | DATE; ~ = txt_arg; <Code.Date>
-| TEX_PACKAGE; ~ = txt_arg; <Code.TeX_package>
 | DEF; (~,~,~) = fun_spec; <Code.Def>
 | ALLOC; ~ = ident; <Code.Alloc>
 | TAXON; ~ = txt_arg; <Code.Taxon>
@@ -61,7 +60,7 @@ let head_node :=
 | NAMESPACE; ~ = ident; ~ = braces(code_expr); <Code.Namespace>
 | TRANSCLUDE; ~ = txt_arg; <Code.Transclude>
 | LET; (~,~,~) = fun_spec; <Code.Let>
-| TEX; ~ = arg; <Code.Embed_tex>
+| TEX; pkgs = arg; src = arg; <Code.Embed_tex>
 | IF_TEX; x = arg; y = arg; <Code.If_tex>
 | BLOCK; x = arg; y = arg; <Code.Block>
 | (~,~) = ident_with_method_calls; <Code.Ident>

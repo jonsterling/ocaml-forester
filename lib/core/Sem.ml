@@ -11,7 +11,7 @@ type node =
   | Xml_tag of string * (string * t) list * t
   | Unresolved of string
   | Math of math_mode * t
-  | Embed_tex of {packages : string list; source : t}
+  | Embed_tex of {preamble : t; source : t}
   | Img of {path : string}
   | Block of t * t
   | If_tex of t * t

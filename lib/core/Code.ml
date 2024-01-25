@@ -8,7 +8,7 @@ type node =
   | Ident of Trie.path * string list
   | Xml_tag of string * (string * t) list * t
   | Transclude of string
-  | Embed_tex of t
+  | Embed_tex of t * t
   | Let of Trie.path * Trie.path list * t
   | Open of Trie.path
   | Block of t * t
@@ -36,7 +36,6 @@ type node =
   | Author of string
   | Contributor of string
   | Tag of string
-  | TeX_package of string
   | Date of string
   | Namespace of Trie.path * t
 [@@deriving show]

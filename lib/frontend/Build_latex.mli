@@ -11,6 +11,6 @@ val build_latex
   : env:_ env
   -> ignore_tex_cache:bool
   -> name:string
-  -> packages:string list
+  -> preamble:string
   -> source:string
   -> Eio.Fs.dir_ty Eio.Path.t list

@@ -105,13 +105,15 @@ and render_node : Sem.node Range.located -> Printer.t =
     Format.dprintf {|\(%a\)|} (Fun.flip (Render_verbatim.render ~cfg:{tex = true})) body
   | Math (Display, body) ->
     Format.dprintf {|\[%a\]|} (Fun.flip (Render_verbatim.render ~cfg:{tex = true})) body
-  | Embed_tex {source; packages} ->
-    let code =
+  | Embed_tex {source; preamble} ->
+    let as_tex x =
       Render_verbatim.Printer.contents @@
-      Render_verbatim.render ~cfg:{tex = true} source
+      Render_verbatim.render ~cfg:{tex = true} x
     in
-    let hash = Digest.to_hex @@ Digest.string code in
-    E.enqueue_latex ~name:hash ~packages ~source:code;
+    let preamble = as_tex preamble in
+    let source = as_tex source in
+    let hash = Digest.to_hex @@ Digest.string @@ preamble ^ source in
+    E.enqueue_latex ~name:hash ~preamble ~source;
     let path = Format.sprintf "resources/%s.pdf" hash in
     Format.dprintf {|\[\includegraphics{%s}\]%s|} path "\n"
   | Img {path} ->

@@ -27,14 +27,14 @@ let dvi_fname name = name ^ ".dvi"
 let pdf_fname name = name ^ ".pdf"
 
 
-let write_tex_file ~env ~name ~packages ~source =
+let write_tex_file ~env ~name ~preamble ~source =
   let cwd = Eio.Stdenv.cwd env in
   let path = Eio.Path.(build_dir cwd / tex_fname name) in
   let create = `Or_truncate 0o644 in
   Eio.Path.with_open_out ~create path @@ fun sink ->
   Eio.Buf_write.with_flow sink @@ fun writer ->
   let fmt = Eio_util.formatter_of_writer writer in
-  LaTeX_template.write fmt ~source ~packages
+  LaTeX_template.write fmt ~source ~preamble
 
 let render_dvi_file ~env ~name ~source =
   let cwd = build_dir @@ Eio.Stdenv.cwd env in
@@ -66,12 +66,12 @@ let render_svg_file ~env ~name ~source =
   Eio_util.ensure_remove_file Eio.Path.(cwd / fname)
 
 
-let build_latex ~env ~ignore_tex_cache ~name ~packages ~source : Eio.Fs.dir_ty Eio.Path.t list =
+let build_latex ~env ~ignore_tex_cache ~name ~preamble ~source : Eio.Fs.dir_ty Eio.Path.t list =
   let cwd = Eio.Stdenv.cwd env in
   let svg_path = Eio.Path.(build_dir cwd / (name ^ ".svg")) in
   let pdf_path = Eio.Path.(build_dir cwd / (name ^ ".pdf")) in
 
-  write_tex_file ~env ~name ~packages ~source;
+  write_tex_file ~env ~name ~preamble ~source;
 
   let svg_task () =
     if ignore_tex_cache || not @@ Eio_util.file_exists svg_path then

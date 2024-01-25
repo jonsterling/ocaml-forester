@@ -8,7 +8,7 @@ type node =
   | Link of {dest : t; title : t option}
   | Transclude of string
   | Query of t Query.t
-  | Embed_tex of {source : t}
+  | Embed_tex of {preamble : t; source : t}
   | Block of t * t
   | Lam of Symbol.t list * t
   | Var of Symbol.t
@@ -37,7 +37,6 @@ type frontmatter =
    tags : addr list;
    dates : Date.t list;
    metas : (string * t) list;
-   tex_packages : string list;
    source_path : string option}
 [@@deriving show]
 

@@ -15,7 +15,7 @@ sig
   val children : addr -> Sem.tree list
   val contributors : addr -> string list
   val contributions : addr -> Sem.tree list
-  val enqueue_latex : name:string -> packages:string list -> source:string -> unit
+  val enqueue_latex : name:string -> preamble:string -> source:string -> unit
   val get_doc : addr -> Sem.tree option
   val run_query : Sem.t Query.t -> Sem.tree list
 end

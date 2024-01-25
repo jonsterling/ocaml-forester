@@ -1,1 +1,1 @@
-val write : Format.formatter -> packages:string list -> source:string -> unit
+val write : Format.formatter -> preamble:string -> source:string -> unit
