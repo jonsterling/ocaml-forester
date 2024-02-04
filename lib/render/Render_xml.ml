@@ -111,8 +111,10 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
     let source = as_tex source in
     let hash = Digest.to_hex @@ Digest.string @@ preamble ^ source in
     E.enqueue_latex ~name:hash ~preamble ~source;
-    let path = Format.sprintf "resources/%s.svg" hash in
-    Printer.tag "img" [Printer.attr "src" path] []
+    Printer.tag "embedded-tex" [Printer.attr "hash" hash] [
+      Printer.tag "embedded-tex-preamble" [] [Printer.text preamble];
+      Printer.tag "embedded-tex-body" [] [Printer.text source]
+    ]
   | Sem.Img {path} ->
     Printer.tag "img" [Printer.attr "src" path] []
   | Sem.Block (title, body) ->
