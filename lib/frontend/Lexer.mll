@@ -73,6 +73,7 @@ rule token =
   | "\\block" { return lexbuf @@ Grammar.BLOCK }
   | "\\iftex" { return lexbuf @@ Grammar.IF_TEX }
   | "\\transclude" { return lexbuf @@ Grammar.TRANSCLUDE }
+  | "\\subtree" { return lexbuf @@ Grammar.SUBTREE }
   | "\\query/and" {return lexbuf @@ Grammar.QUERY_AND }
   | "\\query/or" {return lexbuf @@ Grammar.QUERY_OR }
   | "\\query/author" {return lexbuf @@ Grammar.QUERY_AUTHOR }

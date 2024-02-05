@@ -35,6 +35,19 @@ and t = node Range.located list
 and env = t Env.t
 [@@deriving show]
 
+type tree =
+  {title : t option;
+   taxon : string option;
+   authors : addr list;
+   contributors : addr list;
+   dates : Date.t list;
+   addr : addr option;
+   metas : (string * t) list;
+   tags: string list;
+   body : t;
+   source_path : string option}
+[@@deriving show]
+
 type obj_method =
   {body : Syn.t;
    self : Symbol.t;
@@ -85,18 +98,7 @@ let apply_modifier =
   | Some `Sentence_case -> sentence_case
   | None -> Fun.id
 
-type tree =
-  {title : t option;
-   taxon : string option;
-   authors : addr list;
-   contributors : addr list;
-   dates : Date.t list;
-   addr : addr option;
-   metas : (string * t) list;
-   tags: string list;
-   body : t;
-   source_path : string option}
-[@@deriving show]
+
 
 (** Best-effort rendering of a nodes as a string, to use in text-only contexts.*)
 let string_of_nodes =

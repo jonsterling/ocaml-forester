@@ -7,7 +7,8 @@ type node =
   | Math of math_mode * t
   | Ident of Trie.path * string list
   | Xml_tag of string * (string * t) list * t
-  | Transclude of string
+  | Transclude of addr
+  | Subtree of addr option * t
   | Embed_tex of t * t
   | Let of Trie.path * Trie.path list * t
   | Open of Trie.path
@@ -38,14 +39,16 @@ type node =
   | Tag of string
   | Date of string
   | Namespace of Trie.path * t
+
+
 [@@deriving show]
 
 and t = node Range.located list
 [@@deriving show]
 
-type tree =
+and tree =
   {source_path : string option;
-   addr : addr;
+   addr : addr option;
    code : t}
 [@@deriving show]
 

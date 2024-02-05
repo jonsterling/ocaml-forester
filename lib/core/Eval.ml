@@ -1,9 +1,11 @@
 open Base
 open Bwd
+open Prelude
 
 module LexEnv = Algaeff.Reader.Make (struct type t = Sem.t Env.t end)
 module DynEnv = Algaeff.Reader.Make (struct type t = Sem.t Env.t end)
 module HeapState = Algaeff.State.Make (struct type t = Sem.obj Env.t end)
+module EmittedTrees = Algaeff.State.Make (struct type t = Sem.tree list end)
 
 let get_transclusion_opts () =
   let dynenv = DynEnv.read () in
@@ -56,6 +58,18 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     {node with value = Sem.Unresolved name} :: eval rest
   | Transclude addr ->
     let opts = get_transclusion_opts () in
+    {node with value = Sem.Transclude (opts, addr)} :: eval rest
+  | Subtree (fm, nodes) ->
+    let opts = get_transclusion_opts () in
+    let addr =
+      match fm.addr with
+      | None ->
+        Format.sprintf "anon.%i" (Oo.id (object end))
+      | Some addr -> addr
+    in
+    let fm = {fm with addr = Some addr} in
+    let subtree = eval_tree_inner (fm, nodes) in
+    EmittedTrees.modify (fun trees -> subtree :: trees);
     {node with value = Sem.Transclude (opts, addr)} :: eval rest
   | If_tex (x , y) ->
     let x = eval x in
@@ -212,11 +226,8 @@ and eval_textual prefix : Syn.t -> Sem.t =
     Range.locate_opt None (Sem.Text txt) :: eval rest
 
 
-let eval_tree (doc : Syn.tree) : Sem.tree =
-  let fm, tree = doc in
-  HeapState.run ~init:Env.empty @@ fun () ->
-  LexEnv.run ~env:Env.empty @@ fun () ->
-  DynEnv.run ~env:Env.empty @@ fun () ->
+and eval_tree_inner (tree : Syn.tree) : Sem.tree =
+  let fm, tree = tree in
   let tree = eval tree in
   let title = Option.map eval fm.title in
   let metas =
@@ -226,7 +237,7 @@ let eval_tree (doc : Syn.tree) : Sem.tree =
   let open Sem in
   {title;
    body = tree;
-   addr = Some fm.addr;
+   addr = fm.addr;
    taxon = fm.taxon;
    authors = fm.authors;
    contributors = fm.contributors;
@@ -234,3 +245,14 @@ let eval_tree (doc : Syn.tree) : Sem.tree =
    tags = fm.tags;
    source_path = fm.source_path;
    metas}
+
+
+let eval_tree (tree : Syn.tree) : Sem.tree * Sem.tree list =
+  let fm = fst tree in
+  EmittedTrees.run ~init:[] @@ fun () ->
+  HeapState.run ~init:Env.empty @@ fun () ->
+  LexEnv.run ~env:Env.empty @@ fun () ->
+  DynEnv.run ~env:Env.empty @@ fun () ->
+  let tree = eval_tree_inner tree in
+  let emitted = EmittedTrees.get () in
+  tree, emitted

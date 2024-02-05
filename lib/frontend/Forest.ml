@@ -114,9 +114,14 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
 let plant_forest (trees : raw_forest) : forest =
   let unexpanded_trees =
     let alg acc (tree : Code.tree) =
-      if M.mem tree.addr acc then
-        Reporter.fatalf Duplicate_tree "duplicate tree at address `%s`" tree.addr;
-      M.add tree.addr tree acc
+      match tree.addr with
+      | Some addr ->
+        begin
+          if M.mem addr acc then
+            Reporter.fatalf Duplicate_tree "duplicate tree at address `%s`" addr;
+          M.add addr tree acc
+        end
+      | None -> acc
     in
     Seq.fold_left alg M.empty trees
   in
@@ -129,8 +134,13 @@ let plant_forest (trees : raw_forest) : forest =
       | None -> units, trees
       | Some tree ->
         let units, syn = Expand.expand_tree units tree in
-        let sem = Eval.eval_tree syn in
-        units, M.add addr sem trees
+        let tree, emitted_trees = Eval.eval_tree syn in
+        let add trees tree =
+          match Sem.(tree.addr) with
+          | None -> trees
+          | Some addr -> M.add addr tree trees
+        in
+        units, List.fold_left add trees @@ tree :: emitted_trees
     in
     A.Topo.fold task import_graph (Expand.UnitMap.empty, M.empty)
   in

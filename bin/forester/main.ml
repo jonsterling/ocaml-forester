@@ -36,7 +36,15 @@ let new_tree ~env input_dirs dest_dir prefix template random =
     else
       dest_dir :: input_dirs
   in
-  let addrs = Process.read_addrs_in_dirs input_dirs in
+  let forest =
+    Forest.plant_forest @@
+    Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true input_dirs
+  in
+  let addrs =
+    Analysis.Map.bindings forest.trees
+    |> List.to_seq
+    |> Seq.map fst
+  in
   let mode = if random then `Random else `Sequential in
   let addr = Forest.create_tree ~cfg ~dest:(make_dir ~env dest_dir) ~prefix ~template ~addrs ~mode in
   Format.printf "%s/%s.tree\n" dest_dir addr
@@ -52,7 +60,16 @@ let complete ~env input_dirs title =
   Format.printf "%s, %s\n" addr title
 
 let query_prefixes ~env input_dirs =
-  let addrs = Process.read_addrs_in_dirs @@ make_dirs ~env input_dirs in
+  let forest =
+    Forest.plant_forest @@
+    Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true @@
+    make_dirs ~env input_dirs
+  in
+  let addrs =
+    Analysis.Map.bindings forest.trees
+    |> List.to_seq
+    |> Seq.map fst
+  in
   let prefixes = Forest.prefixes ~addrs in
   prefixes |> List.iter @@ fun addr ->
   Format.printf "%s\n" addr

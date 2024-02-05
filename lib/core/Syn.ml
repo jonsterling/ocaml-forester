@@ -6,7 +6,8 @@ type node =
   | Group of delim * t
   | Math of math_mode * t
   | Link of {dest : t; title : t option}
-  | Transclude of string
+  | Transclude of addr
+  | Subtree of tree
   | Query of t Query.t
   | Embed_tex of {preamble : t; source : t}
   | Block of t * t
@@ -28,9 +29,9 @@ type node =
 and t = node Range.located list
 [@@deriving show]
 
-type frontmatter =
+and frontmatter =
   {title : t option;
-   addr : addr;
+   addr : addr option;
    taxon : string option;
    authors : addr list;
    contributors : addr list;
@@ -40,4 +41,15 @@ type frontmatter =
    source_path : string option}
 [@@deriving show]
 
-type tree = frontmatter * t
+and tree = frontmatter * t
+
+let empty_frontmatter =
+  {addr = None;
+   title = None;
+   taxon = None;
+   dates = [];
+   authors = [];
+   contributors = [];
+   tags = [];
+   metas = [];
+   source_path = None}

@@ -10,11 +10,11 @@ let build_import_graph (trees : Code.tree Seq.t) =
   let import_graph = Gph.create () in
   begin
     trees |> Seq.iter @@ fun (tree : Code.tree) ->
-    Gph.add_vertex import_graph tree.addr;
+    tree.addr |> Option.iter @@ Gph.add_vertex import_graph;
     tree.code |> List.iter @@ fun node ->
     match Asai.Range.(node.value) with
     | Code.Import (_, dep) ->
-      Gph.add_edge import_graph dep tree.addr
+      tree.addr |> Option.iter @@ Gph.add_edge import_graph dep
     | _ -> ()
   end;
   import_graph

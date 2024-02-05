@@ -7,8 +7,27 @@ module UnitMap = Map.Make (String)
 
 type exports = P.data Trie.Untagged.t
 
-module U = Algaeff.Reader.Make (struct type t = exports UnitMap.t end)
+module U = Algaeff.State.Make (struct type t = exports UnitMap.t end)
 module Fm = Algaeff.State.Make (struct type t = Syn.frontmatter end)
+
+module Builtins =
+struct
+  let create path =
+    let sym = Symbol.fresh path in
+    sym, fun () ->
+      Resolver.Scope.include_singleton (path, (`Sym sym, ()))
+
+  module Transclude =
+  struct
+    let title_sym, alloc_title = create ["transclude"; "title"]
+    let taxon_sym, alloc_taxon = create ["transclude"; "taxon"]
+    let expanded_sym, alloc_expanded = create ["transclude"; "expanded"]
+    let show_heading_sym, alloc_show_heading = create ["transclude"; "heading"]
+    let toc_sym, alloc_toc = create ["transclude"; "toc"]
+    let numbered_sym, alloc_numbered = create ["transclude"; "numbered"]
+    let show_metadata_sym, alloc_show_metadata = create ["transclude"; "metadata"]
+  end
+end
 
 let rec expand : Code.t -> Syn.t =
   function
@@ -59,6 +78,14 @@ let rec expand : Code.t -> Syn.t =
 
   | {value = Transclude addr; loc} :: rest ->
     {value = Syn.Transclude addr; loc} :: expand rest
+
+  | {value = Subtree (addr, nodes); loc} :: rest ->
+    let fm = Fm.get () in
+    let subtree =
+      expand_tree_inner @@
+      Code.{source_path = None; addr = addr; code = nodes}
+    in
+    {value = Syn.Subtree subtree; loc} :: expand rest
 
   | {value = Query query; loc} :: rest ->
     {value = Syn.Query (Query.map expand query); loc} :: expand rest
@@ -148,7 +175,7 @@ let rec expand : Code.t -> Syn.t =
     {value = Syn.Xml_tag (title, attrs, body); loc} :: expand rest
 
   | {value = Import (vis, dep); loc} :: rest ->
-    let import = UnitMap.find_opt dep @@ U.read () in
+    let import = UnitMap.find_opt dep @@ U.get () in
     begin
       match import with
       | None -> Reporter.emitf ?loc:loc Tree_not_found "Could not find tree %s" dep; expand rest
@@ -262,28 +289,39 @@ and expand_sym loc path =
       "expected path `%a` to resolve to symbol"
       Trie.pp_path path
 
-module Builtins =
-struct
-  let create path =
-    let sym = Symbol.fresh path in
-    sym, fun () ->
-      Resolver.Scope.include_singleton (path, (`Sym sym, ()))
 
-  module Transclude =
-  struct
-    let title_sym, alloc_title = create ["transclude"; "title"]
-    let taxon_sym, alloc_taxon = create ["transclude"; "taxon"]
-    let expanded_sym, alloc_expanded = create ["transclude"; "expanded"]
-    let show_heading_sym, alloc_show_heading = create ["transclude"; "heading"]
-    let toc_sym, alloc_toc = create ["transclude"; "toc"]
-    let numbered_sym, alloc_numbered = create ["transclude"; "numbered"]
-    let show_metadata_sym, alloc_show_metadata = create ["transclude"; "metadata"]
-  end
-end
+and expand_tree_inner (tree : Code.tree) : Syn.tree =
+  let trace f =
+    match tree.addr with
+    | Some addr -> Reporter.tracef "when expanding tree at address `%s`" addr f
+    | None -> f ()
+  in
+
+  trace @@ fun () ->
+  Scope.section [] @@ fun () ->
+  let units = U.get () in
+
+  Fm.run ~init:{Syn.empty_frontmatter with addr = tree.addr; source_path = tree.source_path} @@ fun () ->
+  let syn = expand tree.code in
+  let fm = Fm.get () in
+  let exports = Resolver.Scope.get_export () in
+  let units =
+    match tree.addr with
+    | None -> units
+    | Some addr -> UnitMap.add addr exports units
+  in
+  U.set units;
+  fm, syn
+
 
 let expand_tree (units : exports UnitMap.t) (tree : Code.tree) =
-  Reporter.tracef "when expanding tree at address `%s`" tree.addr @@ fun () ->
-  let init = Syn.{addr = tree.addr; title = None; taxon = None; dates = []; authors = []; contributors = []; tags = []; metas = []; source_path = tree.source_path} in
+  let trace f =
+    match tree.addr with
+    | Some addr -> Reporter.tracef "when expanding tree at address `%s`" addr f
+    | None -> f ()
+  in
+
+  U.run ~init:units @@ fun () ->
   Resolver.Scope.run @@ fun () ->
   Builtins.Transclude.alloc_title ();
   Builtins.Transclude.alloc_taxon ();
@@ -293,9 +331,6 @@ let expand_tree (units : exports UnitMap.t) (tree : Code.tree) =
   Builtins.Transclude.alloc_numbered ();
   Builtins.Transclude.alloc_show_metadata ();
 
-  U.run ~env:units @@ fun () ->
-  Fm.run ~init @@ fun () ->
-  let syn = expand tree.code in
-  let fm = Fm.get () in
-  let exports = Resolver.Scope.get_export () in
-  UnitMap.add tree.addr exports units, (fm, syn)
+  let tree = expand_tree_inner tree in
+  let units = U.get () in
+  units, tree

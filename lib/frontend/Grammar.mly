@@ -9,7 +9,7 @@
 %token <Core.Prim.t> PRIM
 %token TITLE IMPORT EXPORT DEF TAXON AUTHOR CONTRIBUTOR TAG DATE NAMESPACE LET TEX BLOCK META OPEN
 %token OBJECT PATCH CALL
-%token TRANSCLUDE SCOPE PUT GET DEFAULT ALLOC IF_TEX XML_TAG REF
+%token TRANSCLUDE SUBTREE SCOPE PUT GET DEFAULT ALLOC IF_TEX XML_TAG REF
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token QUERY_AND QUERY_OR QUERY_AUTHOR QUERY_TAG QUERY_TAXON QUERY_META
 %token QUERY_TREE
@@ -59,6 +59,7 @@ let head_node :=
 | TAG; ~ = txt_arg; <Code.Tag>
 | NAMESPACE; ~ = ident; ~ = braces(code_expr); <Code.Namespace>
 | TRANSCLUDE; ~ = txt_arg; <Code.Transclude>
+| SUBTREE; addr = option(squares(wstext)); body = braces(ws_list(locate(head_node))); <Code.Subtree>
 | LET; (~,~,~) = fun_spec; <Code.Let>
 | TEX; pkgs = arg; src = arg; <Code.Embed_tex>
 | IF_TEX; x = arg; y = arg; <Code.If_tex>
