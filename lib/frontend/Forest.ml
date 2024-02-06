@@ -134,7 +134,7 @@ let plant_forest (trees : raw_forest) : forest =
       | None -> units, trees
       | Some tree ->
         let units, syn = Expand.expand_tree units tree in
-        let tree, emitted_trees = Eval.eval_tree syn in
+        let tree, emitted_trees = Eval.eval_tree ~addr ~source_path:tree.source_path syn in
         let add trees tree =
           match Sem.(tree.fm.addr) with
           | None -> trees

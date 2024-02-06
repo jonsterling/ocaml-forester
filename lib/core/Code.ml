@@ -31,6 +31,9 @@ type node =
   | Import of visibility * addr
   | Def of Trie.path * Trie.path list * t
   | Alloc of Trie.path
+
+  | Namespace of Trie.path * t
+
   | Title of t
   | Taxon of string
   | Meta of string * t
@@ -38,7 +41,6 @@ type node =
   | Contributor of string
   | Tag of string
   | Date of string
-  | Namespace of Trie.path * t
 
 
 [@@deriving show]

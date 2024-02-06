@@ -177,3 +177,14 @@ struct
     | _ -> false
 
 end
+
+let empty_frontmatter =
+  {addr = None;
+   title = None;
+   taxon = None;
+   dates = [];
+   authors = [];
+   contributors = [];
+   tags = [];
+   metas = [];
+   source_path = None}

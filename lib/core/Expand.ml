@@ -8,7 +8,6 @@ module UnitMap = Map.Make (String)
 type exports = P.data Trie.Untagged.t
 
 module U = Algaeff.State.Make (struct type t = exports UnitMap.t end)
-module Fm = Algaeff.State.Make (struct type t = Syn.frontmatter end)
 
 module Builtins =
 struct
@@ -80,12 +79,8 @@ let rec expand : Code.t -> Syn.t =
     {value = Syn.Transclude addr; loc} :: expand rest
 
   | {value = Subtree (addr, nodes); loc} :: rest ->
-    let fm = Fm.get () in
-    let subtree =
-      expand_tree_inner @@
-      Code.{source_path = None; addr = addr; code = nodes}
-    in
-    {value = Syn.Subtree subtree; loc} :: expand rest
+    let subtree = expand_tree_inner @@ Code.{source_path = None; addr = addr; code = nodes} in
+    {value = Syn.Subtree (addr, subtree); loc} :: expand rest
 
   | {value = Query query; loc} :: rest ->
     {value = Syn.Query (Query.map expand query); loc} :: expand rest
@@ -198,55 +193,25 @@ let rec expand : Code.t -> Syn.t =
     expand rest
 
   | {value = Title xs; loc} :: rest ->
-    begin
-      Fm.modify @@ fun fm ->
-      {fm with title = Option.some @@ expand xs}
-    end;
-    expand rest
+    {value = Syn.Title (expand xs); loc} :: expand rest
 
   | {value = Author author; loc} :: rest ->
-    begin
-      Fm.modify @@ fun fm ->
-      {fm with authors = fm.authors @ [author]}
-    end;
-    expand rest
+    {value = Syn.Author author; loc} :: expand rest
 
   | {value = Contributor author; loc} :: rest ->
-    begin
-      Fm.modify @@ fun fm ->
-      {fm with contributors = fm.contributors @ [author]}
-    end;
-    expand rest
+    {value = Syn.Contributor author; loc} :: expand rest
 
   | {value = Tag tag; loc} :: rest ->
-    begin
-      Fm.modify @@ fun fm ->
-      {fm with tags = fm.tags @ [tag]}
-    end;
-    expand rest
+    {value = Syn.Tag tag; loc} :: expand rest
 
   | {value = Taxon taxon; loc} :: rest ->
-    begin
-      Fm.modify @@ fun fm ->
-      {fm with taxon = Some taxon}
-    end;
-    expand rest
+    {value = Syn.Taxon taxon; loc} :: expand rest
 
   | {value = Date str; loc} :: rest ->
-    let date = Date.parse str in
-    begin
-      Fm.modify @@ fun fm ->
-      {fm with dates = fm.dates @ [date]}
-    end;
-    expand rest
+    {value = Syn.Date str; loc} :: expand rest
 
   | {value = Meta (k, v); loc} :: rest ->
-    begin
-      let v = expand v in
-      Fm.modify @@ fun fm ->
-      {fm with metas = fm.metas @ [k,v]}
-    end;
-    expand rest
+    {value = Syn.Meta (k, expand v); loc} :: expand rest
 
 and expand_method (key, body) =
   key, expand body
@@ -300,10 +265,7 @@ and expand_tree_inner (tree : Code.tree) : Syn.tree =
   trace @@ fun () ->
   Scope.section [] @@ fun () ->
   let units = U.get () in
-
-  Fm.run ~init:{Syn.empty_frontmatter with addr = tree.addr; source_path = tree.source_path} @@ fun () ->
   let syn = expand tree.code in
-  let fm = Fm.get () in
   let exports = Resolver.Scope.get_export () in
   let units =
     match tree.addr with
@@ -311,7 +273,7 @@ and expand_tree_inner (tree : Code.tree) : Syn.tree =
     | Some addr -> UnitMap.add addr exports units
   in
   U.set units;
-  fm, syn
+  syn
 
 
 let expand_tree (units : exports UnitMap.t) (tree : Code.tree) =

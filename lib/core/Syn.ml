@@ -7,7 +7,7 @@ type node =
   | Math of math_mode * t
   | Link of {dest : t; title : t option}
   | Transclude of addr
-  | Subtree of tree
+  | Subtree of addr option * tree
   | Query of t Query.t
   | Embed_tex of {preamble : t; source : t}
   | Block of t * t
@@ -24,32 +24,19 @@ type node =
   | Patch of {obj : t; self : Symbol.t; super : Symbol.t; methods : (string * t) list}
   | Call of t * string
   | Ref of t
+
+  | Title of t
+  | Taxon of string
+  | Meta of string * t
+  | Author of string
+  | Contributor of string
+  | Tag of string
+  | Date of string
+
 [@@deriving show]
 
 and t = node Range.located list
 [@@deriving show]
 
-and frontmatter =
-  {title : t option;
-   addr : addr option;
-   taxon : string option;
-   authors : addr list;
-   contributors : addr list;
-   tags : string list;
-   dates : Date.t list;
-   metas : (string * t) list;
-   source_path : string option}
-[@@deriving show]
+and tree = t
 
-and tree = frontmatter * t
-
-let empty_frontmatter =
-  {addr = None;
-   title = None;
-   taxon = None;
-   dates = [];
-   authors = [];
-   contributors = [];
-   tags = [];
-   metas = [];
-   source_path = None}

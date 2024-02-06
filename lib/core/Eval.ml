@@ -6,6 +6,7 @@ module LexEnv = Algaeff.Reader.Make (struct type t = Sem.t Env.t end)
 module DynEnv = Algaeff.Reader.Make (struct type t = Sem.t Env.t end)
 module HeapState = Algaeff.State.Make (struct type t = Sem.obj Env.t end)
 module EmittedTrees = Algaeff.State.Make (struct type t = Sem.tree list end)
+module Fm = Algaeff.State.Make (struct type t = Sem.frontmatter end)
 
 let get_transclusion_opts () =
   let dynenv = DynEnv.read () in
@@ -59,9 +60,9 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
   | Transclude addr ->
     let opts = get_transclusion_opts () in
     {node with value = Sem.Transclude (opts, addr)} :: eval rest
-  | Subtree (fm, nodes) ->
+  | Subtree (addr, nodes) ->
     let opts = get_transclusion_opts () in
-    let subtree = eval_tree_inner (fm, nodes) in
+    let subtree = eval_tree_inner ~addr nodes in
     EmittedTrees.modify (fun trees -> subtree :: trees);
     {node with value = Sem.Subtree (opts, subtree)} :: eval rest
   | If_tex (x , y) ->
@@ -198,6 +199,55 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
   | Group _ | Text _ ->
     eval_textual [] @@ node :: rest
 
+  | Title title ->
+    let title = eval title in
+    Fm.modify (fun fm -> {fm with title = Some title});
+    eval rest
+
+  | Meta (k, v) ->
+    begin
+      let v = eval v in
+      Fm.modify @@ fun fm ->
+      {fm with metas = fm.metas @ [k,v]}
+    end;
+    eval rest
+
+  | Author author ->
+    begin
+      Fm.modify @@ fun fm ->
+      {fm with authors = fm.authors @ [author]}
+    end;
+    eval rest
+
+  | Contributor author ->
+    begin
+      Fm.modify @@ fun fm ->
+      {fm with contributors = fm.contributors @ [author]}
+    end;
+    eval rest
+
+  | Tag tag ->
+    begin
+      Fm.modify @@ fun fm ->
+      {fm with tags = fm.tags @ [tag]}
+    end;
+    eval rest
+
+  | Date date ->
+    let date = Date.parse date in
+    begin
+      Fm.modify @@ fun fm ->
+      {fm with dates = fm.dates @ [date]}
+    end;
+    eval rest
+
+  | Taxon taxon ->
+    begin
+      Fm.modify @@ fun fm ->
+      {fm with taxon = Some taxon}
+    end;
+    eval rest
+
 and eval_strip xs = Sem.strip_whitespace @@ eval xs
 
 and eval_trim xs = Sem.trim_whitespace @@ eval xs
@@ -219,35 +269,30 @@ and eval_textual prefix : Syn.t -> Sem.t =
     Range.locate_opt None (Sem.Text txt) :: eval rest
 
 
-and eval_tree_inner (tree : Syn.tree) : Sem.tree =
-  let fm, tree = tree in
-  let body = eval tree in
-  let title = Option.map eval fm.title in
-  let metas =
-    fm.metas |> List.map @@ fun (k, v) ->
-    k, eval v
-  in
-  let open Sem in
+and eval_tree_inner ~addr (tree : Syn.tree) : Sem.tree =
+  let outer_fm = Fm.get () in
   let fm =
-    {title;
-     addr = fm.addr;
-     taxon = fm.taxon;
-     authors = fm.authors;
-     contributors = fm.contributors;
-     dates = fm.dates;
-     tags = fm.tags;
-     source_path = fm.source_path;
-     metas}
+    {Sem.empty_frontmatter with
+     addr;
+     source_path = outer_fm.source_path;
+     authors = outer_fm.authors;
+     contributors = outer_fm.contributors;
+     dates = outer_fm.dates}
   in
+  Fm.run ~init:fm @@ fun () ->
+  let body = eval tree in
+  let fm = Fm.get () in
+  let open Sem in
   {fm; body}
 
 
-let eval_tree (tree : Syn.tree) : Sem.tree * Sem.tree list =
-  let fm = fst tree in
+let eval_tree ~addr ~source_path (tree : Syn.tree) : Sem.tree * Sem.tree list =
+  let fm = {Sem.empty_frontmatter with addr = Some addr; source_path} in
+  Fm.run ~init:fm @@ fun () ->
   EmittedTrees.run ~init:[] @@ fun () ->
   HeapState.run ~init:Env.empty @@ fun () ->
   LexEnv.run ~env:Env.empty @@ fun () ->
   DynEnv.run ~env:Env.empty @@ fun () ->
-  let tree = eval_tree_inner tree in
+  let tree = eval_tree_inner ~addr:(Some addr) tree in
   let emitted = EmittedTrees.get () in
   tree, emitted
