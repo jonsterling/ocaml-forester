@@ -120,10 +120,6 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
     ]
   | Sem.Img {path} ->
     Printer.tag "img" [Printer.attr "src" path] []
-  | Sem.Block (title, body) ->
-    Printer.tag "block" [Printer.attr "open" "open"] @@
-    [Printer.tag "headline" [] [render ~cfg title];
-     render ~cfg body]
   | Sem.If_tex (_, x) ->
     render ~cfg x
   | Sem.Prim (p, x) ->

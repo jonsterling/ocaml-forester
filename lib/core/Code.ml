@@ -12,7 +12,6 @@ type node =
   | Embed_tex of t * t
   | Let of Trie.path * Trie.path list * t
   | Open of Trie.path
-  | Block of t * t
   | Scope of t
   | Put of Trie.path * t
   | Default of Trie.path * t

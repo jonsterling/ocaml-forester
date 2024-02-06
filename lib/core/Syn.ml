@@ -10,7 +10,6 @@ type node =
   | Subtree of addr option * tree
   | Query of t Query.t
   | Embed_tex of {preamble : t; source : t}
-  | Block of t * t
   | Lam of Symbol.t list * t
   | Var of Symbol.t
   | Put of Symbol.t * t * t

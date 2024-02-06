@@ -80,8 +80,6 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     {node with value = Sem.Query (opts, query)} :: eval rest
   | Embed_tex {preamble; source} ->
     {node with value = Sem.Embed_tex {preamble = eval preamble; source = eval source}} :: eval rest
-  | Block (title, body) ->
-    {node with value = Sem.Block (eval title, eval body)} :: eval rest
   | Lam (xs, body) ->
     let rec loop xs rest =
       match xs, rest with

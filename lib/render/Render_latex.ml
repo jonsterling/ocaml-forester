@@ -122,12 +122,6 @@ and render_node : Sem.node Range.located -> Printer.t =
     Format.dprintf {|\includegraphics{%s}%s|} path "\n"
   | If_tex (x, _) ->
     render x
-  | Block (title, body) ->
-    Printer.seq [
-      Format.dprintf {|\begin{proof}[{%a}]%s|} (Fun.flip render) title "\n";
-      render @@ add_qedhere body;
-      Format.dprintf {|\end{proof}%s|} "\n"
-    ]
   | Query _ ->
     Printer.nil
   | Object _ ->

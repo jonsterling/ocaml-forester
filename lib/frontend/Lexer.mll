@@ -70,7 +70,6 @@ rule token =
   | "\\alloc" { return lexbuf @@ Grammar.ALLOC }
   | "\\let" { return lexbuf @@ Grammar.LET }
   | "\\tex" { return lexbuf @@ Grammar.TEX }
-  | "\\block" { return lexbuf @@ Grammar.BLOCK }
   | "\\iftex" { return lexbuf @@ Grammar.IF_TEX }
   | "\\transclude" { return lexbuf @@ Grammar.TRANSCLUDE }
   | "\\subtree" { return lexbuf @@ Grammar.SUBTREE }

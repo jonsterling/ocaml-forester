@@ -88,9 +88,6 @@ let rec expand : Code.t -> Syn.t =
   | {value = Embed_tex (preamble, source); loc} :: rest ->
     {value = Syn.Embed_tex {preamble = expand preamble; source = expand source}; loc} :: expand rest
 
-  | {value = Block (xs, ys); loc} :: rest ->
-    {value = Syn.Block (expand xs, expand ys); loc} :: expand rest
-
   | {value = Math (m, xs); loc} :: rest ->
     {value = Syn.Math (m, expand xs); loc} :: expand rest
 

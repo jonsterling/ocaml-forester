@@ -65,9 +65,6 @@ let rec analyze_nodes ~analysis scope : Sem.t -> unit =
     analyze_nodes ~analysis scope x
   | Sem.Embed_tex {source; _} ->
     analyze_nodes ~analysis scope source
-  | Sem.Block (title, body) ->
-    analyze_nodes ~analysis scope title;
-    analyze_nodes ~analysis scope body
   | Sem.Query (opts, _) ->
     analyze_transclusion_opts ~analysis scope opts
   | Sem.If_tex (_, y) ->

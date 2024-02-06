@@ -7,7 +7,7 @@
 %token <string> WHITESPACE
 %token <string> IDENT
 %token <Core.Prim.t> PRIM
-%token TITLE IMPORT EXPORT DEF TAXON AUTHOR CONTRIBUTOR TAG DATE NAMESPACE LET TEX BLOCK META OPEN
+%token TITLE IMPORT EXPORT DEF TAXON AUTHOR CONTRIBUTOR TAG DATE NAMESPACE LET TEX META OPEN
 %token OBJECT PATCH CALL
 %token TRANSCLUDE SUBTREE SCOPE PUT GET DEFAULT ALLOC IF_TEX XML_TAG REF
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
@@ -63,7 +63,6 @@ let head_node :=
 | LET; (~,~,~) = fun_spec; <Code.Let>
 | TEX; pkgs = arg; src = arg; <Code.Embed_tex>
 | IF_TEX; x = arg; y = arg; <Code.If_tex>
-| BLOCK; x = arg; y = arg; <Code.Block>
 | (~,~) = ident_with_method_calls; <Code.Ident>
 | SCOPE; ~ = arg; <Code.Scope>
 | PUT; ~ = ident; ~ = arg; <Code.Put>

@@ -14,7 +14,6 @@ type node =
   | Math of math_mode * t
   | Embed_tex of {preamble : t; source : t}
   | Img of {path : string}
-  | Block of t * t
   | If_tex of t * t
   | Prim of Prim.t * t
   | Object of Symbol.t
@@ -120,7 +119,7 @@ let string_of_nodes =
     | Embed_tex {source; _} -> Some (render source)
     | If_tex (_, x) -> Some (render x)
     | Prim (_, x) -> Some (render x)
-    | Transclude _ | Subtree _ | Query _ | Block _ | Unresolved _ | Img _ | Object _ -> None
+    | Transclude _ | Subtree _ | Query _ | Unresolved _ | Img _ | Object _ -> None
   in
   render
 
