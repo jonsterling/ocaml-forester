@@ -63,7 +63,11 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
   | Subtree (addr, nodes) ->
     let opts = get_transclusion_opts () in
     let subtree = eval_tree_inner ~addr nodes in
-    EmittedTrees.modify (fun trees -> subtree :: trees);
+    begin
+      addr |> Option.iter @@ fun _ ->
+      EmittedTrees.modify @@ fun trees ->
+      subtree :: trees
+    end;
     {node with value = Sem.Subtree (opts, subtree)} :: eval rest
   | If_tex (x , y) ->
     let x = eval x in
