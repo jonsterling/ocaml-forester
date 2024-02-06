@@ -218,9 +218,7 @@ let tags ~forest =
 
 module E = Render_effect.Perform
 
-let render_tree ~cfg ~cwd ~bib_fmt doc =
-  Render_bibtex.render_bibtex ~base_url:cfg.base_url doc bib_fmt;
-  Format.fprintf bib_fmt "\n";
+let render_tree ~cfg ~cwd doc =
 
   doc.fm.addr |> Option.iter @@ fun addr ->
   let create = `Or_truncate 0o644 in
@@ -243,12 +241,6 @@ let render_tree ~cfg ~cwd ~bib_fmt doc =
     Eio.Buf_write.with_flow flow @@ fun w ->
     let out = Xmlm.make_output @@ Eio_util.xmlm_dest_of_writer w in
     Render_rss.render_tree_page ~base_url doc out
-  end;
-  begin
-    let path = Eio.Path.(cwd / "latex" / (addr ^ ".tex")) in
-    Eio.Path.with_open_out ~create path @@ fun flow ->
-    Eio.Buf_write.with_flow flow @@ fun w ->
-    Render_latex.render_tree_page ~base_url doc @@ Eio_util.formatter_of_writer w
   end
 
 let render_json ~cwd docs =
@@ -301,13 +293,6 @@ let copy_resources ~env =
     if not @@ Eio_util.file_exists Eio.Path.(cwd / dest_dir / fname) then
       Eio_util.copy_to_dir ~cwd ~env ~source:fp ~dest_dir
 
-let with_bib_fmt ~cwd kont =
-  let create = `Or_truncate 0o644 in
-  let bib_path = Eio.Path.(cwd / "latex" / "forest.bib") in
-  Eio.Path.with_open_out ~append:true ~create bib_path @@ fun bib_sink ->
-  Eio.Buf_write.with_flow bib_sink @@ fun bib_w ->
-  kont @@ Eio_util.formatter_of_writer bib_w
-
 let render_trees ~cfg ~forest : unit =
   let env = cfg.env in
   let cwd = Eio.Stdenv.cwd env in
@@ -317,13 +302,12 @@ let render_trees ~cfg ~forest : unit =
   Eio_util.ensure_dir_path cwd ["latex"; "resources"];
 
   run_renderer ~cfg forest @@ fun () ->
-  with_bib_fmt ~cwd @@ fun bib_fmt ->
   forest.trees
   |> M.to_seq
   |> Seq.map snd
   |> List.of_seq
   |> Sem.Util.sort
-  |> List.iter (render_tree ~cfg ~cwd ~bib_fmt);
+  |> List.iter (render_tree ~cfg ~cwd);
   render_json ~cwd forest.trees;
   if not cfg.no_assets then
     copy_assets ~env ~assets_dirs:cfg.assets_dirs;
