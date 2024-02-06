@@ -55,6 +55,8 @@ and render_node : Sem.node Range.located -> Printer.t =
       | Some doc ->
         render_tree_section ~opts doc
     end
+  | Subtree (opts, subtree) ->
+    render_tree_section ~opts subtree
   | Xml_tag (name, _, body) ->
     (* Best effort: maybe turn into a warning or an error  *)
     Format.dprintf {|\%s{%a}|} name (Fun.flip render) body

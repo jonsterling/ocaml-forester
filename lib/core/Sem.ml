@@ -6,6 +6,7 @@ module MethodTable = Map.Make (String)
 type node =
   | Text of string
   | Transclude of transclusion_opts * addr
+  | Subtree of transclusion_opts * tree
   | Query of transclusion_opts * t Query.t
   | Link of {dest : string; title : t option; modifier : [`Sentence_case] option}
   | Xml_tag of string * (string * t) list * t
@@ -35,7 +36,7 @@ and t = node Range.located list
 and env = t Env.t
 [@@deriving show]
 
-type tree =
+and tree =
   {title : t option;
    taxon : string option;
    authors : addr list;
@@ -115,7 +116,7 @@ let string_of_nodes =
     | Embed_tex {source; _} -> Some (render source)
     | If_tex (_, x) -> Some (render x)
     | Prim (_, x) -> Some (render x)
-    | Transclude _ | Query _ | Block _ | Unresolved _ | Img _ | Object _ -> None
+    | Transclude _ | Subtree _ | Query _ | Block _ | Unresolved _ | Img _ | Object _ -> None
   in
   render
 

@@ -41,6 +41,15 @@ let rec analyze_nodes ~analysis scope : Sem.t -> unit =
   | Sem.Transclude (opts, addr) ->
     analyze_transclusion_opts ~analysis scope opts;
     Gph.add_edge analysis.transclusion_graph addr scope
+  | Sem.Subtree (opts, subtree) ->
+    analyze_transclusion_opts ~analysis scope opts;
+    begin
+      match subtree.addr with
+      | None ->
+        analyze_nodes ~analysis scope subtree.body
+      | Some addr ->
+        Gph.add_edge analysis.transclusion_graph addr scope
+    end
   | Sem.Link {title; dest; _} ->
     Option.iter (analyze_nodes ~analysis scope) title;
     Gph.add_edge analysis.link_graph dest scope

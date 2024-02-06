@@ -61,16 +61,9 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     {node with value = Sem.Transclude (opts, addr)} :: eval rest
   | Subtree (fm, nodes) ->
     let opts = get_transclusion_opts () in
-    let addr =
-      match fm.addr with
-      | None ->
-        Format.sprintf "anon.%i" (Oo.id (object end))
-      | Some addr -> addr
-    in
-    let fm = {fm with addr = Some addr} in
     let subtree = eval_tree_inner (fm, nodes) in
     EmittedTrees.modify (fun trees -> subtree :: trees);
-    {node with value = Sem.Transclude (opts, addr)} :: eval rest
+    {node with value = Sem.Subtree (opts, subtree)} :: eval rest
   | If_tex (x , y) ->
     let x = eval x in
     let y = eval y in

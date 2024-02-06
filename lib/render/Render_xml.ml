@@ -75,6 +75,8 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
       | Some doc ->
         render_transclusion ~cfg ~opts doc
     end
+  | Sem.Subtree (opts, subtree) ->
+    render_transclusion ~cfg ~opts subtree
   | Sem.Query (opts, query) ->
     if not cfg.in_backmatter then
       let docs = E.run_query query in
