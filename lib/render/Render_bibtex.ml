@@ -23,7 +23,7 @@ let render_author author =
   | None ->
     Printer.text author
   | Some doc ->
-    match doc.title with
+    match doc.fm.title with
     | None ->
       Printer.text author
     | Some title ->
@@ -45,7 +45,7 @@ let render_title ~taxon title =
     Render_latex.render @@ Sem.sentence_case title
 
 let render_auto_bibtex ~base_url (doc : Sem.tree) : Printer.t =
-  match doc.addr with
+  match doc.fm.addr with
   | None -> Printer.nil
   | Some addr ->
     let contributors = E.contributors addr in
@@ -53,10 +53,10 @@ let render_auto_bibtex ~base_url (doc : Sem.tree) : Printer.t =
       Printer.nil;
       Format.dprintf "@misc{%s," addr;
       begin
-        doc.title |> Printer.option @@ fun title ->
-        Format.dprintf "title = {%a}," (Fun.flip @@ render_title ~taxon:doc.taxon) title
+        doc.fm.title |> Printer.option @@ fun title ->
+        Format.dprintf "title = {%a}," (Fun.flip @@ render_title ~taxon:doc.fm.taxon) title
       end;
-      Format.dprintf "author = {%a}," (Fun.flip render_authors) doc.authors;
+      Format.dprintf "author = {%a}," (Fun.flip render_authors) doc.fm.authors;
       begin
         base_url |> Printer.option @@ fun url ->
         Format.dprintf "url = {%s/%s}," url @@ E.route Xml addr
@@ -74,7 +74,7 @@ let render_auto_bibtex ~base_url (doc : Sem.tree) : Printer.t =
     ]
 
 let render_bibtex ~base_url (doc : Sem.tree) : Printer.t =
-  let metas = Metas.of_seq @@ List.to_seq doc.metas in
+  let metas = Metas.of_seq @@ List.to_seq doc.fm.metas in
   match Metas.find_opt "bibtex" metas with
   | None ->
     render_auto_bibtex ~base_url doc

@@ -44,7 +44,7 @@ let rec analyze_nodes ~analysis scope : Sem.t -> unit =
   | Sem.Subtree (opts, subtree) ->
     analyze_transclusion_opts ~analysis scope opts;
     begin
-      match subtree.addr with
+      match subtree.fm.addr with
       | None ->
         analyze_nodes ~analysis scope subtree.body
       | Some addr ->
@@ -83,17 +83,17 @@ and analyze_transclusion_opts ~analysis scope : Sem.transclusion_opts -> unit =
 
 let analyze_doc ~analysis scope (doc : Sem.tree) =
   analyze_nodes ~analysis scope doc.body;
-  doc.title |> Option.iter @@ analyze_nodes ~analysis scope;
+  doc.fm.title |> Option.iter @@ analyze_nodes ~analysis scope;
   begin
-    doc.authors |> List.iter @@ fun author ->
+    doc.fm.authors |> List.iter @@ fun author ->
     Tbl.add analysis.author_pages author scope
   end;
   begin
-    doc.contributors |> List.iter @@ fun author ->
+    doc.fm.contributors |> List.iter @@ fun author ->
     Tbl.add analysis.author_pages author scope
   end;
   begin
-    doc.metas |> List.iter @@ fun (_, meta) ->
+    doc.fm.metas |> List.iter @@ fun (_, meta) ->
     analyze_nodes ~analysis scope meta
   end
 
@@ -111,7 +111,7 @@ let analyze_trees (trees : Sem.tree Map.t) : analysis =
     analyze_doc ~analysis addr doc;
     let task ref =
       match Map.find_opt ref trees with
-      | Some (ref_doc : Sem.tree) when ref_doc.taxon = Some "reference" ->
+      | Some (ref_doc : Sem.tree) when ref_doc.fm.taxon = Some "reference" ->
         Tbl.add analysis.bibliography addr ref
       | _ -> ()
     in
@@ -123,12 +123,12 @@ let analyze_trees (trees : Sem.tree Map.t) : analysis =
 
     let handle_parent parent_addr =
       Map.find_opt child_addr trees |> Option.iter @@ fun (parent_doc : Sem.tree) ->
-      match parent_doc.taxon with
+      match parent_doc.fm.taxon with
       | Some "reference" -> ()
       | _ ->
         begin
-          parent_doc.authors
-          @ parent_doc.contributors
+          parent_doc.fm.authors
+          @ parent_doc.fm.contributors
           @ Tbl.find_all analysis.contributors child_addr
           |> List.iter @@ fun contributor ->
           Tbl.add analysis.contributors parent_addr contributor

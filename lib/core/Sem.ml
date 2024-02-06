@@ -37,6 +37,11 @@ and env = t Env.t
 [@@deriving show]
 
 and tree =
+  {fm : frontmatter;
+   body : t}
+[@@deriving show]
+
+and frontmatter =
   {title : t option;
    taxon : string option;
    authors : addr list;
@@ -45,9 +50,8 @@ and tree =
    addr : addr option;
    metas : (string * t) list;
    tags: string list;
-   body : t;
    source_path : string option}
-[@@deriving show]
+
 
 type obj_method =
   {body : Syn.t;
@@ -123,26 +127,30 @@ let string_of_nodes =
 module Util =
 struct
   let peek_title (tree : tree) =
-    match tree.title with
+    match tree.fm.title with
     | Some ({value = Text txt; _} :: _) -> Some txt
     | _ -> None
 
   let peek_addr (tree : tree) =
-    tree.addr
+    tree.fm.addr
 
   let tags (tree : tree) =
-    tree.tags
+    tree.fm.tags
 
   let taxon (tree : tree) =
-    tree.taxon
+    tree.fm.taxon
 
   let authors (tree : tree) =
-    tree.authors
+    tree.fm.authors
 
   let sort =
-    let by_date = Fun.flip @@ Compare.under (fun x -> List.nth_opt x.dates 0) @@ Compare.option Date.compare in
+    let by_date =
+      Fun.flip @@
+      Compare.under (fun x -> List.nth_opt x.fm.dates 0) @@
+      Compare.option Date.compare
+    in
     let by_title = Compare.under peek_title @@ Compare.option String.compare in
-    let by_addr = Compare.under (fun x -> x.addr) @@ Compare.option String.compare in
+    let by_addr = Compare.under (fun x -> x.fm.addr) @@ Compare.option String.compare in
     List.sort @@ Compare.cascade by_date @@ Compare.cascade by_title by_addr
 end
 
@@ -151,13 +159,13 @@ struct
   let rec test query (doc : tree) =
     match query with
     | Query.Author [Range.{value = Text addr; _}] ->
-      List.mem addr doc.authors
+      List.mem addr doc.fm.authors
     | Query.Tag [{value = Text addr; _}] ->
-      List.mem addr doc.tags
+      List.mem addr doc.fm.tags
     | Query.Meta (key, value) ->
-      List.mem (key, value) doc.metas
+      List.mem (key, value) doc.fm.metas
     | Query.Taxon [{value = Text taxon; _}] ->
-      doc.taxon = Some taxon
+      doc.fm.taxon = Some taxon
     | Query.Or qs ->
       qs |> List.exists @@ fun q -> test q doc
     | Query.And qs ->

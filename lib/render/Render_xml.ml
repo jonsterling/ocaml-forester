@@ -48,7 +48,7 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
         let attrs =
           (Printer.attr "addr" addr) ::
           (Printer.attr "href" url) ::
-          match tree.taxon with
+          match tree.fm.taxon with
           | None -> []
           | Some taxon -> [Printer.attr "taxon" @@ String_util.sentence_case taxon]
         in
@@ -85,21 +85,22 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
       | _ ->
         let body =
           docs |> List.filter_map @@ fun (doc : Sem.tree) ->
-          doc.addr |> Option.map @@ fun addr ->
+          doc.fm.addr |> Option.map @@ fun addr ->
           let opts = Sem.{expanded = false; show_heading = true; title_override = None; taxon_override = None; toc = false; numbered = false; show_metadata = true} in
           Range.locate_opt None @@ Sem.Transclude (opts, addr)
         in
         let doc : Sem.tree =
-          {addr = None;
-           taxon = None;
-           title = None;
-           authors = [];
-           contributors = [];
-           dates = [];
-           metas = [];
-           tags = [];
-           body = body;
-           source_path = None}
+          {fm =
+             {addr = None;
+              taxon = None;
+              title = None;
+              authors = [];
+              contributors = [];
+              dates = [];
+              metas = [];
+              tags = [];
+              source_path = None};
+           body}
         in
         render_transclusion ~cfg ~opts doc
     else
@@ -152,7 +153,7 @@ and render_transclusion ~cfg ~opts doc =
 and render_internal_link ~cfg ~title ~modifier ~addr =
   let url = E.route Xml addr in
   let doc = E.get_doc addr in
-  let doc_title = Option.bind doc @@ fun d -> d.title in
+  let doc_title = Option.bind doc @@ fun d -> d.fm.title in
   let title = Option.fold title ~none:doc_title ~some:Option.some in
   let target_title_attr =
     match doc_title with
@@ -188,14 +189,14 @@ and render_author (author : string) =
   match E.get_doc author with
   | Some bio ->
     begin
-      match bio.addr with
+      match bio.fm.addr with
       | None ->
         Printer.text author
       | Some addr ->
         let url = E.route Xml addr in
         Printer.tag "link"
           [Printer.attr "href" url; Printer.attr "type" "local"; Printer.attr addr "addr"]
-          [match bio.title with
+          [match bio.fm.title with
            | Some title ->
              render ~cfg title
            | _ -> Printer.text "Untitled"
@@ -222,15 +223,15 @@ and render_date (doc : Sem.tree) =
       end;
     ]
   in
-  Printer.iter inner_render_date doc.dates
+  Printer.iter inner_render_date doc.fm.dates
 
 and render_authors (doc : Sem.tree) =
   let contributors =
-    match doc.addr with
+    match doc.fm.addr with
     | Some addr -> E.contributors addr
     | None -> []
   in
-  match doc.authors, contributors with
+  match doc.fm.authors, contributors with
   | [], [] -> Printer.nil
   | authors, contributors ->
     Printer.tag "authors" [] [
@@ -245,7 +246,7 @@ and render_authors (doc : Sem.tree) =
     ]
 
 and with_addr (doc : Sem.tree) k =
-  match doc.addr with
+  match doc.fm.addr with
   | Some addr -> k addr
   | None -> Printer.nil
 
@@ -260,14 +261,14 @@ and render_frontmatter ~cfg ?(toc = true) (doc : Sem.tree) =
   Printer.tag "frontmatter" [] [
     Printer.tag "anchor" [] [Printer.text anchor];
     render_rss_link ~cfg doc;
-    doc.taxon |> Printer.option begin fun taxon ->
+    doc.fm.taxon |> Printer.option begin fun taxon ->
       Printer.tag "taxon" [] [Printer.text @@ String_util.sentence_case taxon]
     end;
     with_addr doc begin fun addr ->
       Printer.tag "addr" [] [Printer.text addr]
     end;
     begin
-      doc.source_path |> Printer.option @@ fun path ->
+      doc.fm.source_path |> Printer.option @@ fun path ->
       Printer.tag "source-path" [] [Printer.text path]
     end;
     with_addr doc begin fun addr ->
@@ -276,14 +277,14 @@ and render_frontmatter ~cfg ?(toc = true) (doc : Sem.tree) =
     render_date doc;
     render_authors doc;
     begin
-      doc.title |> Printer.option @@ fun title ->
+      doc.fm.title |> Printer.option @@ fun title ->
       Printer.tag "title" [] [
         render ~cfg @@
         Sem.sentence_case title
       ]
     end;
     begin
-      doc.metas |> Printer.iter @@ fun (key, body) ->
+      doc.fm.metas |> Printer.iter @@ fun (key, body) ->
       Printer.tag "meta" [Printer.attr "name" key] [render ~cfg body]
     end
   ]
@@ -330,12 +331,12 @@ and bool_to_string =
 and render_tree ~cfg ~opts (doc : Sem.tree) : printer =
   let doc =
     match opts.title_override with
-    | Some _ as title -> {doc with title}
+    | Some _ as title -> {doc with fm = {doc.fm with title}}
     | None -> doc
   in
   let doc =
     match opts.taxon_override with
-    | Some _ as taxon -> {doc with taxon}
+    | Some _ as taxon -> {doc with fm = {doc.fm with taxon}}
     | None -> doc
   in
   let attrs =
@@ -344,15 +345,15 @@ and render_tree ~cfg ~opts (doc : Sem.tree) : printer =
      Printer.attr "show-metadata" @@ string_of_bool opts.show_metadata;
      Printer.attr "toc" @@ string_of_bool opts.toc;
      Printer.attr "numbered" @@ string_of_bool opts.numbered;
-     Printer.attr "root" @@ string_of_bool @@ Option.fold doc.addr ~none:false ~some:(fun addr -> E.is_root addr)]
+     Printer.attr "root" @@ string_of_bool @@ Option.fold doc.fm.addr ~none:false ~some:(fun addr -> E.is_root addr)]
   in
   let seen =
-    match doc.addr with
+    match doc.fm.addr with
     | None -> false
     | Some addr -> List.mem addr cfg.seen
   in
   let trace k =
-    match doc.addr with
+    match doc.fm.addr with
     | None -> k ()
     | Some addr ->
       Reporter.tracef "when rendering tree at address `%s` to XML" addr k
@@ -361,7 +362,7 @@ and render_tree ~cfg ~opts (doc : Sem.tree) : printer =
     Printer.nil
   else
     let cfg =
-      match doc.addr with
+      match doc.fm.addr with
       | None -> cfg
       | Some addr ->
         {cfg with seen = addr :: cfg.seen}

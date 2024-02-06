@@ -74,7 +74,7 @@ and render_node : Sem.node Range.located -> Printer.t =
           Option.fold
             ~some:String_util.sentence_case
             ~none:"§"
-            doc.taxon
+            doc.fm.taxon
         in
         Format.dprintf {|%s~\ForesterNumberedRef{%s}|} taxon addr
     end
@@ -90,11 +90,11 @@ and render_node : Sem.node Range.located -> Printer.t =
           match title with
           | Some t -> Sem.apply_modifier modifier t
           | None ->
-            let title = Option.map (Sem.apply_modifier modifier) doc.title in
-            Option.value ~default:[Range.locate_opt None @@ Sem.Text dest] doc.title
+            let title = Option.map (Sem.apply_modifier modifier) doc.fm.title in
+            Option.value ~default:[Range.locate_opt None @@ Sem.Text dest] doc.fm.title
         in
         begin
-          match doc.taxon with
+          match doc.fm.taxon with
           | Some "reference" ->
             Format.dprintf {|%a~\cite{%s}|} (Fun.flip render) title dest
           | Some "person" ->
@@ -176,7 +176,7 @@ and render_author author =
   match E.get_doc author with
   | Some bio ->
     begin
-      match bio.title with
+      match bio.fm.title with
       | Some title -> render title
       | None -> Printer.text author
     end
@@ -216,10 +216,10 @@ and strip_first_paragraph xs =
 
 and render_tree_section ~opts (doc : Sem.tree) : Printer.t =
   if opts.show_heading then
-    let title = Sem.sentence_case @@ Option.value ~default:[] doc.title in
-    let taxon = Option.value ~default:"" doc.taxon in
+    let title = Sem.sentence_case @@ Option.value ~default:[] doc.fm.title in
+    let taxon = Option.value ~default:"" doc.fm.taxon in
     let addr =
-      match doc.addr with
+      match doc.fm.addr with
       | Some addr -> addr
       | None -> string_of_int @@ Oo.id @@ object end
     in
@@ -242,15 +242,15 @@ let render_base_url url =
 
 let render_tree_page ~base_url (doc : Sem.tree) : Printer.t =
   let trace k =
-    match doc.addr with
+    match doc.fm.addr with
     | None -> k ()
     | Some addr ->
       Reporter.tracef "when rendering tree at address `%s` to LaTeX" addr k
   in
   let contributors =
-    match doc.addr with
+    match doc.fm.addr with
     | Some addr -> E.contributors addr
-    | None -> doc.contributors
+    | None -> doc.fm.contributors
   in
   let printer =
     Printer.seq ~sep:(Printer.text "\n") [
@@ -261,9 +261,9 @@ let render_tree_page ~base_url (doc : Sem.tree) : Printer.t =
       Format.dprintf {|\usepackage{amsmath,amsthm,amssymb,stmaryrd,mathtools,biblatex,forester}|};
       Format.dprintf {|\addbibresource{forest.bib}|};
       base_url |> Printer.option render_base_url;
-      doc.title |> Printer.option render_title;
-      render_dates doc.dates;
-      render_authors (doc.authors, contributors);
+      doc.fm.title |> Printer.option render_title;
+      render_dates doc.fm.dates;
+      render_authors (doc.fm.authors, contributors);
       Format.dprintf {|\begin{document}|};
       Format.dprintf {|\maketitle|};
       render doc.body;

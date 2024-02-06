@@ -221,23 +221,25 @@ and eval_textual prefix : Syn.t -> Sem.t =
 
 and eval_tree_inner (tree : Syn.tree) : Sem.tree =
   let fm, tree = tree in
-  let tree = eval tree in
+  let body = eval tree in
   let title = Option.map eval fm.title in
   let metas =
     fm.metas |> List.map @@ fun (k, v) ->
     k, eval v
   in
   let open Sem in
-  {title;
-   body = tree;
-   addr = fm.addr;
-   taxon = fm.taxon;
-   authors = fm.authors;
-   contributors = fm.contributors;
-   dates = fm.dates;
-   tags = fm.tags;
-   source_path = fm.source_path;
-   metas}
+  let fm =
+    {title;
+     addr = fm.addr;
+     taxon = fm.taxon;
+     authors = fm.authors;
+     contributors = fm.contributors;
+     dates = fm.dates;
+     tags = fm.tags;
+     source_path = fm.source_path;
+     metas}
+  in
+  {fm; body}
 
 
 let eval_tree (tree : Syn.tree) : Sem.tree * Sem.tree list =

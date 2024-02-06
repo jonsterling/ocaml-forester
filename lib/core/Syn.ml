@@ -35,7 +35,7 @@ and frontmatter =
    taxon : string option;
    authors : addr list;
    contributors : addr list;
-   tags : addr list;
+   tags : string list;
    dates : Date.t list;
    metas : (string * t) list;
    source_path : string option}

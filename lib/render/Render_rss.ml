@@ -32,7 +32,7 @@ let render_tree_info ~base_url ~addr (doc : Sem.tree) : printer =
     Printer.tag "title" [] [
       Printer.text @@ Option.value ~default:"Untitled" @@
       begin
-        doc.title |> Option.map @@ fun title ->
+        doc.fm.title |> Option.map @@ fun title ->
         String_util.sentence_case @@
         Render_text.Printer.contents @@
         Render_text.render title
@@ -41,7 +41,7 @@ let render_tree_info ~base_url ~addr (doc : Sem.tree) : printer =
     Printer.tag "link" [] [
       Printer.text @@ Format.asprintf "%s/%s" base_url @@ E.route Xml addr
     ];
-    doc.dates |> Fun.flip List.nth_opt 0 |> Printer.option begin fun date ->
+    doc.fm.dates |> Fun.flip List.nth_opt 0 |> Printer.option begin fun date ->
       Printer.tag "pubDate" [] [
         Printer.text @@ render_rfc_822 date
       ]
@@ -49,7 +49,7 @@ let render_tree_info ~base_url ~addr (doc : Sem.tree) : printer =
   ]
 
 let render_item ~base_url (doc : Sem.tree) : printer =
-  match doc.addr with
+  match doc.fm.addr with
   | None -> failwith "render_item: no addr"
   | Some addr ->
     Printer.tag "item" [] [
@@ -58,7 +58,7 @@ let render_item ~base_url (doc : Sem.tree) : printer =
 
 
 let render_channel ~base_url (doc : Sem.tree) : printer =
-  match doc.addr with
+  match doc.fm.addr with
   | None -> failwith "render_channel: no addr"
   | Some addr ->
     let children = E.children addr in

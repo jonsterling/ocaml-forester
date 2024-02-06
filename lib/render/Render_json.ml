@@ -43,14 +43,14 @@ let escape =
   fun _ -> {|\"|}
 
 let render_tree (doc : Sem.tree) : Printer.t =
-  match doc.addr with
+  match doc.fm.addr with
   | None -> Printer.nil
   | Some addr ->
     render_key addr @@ braces @@
     Printer.iter ~sep:comma (fun (k, x) -> render_key k x)
       ["title",
        begin
-         match doc.title with
+         match doc.fm.title with
          | None -> Printer.text "null"
          | Some title ->
            let title_string =
@@ -63,14 +63,14 @@ let render_tree (doc : Sem.tree) : Printer.t =
        end;
        "taxon",
        begin
-         match doc.taxon with
+         match doc.fm.taxon with
          | None -> Printer.text "null"
          | Some taxon -> render_string_literal @@ Printer.text @@ String_util.sentence_case taxon
        end;
        "tags",
        begin
          squares @@
-         Printer.iter ~sep:comma (fun tag -> render_string_literal @@ Printer.text tag) doc.tags
+         Printer.iter ~sep:comma (fun tag -> render_string_literal @@ Printer.text tag) doc.fm.tags
        end;
        "route",
        render_string_literal @@ Printer.text @@

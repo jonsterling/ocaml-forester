@@ -32,7 +32,7 @@ let rec render_node : Sem.node Range.located -> Printer.t =
     render @@
     Option.value ~default:[Range.locate_opt None @@ Sem.Text dest] @@
     Option.bind (E.get_doc dest) @@ fun doc ->
-    Option.map (Sem.apply_modifier modifier) doc.title
+    Option.map (Sem.apply_modifier modifier) doc.fm.title
   | Sem.Link {title = Some title; dest; modifier} ->
     render @@ Sem.apply_modifier modifier title
   | Sem.Transclude (_, addr) ->

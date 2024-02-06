@@ -75,7 +75,7 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
 
     let related scope =
       get_all_links scope |> List.filter @@ fun (doc : Sem.tree) ->
-      doc.taxon <> Some "reference"
+      doc.fm.taxon <> Some "reference"
 
     let bibliography scope =
       get_sorted_trees @@
@@ -92,8 +92,8 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
 
     let contributors scope =
       let tree = M.find scope forest.trees in
-      let authors = S.of_list tree.authors in
-      let contributors = S.union (S.of_list tree.contributors) @@ S.of_list @@ Tbl.find_all analysis.contributors scope in
+      let authors = S.of_list tree.fm.authors in
+      let contributors = S.union (S.of_list tree.fm.contributors) @@ S.of_list @@ Tbl.find_all analysis.contributors scope in
       let proper_contributors =
         contributors |> S.filter @@ fun contr ->
         not @@ S.mem contr authors
@@ -136,7 +136,7 @@ let plant_forest (trees : raw_forest) : forest =
         let units, syn = Expand.expand_tree units tree in
         let tree, emitted_trees = Eval.eval_tree syn in
         let add trees tree =
-          match Sem.(tree.addr) with
+          match Sem.(tree.fm.addr) with
           | None -> trees
           | Some addr -> M.add addr tree trees
         in
@@ -222,7 +222,7 @@ let render_tree ~cfg ~cwd ~bib_fmt doc =
   Render_bibtex.render_bibtex ~base_url:cfg.base_url doc bib_fmt;
   Format.fprintf bib_fmt "\n";
 
-  doc.addr |> Option.iter @@ fun addr ->
+  doc.fm.addr |> Option.iter @@ fun addr ->
   let create = `Or_truncate 0o644 in
   let base_url = cfg.base_url in
   begin
