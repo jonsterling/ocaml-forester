@@ -192,6 +192,9 @@ let rec expand : Code.t -> Syn.t =
   | {value = Title xs; loc} :: rest ->
     {value = Syn.Title (expand xs); loc} :: expand rest
 
+  | {value = Parent addr; loc} :: rest ->
+    {value = Syn.Parent addr; loc} :: expand rest
+
   | {value = Author author; loc} :: rest ->
     {value = Syn.Author author; loc} :: expand rest
 

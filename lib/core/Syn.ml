@@ -25,6 +25,7 @@ type node =
   | Ref of t
 
   | Title of t
+  | Parent of addr
   | Taxon of string
   | Meta of string * t
   | Author of string

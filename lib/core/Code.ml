@@ -40,6 +40,7 @@ type node =
   | Contributor of string
   | Tag of string
   | Date of string
+  | Parent of string
 
 
 [@@deriving show]

@@ -53,6 +53,7 @@ let render_tree (doc : Sem.tree) : Printer.t =
          match doc.fm.title with
          | None -> Printer.text "null"
          | Some title ->
+           let title = Render_util.expand_title_with_parents doc title in
            let title_string =
              String.trim @@
              String_util.sentence_case @@

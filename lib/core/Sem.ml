@@ -49,6 +49,7 @@ and frontmatter =
    addr : addr option;
    metas : (string * t) list;
    tags: string list;
+   parent : addr option;
    source_path : string option}
 
 
@@ -142,7 +143,7 @@ struct
   let authors (tree : tree) =
     tree.fm.authors
 
-  let sort =
+  let basic_comparator =
     let by_date =
       Fun.flip @@
       Compare.under (fun x -> List.nth_opt x.fm.dates 0) @@
@@ -150,7 +151,15 @@ struct
     in
     let by_title = Compare.under peek_title @@ Compare.option String.compare in
     let by_addr = Compare.under (fun x -> x.fm.addr) @@ Compare.option String.compare in
-    List.sort @@ Compare.cascade by_date @@ Compare.cascade by_title by_addr
+    Compare.cascade by_date @@ Compare.cascade by_title by_addr
+
+  let sort =
+    List.sort basic_comparator
+
+  let sort_for_index =
+    let by_has_parent = Compare.under (fun x -> Option.is_some x.fm.parent) @@ Bool.compare in
+    List.sort @@ Compare.cascade by_has_parent basic_comparator
+
 end
 
 module Query =
@@ -186,4 +195,5 @@ let empty_frontmatter =
    contributors = [];
    tags = [];
    metas = [];
+   parent = None;
    source_path = None}

@@ -249,7 +249,7 @@ let render_json ~cwd docs =
   Eio.Path.with_open_out ~create json_path @@ fun json_sink ->
   Eio.Buf_write.with_flow json_sink @@ fun w ->
   let fmt = Eio_util.formatter_of_writer w in
-  let docs = Sem.Util.sort @@ List.of_seq @@ Seq.map snd @@ M.to_seq docs in
+  let docs = Sem.Util.sort_for_index @@ List.of_seq @@ Seq.map snd @@ M.to_seq docs in
   Render_json.render_trees docs fmt
 
 let is_hidden_file fname =

@@ -51,6 +51,7 @@ rule token =
   | "\\stopverb" { verbatim := false; token lexbuf }
   | "\\ " { return lexbuf @@ Grammar.IDENT {| |} }
   | "\\title" { return lexbuf @@ Grammar.TITLE }
+  | "\\parent" { return lexbuf @@ Grammar.PARENT }
   | "\\taxon" { return lexbuf @@ Grammar.TAXON }
   | "\\author" { return lexbuf @@ Grammar.AUTHOR }
   | "\\contributor" { return lexbuf @@ Grammar.CONTRIBUTOR }

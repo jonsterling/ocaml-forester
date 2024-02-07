@@ -8,7 +8,8 @@ module Printer = Xml_printer
 type printer = Printer.printer
 
 type cfg =
-  {base_url : string option;
+  {addr : addr option;
+   base_url : string option;
    in_backmatter : bool;
    top : bool;
    seen : addr list}
@@ -90,16 +91,7 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
           Range.locate_opt None @@ Sem.Transclude (opts, addr)
         in
         let doc : Sem.tree =
-          {fm =
-             {addr = None;
-              taxon = None;
-              title = None;
-              authors = [];
-              contributors = [];
-              dates = [];
-              metas = [];
-              tags = [];
-              source_path = None};
+          {fm = Sem.empty_frontmatter;
            body}
         in
         render_transclusion ~cfg ~opts doc
@@ -140,16 +132,25 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
     Reporter.fatal ?loc:located.loc Type_error
       "tried to render object closure to XML"
 
-and render_transclusion ~cfg ~opts doc =
-  let cfg =
-    {cfg with top = false}
+and render_transclusion ~cfg ~opts tree =
+  let tree =
+    match tree.fm.parent, cfg.addr with
+    | None, _ -> tree
+    | Some _, None -> tree
+    | Some addr0, Some addr1 when addr0 = addr1 ->
+      {tree with fm = {tree.fm with parent = None}}
+    | Some addr0, Some addr1 -> tree
   in
-  render_tree ~cfg ~opts doc
+  let cfg = {cfg with top = false; addr = tree.fm.addr} in
+  render_tree ~cfg ~opts tree
 
 and render_internal_link ~cfg ~title ~modifier ~addr =
   let url = E.route Xml addr in
   let doc = E.get_doc addr in
-  let doc_title = Option.bind doc @@ fun d -> d.fm.title in
+  let doc_title =
+    Option.bind doc @@ fun d ->
+    d.fm.title |> Option.map @@ Render_util.expand_title_with_parents d
+  in
   let title = Option.fold title ~none:doc_title ~some:Option.some in
   let target_title_attr =
     match doc_title with
@@ -180,7 +181,7 @@ and render ~cfg : Sem.t -> printer =
   Printer.iter (render_node ~cfg)
 
 and render_author (author : string) =
-  let cfg = {base_url = None; top = false; in_backmatter = false; seen = []} in
+  let cfg = {addr = None; base_url = None; top = false; in_backmatter = false; seen = []} in
   (* If the author string is an address to a biographical page, then link to it *)
   match E.get_doc author with
   | Some bio ->
@@ -252,6 +253,12 @@ and render_rss_link ~cfg doc =
   with_addr doc @@ fun addr ->
   Printer.tag "rss" [] [Printer.text (E.route Rss addr)]
 
+and render_title ~cfg (tree : Sem.tree) =
+  tree.fm.title |> Printer.option @@ fun title ->
+  Printer.tag "title" [] [
+    render ~cfg @@ Sem.sentence_case @@ Render_util.expand_title_with_parents tree title
+  ]
+
 and render_frontmatter ~cfg ?(toc = true) (doc : Sem.tree) =
   let anchor = string_of_int @@ Oo.id (object end) in
   Printer.tag "frontmatter" [] [
@@ -272,12 +279,10 @@ and render_frontmatter ~cfg ?(toc = true) (doc : Sem.tree) =
     end;
     render_date doc;
     render_authors doc;
+    render_title ~cfg doc;
     begin
-      doc.fm.title |> Printer.option @@ fun title ->
-      Printer.tag "title" [] [
-        render ~cfg @@
-        Sem.sentence_case title
-      ]
+      doc.fm.parent |> Printer.option @@ fun addr ->
+      Printer.tag "parent" [] [Printer.text addr]
     end;
     begin
       doc.fm.metas |> Printer.iter @@ fun (key, body) ->
@@ -354,26 +359,23 @@ and render_tree ~cfg ~opts (doc : Sem.tree) : printer =
     | Some addr ->
       Reporter.tracef "when rendering tree at address `%s` to XML" addr k
   in
-  if seen then
-    Printer.nil
-  else
-    let cfg =
-      match doc.fm.addr with
-      | None -> cfg
-      | Some addr ->
-        {cfg with seen = addr :: cfg.seen}
-    in
-    fun fmt ->
-      trace @@ fun () ->
-      Printer.tag "tree" attrs
-        [render_frontmatter ~cfg ~toc:opts.toc doc;
-         render_mainmatter ~cfg doc;
-         match cfg.top with
-         | true -> render_backmatter ~cfg doc
-         | _ -> Printer.nil
-        ] fmt
+  let cfg =
+    match doc.fm.addr with
+    | None -> cfg
+    | Some addr ->
+      {cfg with seen = addr :: cfg.seen}
+  in
+  fun fmt ->
+    trace @@ fun () ->
+    Printer.tag "tree" attrs
+      [render_frontmatter ~cfg ~toc:opts.toc doc;
+       render_mainmatter ~cfg doc;
+       match cfg.top with
+       | true -> render_backmatter ~cfg doc
+       | _ -> Printer.nil
+      ] fmt
 
 let render_tree_page ~base_url (doc : Sem.tree) : printer =
-  let cfg = {base_url; top = true; seen = []; in_backmatter = false} in
+  let cfg = {addr = doc.fm.addr; base_url; top = true; seen = []; in_backmatter = false} in
   let opts = Sem.{title_override = None; taxon_override = None; toc = false; show_heading = true; expanded = true; numbered = false; show_metadata = true} in
   Printer.with_xsl "forest.xsl" @@ render_tree ~cfg ~opts doc

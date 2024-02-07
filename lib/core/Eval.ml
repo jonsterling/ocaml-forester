@@ -63,6 +63,8 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
   | Subtree (addr, nodes) ->
     let opts = get_transclusion_opts () in
     let subtree = eval_tree_inner ~addr nodes in
+    let fm = Fm.get () in
+    let subtree = {subtree with fm = {subtree.fm with parent = fm.addr}} in
     begin
       addr |> Option.iter @@ fun _ ->
       EmittedTrees.modify @@ fun trees ->
@@ -204,6 +206,10 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
   | Title title ->
     let title = eval title in
     Fm.modify (fun fm -> {fm with title = Some title});
+    eval rest
+
+  | Parent addr ->
+    Fm.modify (fun fm -> {fm with parent = Some addr});
     eval rest
 
   | Meta (k, v) ->
