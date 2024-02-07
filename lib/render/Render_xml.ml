@@ -253,20 +253,35 @@ and render_rss_link ~cfg doc =
   with_addr doc @@ fun addr ->
   Printer.tag "rss" [] [Printer.text (E.route Rss addr)]
 
-and render_title ~cfg (tree : Sem.tree) =
-  tree.fm.title |> Printer.option @@ fun title ->
+and render_title ~cfg ~opts (tree : Sem.tree) =
+  let title =
+    match Sem.(opts.title_override) with
+    | Some title -> Some title
+    | None ->
+      tree.fm.title |> Option.map @@ fun title ->
+      Render_util.expand_title_with_parents tree title
+  in
+  title |> Printer.option @@ fun title ->
   Printer.tag "title" [] [
-    render ~cfg @@ Sem.sentence_case @@ Render_util.expand_title_with_parents tree title
+    render ~cfg @@ Sem.sentence_case @@ title
   ]
 
-and render_frontmatter ~cfg ?(toc = true) (doc : Sem.tree) =
+and render_taxon ~cfg ~opts (tree : Sem.tree) =
+  let taxon =
+    match Sem.(opts.taxon_override) with
+    | Some taxon -> Some taxon
+    | None -> tree.fm.taxon
+  in
+  taxon |> Printer.option @@ fun taxon ->
+  Printer.tag "taxon" [] [Printer.text @@ String_util.sentence_case taxon]
+
+
+and render_frontmatter ~cfg ~opts (doc : Sem.tree) =
   let anchor = string_of_int @@ Oo.id (object end) in
   Printer.tag "frontmatter" [] [
     Printer.tag "anchor" [] [Printer.text anchor];
     render_rss_link ~cfg doc;
-    doc.fm.taxon |> Printer.option begin fun taxon ->
-      Printer.tag "taxon" [] [Printer.text @@ String_util.sentence_case taxon]
-    end;
+    render_taxon ~cfg ~opts doc;
     with_addr doc begin fun addr ->
       Printer.tag "addr" [] [Printer.text addr]
     end;
@@ -279,7 +294,7 @@ and render_frontmatter ~cfg ?(toc = true) (doc : Sem.tree) =
     end;
     render_date doc;
     render_authors doc;
-    render_title ~cfg doc;
+    render_title ~cfg ~opts doc;
     begin
       doc.fm.parent |> Printer.option @@ fun addr ->
       Printer.tag "parent" [] [Printer.text addr]
@@ -330,16 +345,6 @@ and bool_to_string =
   | false -> "false"
 
 and render_tree ~cfg ~opts (doc : Sem.tree) : printer =
-  let doc =
-    match opts.title_override with
-    | Some _ as title -> {doc with fm = {doc.fm with title}}
-    | None -> doc
-  in
-  let doc =
-    match opts.taxon_override with
-    | Some _ as taxon -> {doc with fm = {doc.fm with taxon}}
-    | None -> doc
-  in
   let attrs =
     [Printer.attr "expanded" @@ string_of_bool opts.expanded;
      Printer.attr "show-heading" @@ string_of_bool opts.show_heading;
@@ -368,7 +373,7 @@ and render_tree ~cfg ~opts (doc : Sem.tree) : printer =
   fun fmt ->
     trace @@ fun () ->
     Printer.tag "tree" attrs
-      [render_frontmatter ~cfg ~toc:opts.toc doc;
+      [render_frontmatter ~cfg ~opts doc;
        render_mainmatter ~cfg doc;
        match cfg.top with
        | true -> render_backmatter ~cfg doc
