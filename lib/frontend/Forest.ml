@@ -112,15 +112,20 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
 
 
 let plant_forest (trees : raw_forest) : forest =
+  let add_tree addr tree trees =
+    if M.mem addr trees then
+      begin
+        Reporter.emitf Duplicate_tree "skipping duplicate tree at address `%s`" addr;
+        trees
+      end
+    else
+      M.add addr tree trees
+  in
+
   let unexpanded_trees =
     let alg acc (tree : Code.tree) =
       match tree.addr with
-      | Some addr ->
-        begin
-          if M.mem addr acc then
-            Reporter.fatalf Duplicate_tree "duplicate tree at address `%s`" addr;
-          M.add addr tree acc
-        end
+      | Some addr -> add_tree addr tree acc
       | None -> acc
     in
     Seq.fold_left alg M.empty trees
@@ -138,7 +143,7 @@ let plant_forest (trees : raw_forest) : forest =
         let add trees tree =
           match Sem.(tree.fm.addr) with
           | None -> trees
-          | Some addr -> M.add addr tree trees
+          | Some addr -> add_tree addr tree trees
         in
         units, List.fold_left add trees @@ tree :: emitted_trees
     in
