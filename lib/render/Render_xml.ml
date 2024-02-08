@@ -131,6 +131,8 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
   | Sem.Object _ ->
     Reporter.fatal ?loc:located.loc Type_error
       "tried to render object closure to XML"
+  | Sem.Error msg ->
+    Printer.tag "error" [] [Printer.text @@ Reporter.Message.show msg]
 
 and render_transclusion ~cfg ~opts tree =
   let tree =

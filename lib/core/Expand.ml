@@ -234,17 +234,20 @@ and expand_ident loc path =
   | None, [name] ->
     [Range.{value = Syn.Unresolved name; loc}]
   | None, _ ->
-    Reporter.fatalf ?loc Resolution_error
+    Reporter.emitf ?loc Resolution_error
       "path %a could not be resolved"
-      Trie.pp_path path
+      Trie.pp_path path;
+    [Range.{value = Syn.Error Resolution_error; loc}]
   | Some (`Term x, ()), _ ->
     let relocate Range.{value; _} = Range.{value; loc} in
     List.map relocate x
   | Some (`Sym x, ()), _ ->
-    Reporter.fatalf ?loc Resolution_error
+    Reporter.emitf ?loc Resolution_error
       "path %a resolved to symbol %a instead of term"
       Trie.pp_path path
-      Symbol.pp x
+      Symbol.pp x;
+    [Range.{value = Syn.Error Resolution_error; loc}]
+
 
 and expand_sym loc path =
   match Scope.resolve path, path with

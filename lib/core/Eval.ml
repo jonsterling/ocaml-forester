@@ -94,9 +94,10 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
         LexEnv.scope (Env.add x (eval u)) @@ fun () ->
         loop xs rest
       | _ ->
-        Reporter.fatalf Type_error ?loc:node.loc
+        Reporter.emitf Type_error ?loc:node.loc
           "expected function to be applied to `%i` additional arguments"
-          (List.length xs)
+          (List.length xs);
+        [Range.locate_opt None @@ Sem.Error Type_error], rest
     in
     let body, rest = loop xs rest in
     body @ eval rest
@@ -128,8 +129,9 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
         HeapState.modify @@ Env.add sym Sem.{prototype = Some obj_ptr; methods = table};
         {node with value = Sem.Object sym} :: eval rest
       | xs ->
-        Reporter.fatalf ?loc:node.loc Type_error
-          "tried to patch non-object"
+        Reporter.emit ?loc:node.loc Type_error
+          "tried to patch non-object";
+        {node with value = Sem.Error Type_error} :: eval rest
     end
   | Call (obj, method_name) ->
     begin
@@ -157,23 +159,25 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
             | Some proto ->
               call_method @@ Env.find proto @@ HeapState.get ()
             | None ->
-              Reporter.fatalf ?loc:node.loc Type_error
-                "tried to call unbound method `%s`" method_name
+              Reporter.emitf ?loc:node.loc Type_error
+                "tried to call unbound method `%s`" method_name;
+              [{node with value = Sem.Error Type_error}]
         in
-
         let result = call_method @@ Env.find sym @@ HeapState.get () in
         result @ eval rest
       | xs ->
-        Reporter.fatalf ?loc:node.loc Type_error
-          "tried to call method `%s` on non-object: %a" method_name Sem.pp xs
+        Reporter.emitf ?loc:node.loc Type_error
+          "tried to call method `%s` on non-object: %a" method_name Sem.pp xs;
+        [{node with value = Sem.Error Type_error}]
     end
   | Var x ->
     begin
       match Env.find_opt x @@ LexEnv.read () with
       | None ->
-        Reporter.fatalf ?loc:node.loc Resolution_error
+        Reporter.emitf ?loc:node.loc Resolution_error
           "could not find variable named %a"
-          Symbol.pp x
+          Symbol.pp x;
+        {node with value = Sem.Error Resolution_error} :: eval rest
       | Some v -> v @ eval rest
     end
   | Put (k, v, body) ->
@@ -194,14 +198,17 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
       let env = DynEnv.read () in
       match Env.find_opt key @@ DynEnv.read () with
       | None ->
-        Eio.traceln "getting %a from %a" Symbol.pp key (Env.pp Sem.pp) env;
-        Reporter.fatalf ?loc:node.loc Resolution_error
+        Reporter.emitf ?loc:node.loc Resolution_error
           "could not find fluid binding named %a"
-          Symbol.pp key
+          Symbol.pp key;
+        {node with value = Sem.Error Resolution_error} :: eval rest
       | Some v -> v @ eval rest
     end
   | Group _ | Text _ ->
     eval_textual [] @@ node :: rest
+
+  | Error msg ->
+    {node with value = Error msg} :: eval rest
 
   | Title title ->
     let title = eval title in

@@ -115,12 +115,11 @@ let plant_forest (trees : raw_forest) : forest =
   let unexpanded_trees =
     let alg acc (tree : Code.tree) =
       match tree.addr with
+      | Some addr when not (M.mem addr acc) ->
+        M.add addr tree acc
       | Some addr ->
-        begin
-          if M.mem addr acc then
-            Reporter.fatalf Duplicate_tree "duplicate tree at address `%s`" addr;
-          M.add addr tree acc
-        end
+        Reporter.emitf Duplicate_tree "duplicate tree at address `%s`" addr;
+        acc
       | None -> acc
     in
     Seq.fold_left alg M.empty trees

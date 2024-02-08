@@ -71,7 +71,7 @@ let rec analyze_nodes ~analysis scope : Sem.t -> unit =
     analyze_nodes ~analysis scope y
   | Sem.Prim (_, x) ->
     analyze_nodes ~analysis scope x
-  | Sem.Object _ | Sem.Unresolved _ | Sem.Img _ | Sem.Text _ ->
+  | Sem.Object _ | Sem.Unresolved _ | Sem.Img _ | Sem.Text _ | Sem.Error _ ->
     ()
 
 and analyze_transclusion_opts ~analysis scope : Sem.transclusion_opts -> unit =
