@@ -18,7 +18,6 @@ type node =
   | Prim of Prim.t * t
   | Object of Symbol.t
   | Ref of {addr : string}
-  | Error of Reporter.Message.t
 [@@deriving show]
 
 and transclusion_opts =
@@ -121,7 +120,7 @@ let string_of_nodes =
     | Embed_tex {source; _} -> Some (render source)
     | If_tex (_, x) -> Some (render x)
     | Prim (_, x) -> Some (render x)
-    | Transclude _ | Subtree _ | Query _ | Unresolved _ | Img _ | Object _ | Error _ -> None
+    | Transclude _ | Subtree _ | Query _ | Unresolved _ | Img _ | Object _ -> None
   in
   render
 

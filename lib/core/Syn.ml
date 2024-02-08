@@ -24,8 +24,6 @@ type node =
   | Call of t * string
   | Ref of t
 
-  | Error of Reporter.Message.t
-
   | Title of t
   | Parent of addr
   | Taxon of string
