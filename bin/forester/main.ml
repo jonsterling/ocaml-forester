@@ -29,13 +29,7 @@ let build ~env input_dirs assets_dirs root base_url dev max_fibers ignore_tex_ca
 
 let new_tree ~env input_dirs dest_dir prefix template random =
   let cfg = Forest.{env; root = None; base_url = None; assets_dirs = []; max_fibers = 20; ignore_tex_cache = true; no_assets = true; no_theme = true;} in
-  let input_dirs =
-    make_dirs ~env @@
-    if List.mem dest_dir input_dirs then
-      input_dirs
-    else
-      dest_dir :: input_dirs
-  in
+  let input_dirs = make_dirs ~env @@ input_dirs in
   let forest =
     Forest.plant_forest @@
     Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true input_dirs
