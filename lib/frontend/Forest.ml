@@ -282,8 +282,7 @@ let copy_resources ~env =
     let fp = Format.sprintf "build/%s" fname in
     let dest_opt =
       match ext with
-      | ".svg" -> Some "output/resources";
-      | ".pdf" -> Some "latex/resources"
+      | ".svg" -> Some "output/resources"
       | _ -> None
     in
     dest_opt |> Option.iter @@ fun dest_dir ->
