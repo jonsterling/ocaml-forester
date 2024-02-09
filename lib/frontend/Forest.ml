@@ -238,14 +238,6 @@ let render_tree ~cfg ~cwd doc =
     let out = Xmlm.make_output @@ `Channel ch in
     (* Eio_util.xmlm_dest_of_writer w in *)
     Render_xml.render_tree_page ~base_url doc out
-  end;
-  begin
-    base_url |> Option.iter @@ fun base_url ->
-    let path = Eio.Path.(cwd / "output" / E.route Rss addr) in
-    Eio.Path.with_open_out ~create path @@ fun flow ->
-    Eio.Buf_write.with_flow flow @@ fun w ->
-    let out = Xmlm.make_output @@ Eio_util.xmlm_dest_of_writer w in
-    Render_rss.render_tree_page ~base_url doc out
   end
 
 let render_json ~cwd docs =
