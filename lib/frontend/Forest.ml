@@ -270,8 +270,7 @@ let copy_assets ~env ~assets_dirs =
     let path = Eio.Path.(assets_dir / fname) in
     let source = Eio.Path.native_exn path in
     Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"build";
-    Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"output";
-    Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"latex"
+    Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"output"
 
 let copy_resources ~env =
   let cwd = Eio.Stdenv.cwd env in
@@ -295,7 +294,6 @@ let render_trees ~cfg ~forest : unit =
 
   Eio_util.ensure_dir @@ Eio.Path.(cwd / "build");
   Eio_util.ensure_dir_path cwd ["output"; "resources"];
-  Eio_util.ensure_dir_path cwd ["latex"; "resources"];
 
   run_renderer ~cfg forest @@ fun () ->
   forest.trees
