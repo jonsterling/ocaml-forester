@@ -16,16 +16,11 @@ let tex_fp name =
 let dvi_fp name =
   Format.sprintf "%s.dvi" name
 
-let pdf_fp name =
-  Format.sprintf "%s.pdf" name
-
 let build_dir cwd =
   Eio.Path.(cwd/"build")
 
 let tex_fname name = name ^ ".tex"
 let dvi_fname name = name ^ ".dvi"
-let pdf_fname name = name ^ ".pdf"
-
 
 let write_tex_file ~env ~name ~preamble ~source =
   let cwd = Eio.Stdenv.cwd env in
@@ -42,13 +37,6 @@ let render_dvi_file ~env ~name ~source =
   Eio.traceln "Building dvi for source: %s" name;
   Eio_util.run_process ~env ~cwd
     ["latex"; "-halt-on-error"; "-interaction=nonstopmode"; tex_fname name]
-
-let render_pdf_file ~env ~name ~source =
-  let cwd = build_dir @@ Eio.Stdenv.cwd env in
-  Eio_util.ensure_remove_file Eio.Path.(cwd / pdf_fname name);
-  Eio.traceln "Building pdf for source: %s" name;
-  Eio_util.run_process ~env ~cwd
-    ["pdflatex"; "-halt-on-error"; "-interaction=nonstopmode"; tex_fname name]
 
 let render_svg_file ~env ~name ~source =
   let cwd = build_dir @@ Eio.Stdenv.cwd env in
@@ -69,29 +57,14 @@ let render_svg_file ~env ~name ~source =
 let build_latex ~env ~ignore_tex_cache ~name ~preamble ~source : Eio.Fs.dir_ty Eio.Path.t list =
   let cwd = Eio.Stdenv.cwd env in
   let svg_path = Eio.Path.(build_dir cwd / (name ^ ".svg")) in
-  let pdf_path = Eio.Path.(build_dir cwd / (name ^ ".pdf")) in
 
   write_tex_file ~env ~name ~preamble ~source;
 
-  let svg_task () =
-    if ignore_tex_cache || not @@ Eio_util.file_exists svg_path then
-      begin
-        render_dvi_file ~env ~name ~source;
-        render_svg_file ~env ~name ~source;
-        Some svg_path
-      end
-    else
-      None
-  in
-  let pdf_task () =
-    if ignore_tex_cache || not @@ Eio_util.file_exists pdf_path then
-      begin
-        render_pdf_file ~env ~name ~source;
-        Some pdf_path
-      end
-    else
-      None
-  in
-
-  [svg_task; pdf_task] |> Eio.Fiber.List.filter_map @@ fun task ->
-  task ()
+  if ignore_tex_cache || not @@ Eio_util.file_exists svg_path then
+    begin
+      render_dvi_file ~env ~name ~source;
+      render_svg_file ~env ~name ~source;
+      [svg_path]
+    end
+  else
+    []
