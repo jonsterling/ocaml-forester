@@ -8,15 +8,20 @@ module Tbl = Hashtbl.Make (String)
 
 let build_import_graph (trees : Code.tree Seq.t) =
   let import_graph = Gph.create () in
-  begin
-    trees |> Seq.iter @@ fun (tree : Code.tree) ->
+
+  let rec analyse_tree roots (tree : Code.tree) =
+    let roots = Option.fold ~none:roots ~some:(fun x -> x :: roots) tree.addr in
     tree.addr |> Option.iter @@ Gph.add_vertex import_graph;
     tree.code |> List.iter @@ fun node ->
     match Asai.Range.(node.value) with
     | Code.Import (_, dep) ->
-      tree.addr |> Option.iter @@ Gph.add_edge import_graph dep
+      roots |> List.iter @@ Gph.add_edge import_graph dep
+    | Code.Subtree (addr, code) ->
+      analyse_tree roots @@ Code.{tree with addr; code}
     | _ -> ()
-  end;
+  in
+
+  trees |> Seq.iter (analyse_tree []);
   import_graph
 
 type analysis =
