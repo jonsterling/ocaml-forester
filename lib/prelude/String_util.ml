@@ -17,3 +17,15 @@ let title_case_word ix word =
 let sentence_case str =
   let words = String.split_on_char ' ' str in
   String.concat " " @@ List.mapi title_case_word words
+
+let trim_newlines str =
+
+  let rec process_lines lines =
+    match lines with
+    | [] -> []
+    | "" :: lines -> process_lines lines
+    | _ -> lines
+  in
+
+  let lines = String.split_on_char '\n' str in
+  String.concat "\n" @@ List.rev @@ process_lines @@ List.rev @@ process_lines lines

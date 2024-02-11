@@ -1,8 +1,6 @@
 let write fmt ~preamble ~source =
   let newline () = Format.fprintf fmt "\n" in
-  Format.fprintf fmt {|\RequirePackage{ifpdf}|};
-  newline ();
-  Format.fprintf fmt {|\ifpdf\documentclass[crop]{standalone}\else\documentclass[crop,dvisvgm]{standalone}\fi|};
+  Format.fprintf fmt {|\documentclass[crop,dvisvgm]{standalone}|};
   newline ();
   Format.fprintf fmt "%s" preamble;
   newline ();
