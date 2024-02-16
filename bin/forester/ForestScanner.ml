@@ -15,4 +15,6 @@ and process_dir fp =
 
 let scan_directories dirs =
   S.run @@ fun () ->
-  dirs |> List.iter process_dir
+  dirs |> List.iter @@ fun fp ->
+    try process_dir fp
+    with Eio.Io (Eio.Fs.E (Permission_denied _), _) -> ()
