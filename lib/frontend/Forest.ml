@@ -196,19 +196,51 @@ let complete ~forest prefix =
   |> M.to_seq
 
 let prefixes ~(addrs : addr Seq.t) : string list =
-  let prefix addr =
-    match String.split_on_char '-' addr with
-    | [] | [_] -> None
-    | prefix :: _ -> Some prefix
+  let first_segment s = match String.split_on_char '-' s  with
+    [] -> "" | [x] -> s | x::_ -> x
   in
-  let prefixes =
-    addrs
-    |> Seq.map prefix
-    |> Seq.filter_map Fun.id
-    |> List.of_seq
-    |> List.sort_uniq String.compare
+
+  let matches_prefix_scheme addr =
+    match String.split_on_char '-' addr with 
+    | [] | [_] -> false
+    | prefix :: [id] -> String.length id = 4 
+    | _ -> false
   in
-  prefixes
+
+  let is_already ~addr ~known = 
+    match List.find_opt (fun c -> first_segment c = first_segment addr) known with
+    | Some _ -> true
+    | None -> false
+  in
+
+  let exists_first ~addr ~queue = 
+    match List.find_opt (fun q -> (q = first_segment addr ^ "-0000") || (q = first_segment addr ^ "-0001")) queue with
+    | Some _ -> true
+    | None -> false
+  in
+
+  let should_add ~candidate ~known ~queue = 
+    if not (matches_prefix_scheme candidate) then false else
+    (not @@ is_already ~addr:candidate ~known) && (exists_first ~addr:candidate ~queue)
+  in
+
+  let remove_addrs ~addr ~queue = 
+    List.filter (fun q -> 
+    (not (first_segment q = first_segment addr))) queue 
+  in
+
+  let queue = addrs |> List.of_seq |> List.sort String.compare in
+
+  let rec step known queue =
+    match queue with 
+    | [] -> known
+    | addr :: rest -> 
+      if (should_add ~candidate:addr ~known ~queue) then
+        step (first_segment addr :: known) (remove_addrs ~addr ~queue)
+      else
+        step known (remove_addrs ~addr ~queue)
+  in
+  step [] queue
 
 let taxa ~forest =
   forest.trees
@@ -241,13 +273,8 @@ let render_tree ~cfg ~cwd doc =
   end
 
 let render_json ~cwd docs =
-  let create = `Or_truncate 0o644 in
-  let json_path = Eio.Path.(cwd / "output" / "forest.json") in
-  Eio.Path.with_open_out ~create json_path @@ fun json_sink ->
-  Eio.Buf_write.with_flow json_sink @@ fun w ->
-  let fmt = Eio_util.formatter_of_writer w in
   let docs = Sem.Util.sort_for_index @@ List.of_seq @@ Seq.map snd @@ M.to_seq docs in
-  Render_json.render_trees docs fmt
+  Yojson.Basic.to_file "./output/forest.json" (Render_json.render_trees docs)
 
 let is_hidden_file fname =
   String.starts_with ~prefix:"." fname

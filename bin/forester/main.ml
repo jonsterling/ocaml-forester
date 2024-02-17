@@ -62,7 +62,7 @@ let query_prefixes ~env input_dirs =
   let addrs =
     Analysis.Map.bindings forest.trees
     |> List.to_seq
-    |> Seq.map fst
+    |> Seq.map fst 
   in
   let prefixes = Forest.prefixes ~addrs in
   prefixes |> List.iter @@ fun addr ->
@@ -91,6 +91,31 @@ let query_tag ~env input_dirs =
     | hd :: tl -> ", " ^ hd ^ tag_string tl
   in
   Format.printf "%s%s\n" addr (tag_string tags)
+
+let query_all ~env input_dirs = 
+  let (forest : Forest.forest) =
+    Forest.plant_forest @@
+    Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true @@
+    make_dirs ~env input_dirs
+  in
+  let cfg = 
+    Forest.{
+      env; 
+      root = None; 
+      base_url = None; 
+      assets_dirs = [] ; 
+      max_fibers = 20; 
+      ignore_tex_cache = false; 
+      no_assets = true; 
+      no_theme = true}
+  in
+  Forest.run_renderer ~cfg forest @@ fun () ->
+  forest.trees 
+  |> Analysis.Map.to_list 
+  |> List.map snd 
+  |> Render.Render_json.render_trees 
+  |> Yojson.Basic.to_string 
+  |> Format.printf "%s"
 
 let build_cmd ~env =
 
@@ -245,10 +270,19 @@ let query_tag_cmd ~env =
   let info = Cmd.info "tag" ~version ~doc in
   Cmd.v info Term.(const (query_tag ~env) $ arg_input_dirs)
 
+let query_all_cmd ~env =
+  let arg_input_dirs =
+    Arg.non_empty @@ Arg.pos_all Arg.file [] @@
+    Arg.info [] ~docv:"INPUT_DIR"
+  in
+  let doc = "List all trees in JSON format" in
+  let info = Cmd.info "all" ~version ~doc in
+  Cmd.v info Term.(const (query_all ~env) $ arg_input_dirs)
+
 let query_cmd ~env =
   let doc = "Query your forest" in
   let info = Cmd.info "query" ~version ~doc in
-  Cmd.group info [query_prefixes_cmd ~env; query_taxon_cmd ~env; query_tag_cmd ~env;]
+  Cmd.group info [query_prefixes_cmd ~env; query_taxon_cmd ~env; query_tag_cmd ~env; query_all_cmd ~env]
 
 
 let cmd ~env =
