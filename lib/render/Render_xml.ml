@@ -28,6 +28,7 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
     let module TP = Render_verbatim.Printer in
     Printer.tag "tex" attrs [
       Printer.text @@
+      Str.global_replace (Str.regexp "\n") " " @@
       TP.contents @@
       Render_verbatim.render ~cfg:{tex = false} bdy
     ]
