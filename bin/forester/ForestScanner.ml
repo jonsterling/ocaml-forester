@@ -9,12 +9,13 @@ let rec process_file fp =
       S.yield fp
 
 and process_dir fp =
-  Eio.Path.with_open_dir fp @@ fun dir ->
-  Eio.Path.read_dir dir |> List.iter @@ fun fp ->
-  process_file Eio.Path.(dir / fp)
+  try
+    Eio.Path.with_open_dir fp @@ fun dir ->
+    Eio.Path.read_dir dir |> List.iter @@ fun fp ->
+    process_file Eio.Path.(dir / fp)
+  with Eio.Io (Eio.Fs.E (Permission_denied _), _) -> ()
 
 let scan_directories dirs =
   S.run @@ fun () ->
   dirs |> List.iter @@ fun fp ->
-    try process_dir fp
-    with Eio.Io (Eio.Fs.E (Permission_denied _), _) -> ()
+  process_dir fp
