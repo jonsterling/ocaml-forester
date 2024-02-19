@@ -64,6 +64,7 @@ rule token =
   | "\\subtree" { Grammar.SUBTREE }
   | "\\query/and" {Grammar.QUERY_AND }
   | "\\query/or" {Grammar.QUERY_OR }
+  | "\\query/not" {Grammar.QUERY_NOT }
   | "\\query/author" {Grammar.QUERY_AUTHOR }
   | "\\query/tag" {Grammar.QUERY_TAG }
   | "\\query/taxon" {Grammar.QUERY_TAXON }

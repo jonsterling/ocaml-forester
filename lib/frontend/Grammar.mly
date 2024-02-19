@@ -11,7 +11,7 @@
 %token OBJECT PATCH CALL
 %token TRANSCLUDE SUBTREE SCOPE PUT GET DEFAULT ALLOC XML_TAG REF
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
-%token QUERY_AND QUERY_OR QUERY_AUTHOR QUERY_TAG QUERY_TAXON QUERY_META
+%token QUERY_AND QUERY_OR QUERY_NOT QUERY_AUTHOR QUERY_TAG QUERY_TAXON QUERY_META
 %token QUERY_TREE
 %token EOF
 
@@ -108,6 +108,7 @@ let query0 :=
 | QUERY_TAXON; ~ = arg; <Query.Taxon>
 | QUERY_AND; ~ = braces(queries); <Query.And>
 | QUERY_OR; ~ = braces(queries); <Query.Or>
+| QUERY_NOT; ~ = braces(query); <Query.Not>
 | QUERY_META; k = txt_arg; v = arg; <Query.Meta>
 
 let queries == ws_list(query0)
