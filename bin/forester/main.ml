@@ -113,7 +113,7 @@ let query_all ~env input_dirs =
   forest.trees 
   |> Analysis.Map.to_list 
   |> List.map snd 
-  |> Render.Render_json.render_trees 
+  |> Render.Render_json.render_trees ~dev:true
   |> Yojson.Basic.to_string 
   |> Format.printf "%s"
 

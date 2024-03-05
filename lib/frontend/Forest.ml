@@ -274,7 +274,7 @@ let render_tree ~cfg ~cwd doc =
 
 let render_json ~cwd docs =
   let docs = Sem.Util.sort_for_index @@ List.of_seq @@ Seq.map snd @@ M.to_seq docs in
-  Yojson.Basic.to_file "./output/forest.json" (Render_json.render_trees docs)
+  Yojson.Basic.to_file "./output/forest.json" (Render_json.render_trees ~dev:false docs)
 
 let is_hidden_file fname =
   String.starts_with ~prefix:"." fname

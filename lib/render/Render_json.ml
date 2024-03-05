@@ -4,7 +4,7 @@ open Sem
 
 module E = Render_effect.Perform
 
-let render_tree (doc : Sem.tree) =
+let render_tree ~dev (doc : Sem.tree) =
   match doc.fm.addr with
   | None -> None
   | Some addr -> 
@@ -42,14 +42,23 @@ let render_tree (doc : Sem.tree) =
         (List.map (fun (s, meta) -> (s, `String (meta_string meta)))
           doc.fm.metas)
     in
-    Some (addr, `Assoc [
-      ("title",title);
-      ("taxon", taxon);
-      ("tags", tags);
-      ("route",route);
-      ("metas", metas);
-    ])
+    let
+      path =
+      if dev then
+        match doc.fm.source_path with
+        | Some p -> [("sourcePath", `String p)]
+        | None -> []
+      else []
+    in
+    Some (addr, `Assoc
+      ( path @
+        [("title", title);
+         ("taxon", taxon);
+         ("tags", tags);
+         ("route",route);
+         ("metas", metas);
+        ]))
 
-let render_trees (docs : Sem.tree list) : Yojson.Basic.t =
-  `Assoc (List.filter_map (render_tree) docs)
+let render_trees ~(dev : bool) (docs : Sem.tree list) : Yojson.Basic.t =
+  `Assoc (List.filter_map (render_tree ~dev) docs)
   
