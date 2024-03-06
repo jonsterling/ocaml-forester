@@ -1,12 +1,8 @@
 open Core
 
-type target =
-  | Xml
-  | Rss
-
 module type Handler =
 sig
-  val route : target -> addr -> string
+  val route : addr -> string
   val is_root : addr -> bool
   val backlinks : addr -> Sem.tree list
   val related : addr -> Sem.tree list

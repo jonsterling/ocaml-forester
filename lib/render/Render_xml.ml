@@ -46,7 +46,7 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
       | None ->
         Reporter.fatalf ?loc:located.loc Tree_not_found "could not find tree at address `%s` for reference" addr
       | Some tree ->
-        let url = E.route Xml addr in
+        let url = E.route addr in
         let attrs =
           (Printer.attr "addr" addr) ::
           (Printer.attr "href" url) ::
@@ -146,7 +146,7 @@ and render_transclusion ~cfg ~opts tree =
   render_tree ~cfg ~opts tree
 
 and render_internal_link ~cfg ~title ~modifier ~addr =
-  let url = E.route Xml addr in
+  let url = E.route addr in
   let doc = E.get_doc addr in
   let doc_title =
     Option.bind doc @@ fun d ->
@@ -191,7 +191,7 @@ and render_author (author : string) =
       | None ->
         Printer.text author
       | Some addr ->
-        let url = E.route Xml addr in
+        let url = E.route addr in
         Printer.tag "link"
           [Printer.attr "href" url; Printer.attr "type" "local"; Printer.attr addr "addr"]
           [match bio.fm.title with
@@ -209,7 +209,7 @@ and render_date (doc : Sem.tree) =
     let attrs =
       match E.get_doc date_addr with
       | None -> []
-      | Some _ -> [Printer.attr "href" @@ E.route Xml date_addr]
+      | Some _ -> [Printer.attr "href" @@ E.route date_addr]
     in
     Printer.tag "date" attrs [
       Printer.tag "year" [] [Printer.text @@ string_of_int @@ Date.year date];
@@ -252,7 +252,7 @@ and render_rss_link ~cfg doc =
   (* Only link to RSS if there is a base url, because RSS cannot be generated in the first place without one. *)
   cfg.base_url |> Printer.option @@ fun _ ->
   with_addr doc @@ fun addr ->
-  Printer.tag "rss" [] [Printer.text (E.route Rss addr)]
+  Printer.tag "rss" [] [Printer.text (E.route addr)]
 
 and render_title ~cfg ~opts (tree : Sem.tree) =
   let title =
@@ -291,7 +291,7 @@ and render_frontmatter ~cfg ~opts (doc : Sem.tree) =
       Printer.tag "source-path" [] [Printer.text path]
     end;
     with_addr doc begin fun addr ->
-      Printer.tag "route" [] [Printer.text @@ E.route Xml addr]
+      Printer.tag "route" [] [Printer.text @@ E.route addr]
     end;
     render_date doc;
     render_authors doc;

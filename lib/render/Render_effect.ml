@@ -1,12 +1,8 @@
 open Core
 
-type target =
-  | Xml
-  | Rss
-
 module type Handler =
 sig
-  val route : target -> addr -> string
+  val route : addr -> string
   val is_root : addr -> bool
   val backlinks : addr -> Sem.tree list
   val related : addr -> Sem.tree list
@@ -21,7 +17,7 @@ sig
 end
 
 type _ Effect.t +=
-  | Route : target * addr -> string Effect.t
+  | Route : addr -> string Effect.t
   | Is_root : addr -> bool Effect.t
   | Backlinks : addr -> Sem.tree list Effect.t
   | Related : addr -> Sem.tree list Effect.t
@@ -36,7 +32,7 @@ type _ Effect.t +=
 
 module Perform : Handler =
 struct
-  let route target addr = Effect.perform @@ Route (target, addr)
+  let route addr = Effect.perform @@ Route addr
   let is_root addr = Effect.perform @@ Is_root addr
   let backlinks addr = Effect.perform @@ Backlinks addr
   let related addr = Effect.perform @@ Related addr
@@ -61,8 +57,8 @@ struct
            Algaeff.Fun.Deep.finally k @@ fun () -> x ()
          in
          match eff with
-         | Route (target, addr) ->
-           resume @@ fun () -> H.route target addr
+         | Route addr ->
+           resume @@ fun () -> H.route addr
          | Is_root addr ->
            resume @@ fun () -> H.is_root addr
          | Backlinks addr ->

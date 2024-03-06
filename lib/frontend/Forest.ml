@@ -35,12 +35,8 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
     let is_root addr =
       cfg.root = Some addr
 
-    let route target addr =
-      let ext =
-        match target with
-        | Render_effect.Xml -> "xml"
-        | Render_effect.Rss -> "rss.xml"
-      in
+    let route addr =
+      let ext = "xml" in
       let base =
         match is_root addr with
         | true -> "index"
@@ -197,44 +193,44 @@ let complete ~forest prefix =
 
 let prefixes ~(addrs : addr Seq.t) : string list =
   let first_segment s = match String.split_on_char '-' s  with
-    [] -> "" | [x] -> s | x::_ -> x
+      [] -> "" | [x] -> s | x::_ -> x
   in
 
   let matches_prefix_scheme addr =
-    match String.split_on_char '-' addr with 
+    match String.split_on_char '-' addr with
     | [] | [_] -> false
-    | prefix :: [id] -> String.length id = 4 
+    | prefix :: [id] -> String.length id = 4
     | _ -> false
   in
 
-  let is_already ~addr ~known = 
+  let is_already ~addr ~known =
     match List.find_opt (fun c -> first_segment c = first_segment addr) known with
     | Some _ -> true
     | None -> false
   in
 
-  let exists_first ~addr ~queue = 
+  let exists_first ~addr ~queue =
     match List.find_opt (fun q -> (q = first_segment addr ^ "-0000") || (q = first_segment addr ^ "-0001")) queue with
     | Some _ -> true
     | None -> false
   in
 
-  let should_add ~candidate ~known ~queue = 
+  let should_add ~candidate ~known ~queue =
     if not (matches_prefix_scheme candidate) then false else
-    (not @@ is_already ~addr:candidate ~known) && (exists_first ~addr:candidate ~queue)
+      (not @@ is_already ~addr:candidate ~known) && (exists_first ~addr:candidate ~queue)
   in
 
-  let remove_addrs ~addr ~queue = 
-    List.filter (fun q -> 
-    (not (first_segment q = first_segment addr))) queue 
+  let remove_addrs ~addr ~queue =
+    List.filter (fun q ->
+        (not (first_segment q = first_segment addr))) queue
   in
 
   let queue = addrs |> List.of_seq |> List.sort String.compare in
 
   let rec step known queue =
-    match queue with 
+    match queue with
     | [] -> known
-    | addr :: rest -> 
+    | addr :: rest ->
       if (should_add ~candidate:addr ~known ~queue) then
         step (first_segment addr :: known) (remove_addrs ~addr ~queue)
       else
@@ -262,8 +258,8 @@ let render_tree ~cfg ~cwd doc =
   let base_url = cfg.base_url in
   begin
     (* TODO: the XML output via Eio is overflowing!!! *)
-    let ch = open_out @@ "output/" ^ E.route Xml addr in
-    (* let path = Eio.Path.(cwd / "output" / E.route Xml addr) in *)
+    let ch = open_out @@ "output/" ^ E.route addr in
+    (* let path = Eio.Path.(cwd / "output" / E.route addr) in *)
     (* Eio.Path.with_open_out ~create path @@ fun flow -> *)
     (* Eio.Buf_write.with_flow flow @@ fun w -> *)
     Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
