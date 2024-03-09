@@ -19,7 +19,6 @@ let sentence_case str =
   String.concat " " @@ List.mapi title_case_word words
 
 let trim_newlines str =
-
   let rec process_lines lines =
     match lines with
     | [] -> []
@@ -29,3 +28,15 @@ let trim_newlines str =
 
   let lines = String.split_on_char '\n' str in
   String.concat "\n" @@ List.rev @@ process_lines @@ List.rev @@ process_lines lines
+
+let trim_trailing_whitespace str =
+  let rec process_chars rstr =
+    match rstr with
+    | '\n' :: rstr -> process_chars rstr
+    | ' ' :: rstr -> process_chars rstr
+    | '\t' :: rstr -> process_chars rstr
+    | _ -> List.rev rstr
+  in
+  let n = String.length str in
+  let chars = List.rev @@ List.init n (String.get str) in
+  String.of_seq @@ List.to_seq @@ process_chars @@ chars

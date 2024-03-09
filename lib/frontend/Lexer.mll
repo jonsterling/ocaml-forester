@@ -35,7 +35,7 @@ rule token =
   | "\\startverb" {
       Buffer.clear verbatim_buff;
       verbatim lexbuf;
-      let text = String_util.trim_newlines @@ Buffer.contents verbatim_buff in
+      let text = String_util.trim_trailing_whitespace @@ String_util.trim_newlines @@ Buffer.contents verbatim_buff in
       Grammar.TEXT text
     }
   | "\\ " { Grammar.IDENT {| |} }
