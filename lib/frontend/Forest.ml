@@ -150,7 +150,7 @@ let plant_forest (trees : raw_forest) : forest =
 
 let rec random_not_in keys =
   let attempt = Random.int (36*36*36*36 - 1) in
-  if Seq.fold_left (fun x y -> x || y) false (Seq.map (fun k -> k == attempt) keys) then
+  if Seq.fold_left (fun x y -> x || y) false (Seq.map (fun k -> k = attempt) keys) then
     random_not_in keys
   else
     attempt

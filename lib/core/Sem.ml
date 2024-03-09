@@ -49,7 +49,8 @@ and frontmatter =
    addr : addr option;
    metas : (string * t) list;
    tags: string list;
-   parent : addr option;
+   physical_parent : addr option;
+   designated_parent : addr option;
    source_path : string option;
    number : string option}
 
@@ -158,7 +159,7 @@ struct
     List.sort basic_comparator
 
   let sort_for_index =
-    let by_has_parent = Compare.under (fun x -> Option.is_some x.fm.parent) @@ Bool.compare in
+    let by_has_parent = Compare.under (fun x -> Option.is_some x.fm.designated_parent) @@ Bool.compare in
     List.sort @@ Compare.cascade by_has_parent basic_comparator
 
 end
@@ -196,6 +197,7 @@ let empty_frontmatter =
    contributors = [];
    tags = [];
    metas = [];
-   parent = None;
+   physical_parent = None;
+   designated_parent = None;
    source_path = None;
    number = None}

@@ -2,7 +2,7 @@ open Core
 module E = Render_effect.Perform
 
 let rec expand_title_with_parents (tree : Sem.tree) title =
-  match tree.fm.parent with
+  match tree.fm.designated_parent with
   | None ->
     title
   | Some parent_addr ->

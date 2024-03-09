@@ -138,11 +138,11 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
 
 and render_transclusion ~cfg ~opts tree =
   let tree =
-    match tree.fm.parent, cfg.addr with
+    match tree.fm.designated_parent, cfg.addr with
     | None, _ -> tree
     | Some _, None -> tree
     | Some addr0, Some addr1 when addr0 = addr1 ->
-      {tree with fm = {tree.fm with parent = None}}
+      {tree with fm = {tree.fm with designated_parent = None}}
     | Some addr0, Some addr1 -> tree
   in
   let cfg = {cfg with top = false; addr = tree.fm.addr} in
@@ -297,7 +297,7 @@ and render_frontmatter ~cfg ~opts (doc : Sem.tree) =
     render_title ~cfg ~opts doc;
     render_number doc;
     begin
-      doc.fm.parent |> Printer.option @@ fun addr ->
+      doc.fm.designated_parent |> Printer.option @@ fun addr ->
       Printer.tag "parent" [] [Printer.text addr]
     end;
     begin

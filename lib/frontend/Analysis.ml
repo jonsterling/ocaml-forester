@@ -87,8 +87,9 @@ let analyze_doc ~analysis scope (doc : Sem.tree) =
   analyze_nodes ~analysis scope doc.body;
   doc.fm.title |> Option.iter @@ analyze_nodes ~analysis scope;
   begin
-    doc.fm.parent |> Option.iter @@ fun parent ->
-    Gph.add_edge analysis.link_graph parent scope
+    doc.fm.designated_parent |> Option.iter @@ fun parent ->
+    if doc.fm.physical_parent = Some parent then () else
+      Gph.add_edge analysis.link_graph parent scope
   end;
   begin
     doc.fm.authors |> List.iter @@ fun author ->
