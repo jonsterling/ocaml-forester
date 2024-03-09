@@ -51,6 +51,7 @@ rule token =
   | "\\tag" { Grammar.TAG }
   | "\\ref" { Grammar.REF }
   | "\\date" { Grammar.DATE }
+  | "\\number" { Grammar.NUMBER }
   | "\\import" { Grammar.IMPORT }
   | "\\export" { Grammar.EXPORT }
   | "\\namespace" { Grammar.NAMESPACE }

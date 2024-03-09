@@ -48,11 +48,14 @@ let rec render_node ~cfg : Sem.node Range.located -> printer =
       | Some tree ->
         let url = E.route addr in
         let attrs =
-          (Printer.attr "addr" addr) ::
-          (Printer.attr "href" url) ::
-          match tree.fm.taxon with
-          | None -> []
-          | Some taxon -> [Printer.attr "taxon" @@ String_util.sentence_case taxon]
+          [Printer.attr "addr" addr;
+           Printer.attr "href" url] @
+          (match tree.fm.taxon with
+           | None -> []
+           | Some taxon -> [Printer.attr "taxon" @@ String_util.sentence_case taxon]) @
+          (match tree.fm.number with
+           | None -> []
+           | Some num -> [Printer.attr "number" num])
         in
         Printer.tag "ref" attrs []
     end
@@ -276,6 +279,9 @@ and render_taxon ~cfg ~opts (tree : Sem.tree) =
   taxon |> Printer.option @@ fun taxon ->
   Printer.tag "taxon" [] [Printer.text @@ String_util.sentence_case taxon]
 
+and render_number (tree : Sem.tree) =
+  tree.fm.number |> Printer.option @@ fun num ->
+  Printer.tag "number" [] [Printer.text num]
 
 and render_frontmatter ~cfg ~opts (doc : Sem.tree) =
   let anchor = string_of_int @@ Oo.id (object end) in
@@ -284,18 +290,19 @@ and render_frontmatter ~cfg ~opts (doc : Sem.tree) =
     render_rss_link ~cfg doc;
     render_taxon ~cfg ~opts doc;
     with_addr doc begin fun addr ->
-      Printer.tag "addr" [] [Printer.text addr]
+      Printer.seq [
+        Printer.tag "addr" [] [Printer.text addr];
+        Printer.tag "route" [] [Printer.text @@ E.route addr]
+      ]
     end;
     begin
       doc.fm.source_path |> Printer.option @@ fun path ->
       Printer.tag "source-path" [] [Printer.text path]
     end;
-    with_addr doc begin fun addr ->
-      Printer.tag "route" [] [Printer.text @@ E.route addr]
-    end;
     render_date doc;
     render_authors doc;
     render_title ~cfg ~opts doc;
+    render_number doc;
     begin
       doc.fm.parent |> Printer.option @@ fun addr ->
       Printer.tag "parent" [] [Printer.text addr]

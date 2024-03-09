@@ -7,7 +7,7 @@
 %token <string> WHITESPACE
 %token <string> IDENT
 %token <Core.Prim.t> PRIM
-%token TITLE PARENT IMPORT EXPORT DEF TAXON AUTHOR CONTRIBUTOR TAG DATE NAMESPACE LET TEX META OPEN
+%token TITLE PARENT IMPORT EXPORT DEF TAXON AUTHOR CONTRIBUTOR TAG DATE NUMBER NAMESPACE LET TEX META OPEN
 %token OBJECT PATCH CALL
 %token TRANSCLUDE SUBTREE SCOPE PUT GET DEFAULT ALLOC XML_TAG REF
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
@@ -51,6 +51,7 @@ let head_node :=
 | AUTHOR; ~ = txt_arg; <Code.Author>
 | CONTRIBUTOR; ~ = txt_arg; <Code.Contributor>
 | DATE; ~ = txt_arg; <Code.Date>
+| NUMBER; ~ = txt_arg; <Code.Number>
 | DEF; (~,~,~) = fun_spec; <Code.Def>
 | ALLOC; ~ = ident; <Code.Alloc>
 | TAXON; ~ = txt_arg; <Code.Taxon>

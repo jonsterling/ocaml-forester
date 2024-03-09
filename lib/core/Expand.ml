@@ -210,6 +210,9 @@ let rec expand : Code.t -> Syn.t =
   | {value = Date str; loc} :: rest ->
     {value = Syn.Date str; loc} :: expand rest
 
+  | {value = Number str; loc} :: rest ->
+    {value = Syn.Number str; loc} :: expand rest
+
   | {value = Meta (k, v); loc} :: rest ->
     {value = Syn.Meta (k, expand v); loc} :: expand rest
 

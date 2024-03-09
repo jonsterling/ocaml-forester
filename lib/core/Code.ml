@@ -41,6 +41,7 @@ type node =
   | Tag of string
   | Date of string
   | Parent of string
+  | Number of string
 
 
 [@@deriving show]

@@ -32,6 +32,7 @@ type node =
   | Contributor of string
   | Tag of string
   | Date of string
+  | Number of string
 
 [@@deriving show]
 

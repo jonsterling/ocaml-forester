@@ -50,7 +50,8 @@ and frontmatter =
    metas : (string * t) list;
    tags: string list;
    parent : addr option;
-   source_path : string option}
+   source_path : string option;
+   number : string option}
 
 
 type obj_method =
@@ -196,4 +197,5 @@ let empty_frontmatter =
    tags = [];
    metas = [];
    parent = None;
-   source_path = None}
+   source_path = None;
+   number = None}

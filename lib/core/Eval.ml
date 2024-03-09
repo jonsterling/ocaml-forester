@@ -249,6 +249,13 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     end;
     eval rest
 
+  | Number num ->
+    begin
+      Fm.modify @@ fun fm ->
+      {fm with number = Some num}
+    end;
+    eval rest
+
   | Taxon taxon ->
     begin
       Fm.modify @@ fun fm ->
