@@ -8,7 +8,7 @@
 
 (maintainers "Jonathan Sterling")
 
-(version 3.0.0)
+(version 3.1.0)
 
 (generate_opam_files true)
 
@@ -50,4 +50,5 @@
    (>= 2.3.0))
   (algaeff
    (>= 2.0.0))
-  (yojson (>= 2.1.2))))
+  (yojson
+   (>= 2.1.2))))
