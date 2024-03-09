@@ -251,12 +251,6 @@ and with_addr (doc : Sem.tree) k =
   | Some addr -> k addr
   | None -> Printer.nil
 
-and render_rss_link ~cfg doc =
-  (* Only link to RSS if there is a base url, because RSS cannot be generated in the first place without one. *)
-  cfg.base_url |> Printer.option @@ fun _ ->
-  with_addr doc @@ fun addr ->
-  Printer.tag "rss" [] [Printer.text (E.route addr)]
-
 and render_title ~cfg ~opts (tree : Sem.tree) =
   let title =
     match Sem.(opts.title_override) with
@@ -287,7 +281,6 @@ and render_frontmatter ~cfg ~opts (doc : Sem.tree) =
   let anchor = string_of_int @@ Oo.id (object end) in
   Printer.tag "frontmatter" [] [
     Printer.tag "anchor" [] [Printer.text anchor];
-    render_rss_link ~cfg doc;
     render_taxon ~cfg ~opts doc;
     with_addr doc begin fun addr ->
       Printer.seq [
