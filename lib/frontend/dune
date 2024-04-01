@@ -14,7 +14,6 @@
   forester.core
   forester.render
   ocamlgraph
-  xmlm
   eio_main
   str
   yuujinchou))

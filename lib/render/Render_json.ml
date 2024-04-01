@@ -12,7 +12,7 @@ let render_tree ~dev (doc : Sem.tree) =
       match doc.fm.title with
       | None -> `Null
       | Some title ->
-        let title = Render_util.expand_title_with_parents doc title in
+        let title = Render_util.expand_title_with_parents doc.fm title in
         let title_string =
           String.trim @@
           String_util.sentence_case @@

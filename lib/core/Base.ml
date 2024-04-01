@@ -9,3 +9,7 @@ type math_mode = Inline | Display
 
 type visibility = Private | Public
 [@@deriving show]
+
+type xml_resolved_qname =
+  | Xml_resolved_qname of {prefix : string option; uname : string; xmlns : string option}
+[@@deriving show]

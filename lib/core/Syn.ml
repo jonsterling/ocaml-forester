@@ -16,7 +16,7 @@ type node =
   | Default of Symbol.t * t * t
   | Get of Symbol.t
   | If_tex of t * t
-  | Xml_tag of string * (string * t) list * t
+  | Xml_tag of xml_resolved_qname * (xml_resolved_qname * t) list * t
   | Unresolved of string
   | Prim of Prim.t * t
   | Object of {self : Symbol.t; methods: (string * t) list}

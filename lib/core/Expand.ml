@@ -14,7 +14,7 @@ struct
   let create path =
     let sym = Symbol.fresh path in
     sym, fun () ->
-      Resolver.Scope.include_singleton (path, (`Sym sym, ()))
+      Resolver.Scope.include_singleton (path, (Sym sym, ()))
 
   module Transclude =
   struct
@@ -37,12 +37,6 @@ let rec expand : Code.t -> Syn.t =
 
   | {value = Text x; loc} :: rest ->
     {value = Syn.Text x; loc} :: expand rest
-
-  | {value = Let (a, bs, def); loc} :: rest ->
-    let singl = Trie.Untagged.singleton (a, `Term (expand_lambda loc (bs, def))) in
-    Resolver.Scope.section [] @@ fun _ ->
-    Resolver.Scope.import_subtree ([], singl);
-    expand rest
 
   | {value = Namespace (path, body); loc} :: rest ->
     let result =
@@ -129,7 +123,7 @@ let rec expand : Code.t -> Syn.t =
       Scope.section [] @@ fun () ->
       let sym = Symbol.fresh [] in
       let var = Range.{value = Syn.Var sym; loc} in
-      self |> Option.iter (fun self -> Scope.import_subtree ([], Trie.Untagged.singleton (self, `Term [var])));
+      self |> Option.iter (fun self -> Scope.import_subtree ([], Trie.Untagged.singleton (self, Resolver.P.Term [var])));
       sym, List.map expand_method methods
     in
     {value = Syn.Object {self; methods}; loc} :: expand rest
@@ -142,8 +136,8 @@ let rec expand : Code.t -> Syn.t =
       let self_var = Range.locate_opt None @@ Syn.Var self_sym in
       let super_var = Range.locate_opt None @@ Syn.Var super_sym in
       self |> Option.iter begin fun self ->
-        Scope.import_subtree ([], Trie.Untagged.singleton (self, `Term [self_var]));
-        Scope.import_subtree ([], Trie.Untagged.singleton (self @ ["super"], `Term [super_var]));
+        Scope.import_subtree ([], Trie.Untagged.singleton (self, Resolver.P.Term [self_var]));
+        Scope.import_subtree ([], Trie.Untagged.singleton (self @ ["super"], Resolver.P.Term [super_var]));
       end;
       self_sym, super_sym, List.map expand_method methods
     in
@@ -159,9 +153,10 @@ let rec expand : Code.t -> Syn.t =
     {value = Syn.If_tex (x, y); loc} :: expand rest
 
   | {value = Xml_tag (title, attrs, body); loc} :: rest ->
+    let title = expand_xml_ident loc title in
     let attrs =
       attrs |> List.map @@ fun (k, v) ->
-      k, expand v
+      expand_xml_ident loc k, expand v
     in
     let body = expand body in
     {value = Syn.Xml_tag (title, attrs, body); loc} :: expand rest
@@ -179,14 +174,27 @@ let rec expand : Code.t -> Syn.t =
         expand rest
     end;
 
+
+  | {value = Let (a, bs, def); loc} :: rest ->
+    let singl = Trie.Untagged.singleton (a, Resolver.P.Term (expand_lambda loc (bs, def))) in
+    Resolver.Scope.section [] @@ fun _ ->
+    Resolver.Scope.import_subtree ([], singl);
+    expand rest
+
   | {value = Def (path, xs, body); loc} :: rest ->
     let lam = expand_lambda loc (xs, body) in
-    Resolver.Scope.include_singleton (path, (`Term lam, ()));
+    Resolver.Scope.include_singleton (path, (Term lam, ()));
+    expand rest
+
+  | {value = Decl_xmlns (prefix, xmlns); loc} :: rest ->
+    let path = ["xmlns"; prefix] in
+    let singl = Trie.Untagged.singleton (path, Resolver.P.Xmlns {prefix; xmlns}) in
+    Resolver.Scope.include_singleton (path, (Xmlns {prefix; xmlns}, ()));
     expand rest
 
   | {value = Alloc path; loc} :: rest ->
     let symbol = Symbol.fresh path in
-    Resolver.Scope.include_singleton (path, (`Sym symbol, ()));
+    Resolver.Scope.include_singleton (path, (Sym symbol, ()));
     expand rest
 
   | {value = Title xs; loc} :: rest ->
@@ -226,7 +234,7 @@ and expand_lambda loc : Trie.path list * Code.t -> Syn.t =
     xs |> List.map @@ fun x ->
     let sym = Symbol.fresh x in
     let var = Range.locate_opt None @@ Syn.Var sym in
-    let singlx = Trie.Untagged.singleton (x, `Term [var]) in
+    let singlx = Trie.Untagged.singleton (x, Resolver.P.Term [var]) in
     Scope.import_subtree ([], singlx);
     sym
   in
@@ -240,23 +248,40 @@ and expand_ident loc path =
     Reporter.fatalf ?loc Resolution_error
       "path %a could not be resolved"
       Trie.pp_path path
-  | Some (`Term x, ()), _ ->
+  | Some (Term x, ()), _ ->
     let relocate Range.{value; _} = Range.{value; loc} in
     List.map relocate x
-  | Some (`Sym x, ()), _ ->
+  | Some (Sym x, ()), _ ->
     Reporter.fatalf ?loc Resolution_error
       "path %a resolved to symbol %a instead of term"
       Trie.pp_path path
       Symbol.pp x
+  | Some (Xmlns {xmlns; prefix}, ()), _ ->
+    Reporter.fatalf ?loc Resolution_error
+      "path %a resolved to xmlns:%s=\"%s\" instead of term"
+      Trie.pp_path path
+      xmlns
+      prefix
 
 and expand_sym loc path =
   match Scope.resolve path, path with
-  | Some (`Sym x, ()), _ -> x
+  | Some (Sym x, ()), _ -> x
   | _ ->
     Reporter.fatalf ?loc Resolution_error
       "expected path `%a` to resolve to symbol"
       Trie.pp_path path
 
+and expand_xml_ident loc (prefix, uname) =
+  match prefix with
+  | None -> Base.Xml_resolved_qname {xmlns = None; prefix = None; uname}
+  | Some prefix ->
+    match Scope.resolve ["xmlns"; prefix] with
+    | Some (Xmlns {xmlns; prefix}, ()) ->
+      Base.Xml_resolved_qname {xmlns = Some xmlns; prefix = Some prefix; uname}
+    | _ ->
+      Reporter.fatalf ?loc Resolution_error
+        "expected path `%s` to resolve to xmlns"
+        prefix
 
 and expand_tree_inner (tree : Code.tree) : Syn.tree =
   let trace f =

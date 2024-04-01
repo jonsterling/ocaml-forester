@@ -14,6 +14,7 @@ type config =
    theme_dir : Eio.Fs.dir_ty Eio.Path.t;
    root : addr option;
    base_url : string option;
+   stylesheet : string;
    ignore_tex_cache : bool;
    no_assets: bool;
    no_theme: bool;
@@ -252,26 +253,27 @@ let tags ~forest =
 
 module E = Render_effect.Perform
 
-let render_tree ~cfg ~cwd doc =
-
-  doc.fm.addr |> Option.iter @@ fun addr ->
+let render_tree ~cfg ~cwd (tree : Sem.tree) =
+  tree.fm.addr |> Option.iter @@ fun addr ->
   let create = `Or_truncate 0o644 in
   let base_url = cfg.base_url in
   begin
-    (* TODO: the XML output via Eio is overflowing!!! *)
-    let ch = open_out @@ "output/" ^ E.route addr in
-    (* let path = Eio.Path.(cwd / "output" / E.route addr) in *)
-    (* Eio.Path.with_open_out ~create path @@ fun flow -> *)
-    (* Eio.Buf_write.with_flow flow @@ fun w -> *)
-    Fun.protect ~finally:(fun _ -> close_out ch) @@ fun _ ->
-    let out = Xmlm.make_output @@ `Channel ch in
-    (* Eio_util.xmlm_dest_of_writer w in *)
-    Render_xml.render_tree_page ~base_url doc out
+    let path = Eio.Path.(cwd / "output" / E.route addr) in
+    Eio.Path.with_open_out ~create path @@ fun flow ->
+    Eio.Buf_write.with_flow flow @@ fun writer ->
+    let fmt = Eio_util.formatter_of_writer writer in
+    let node = Render_dream.render_tree_top tree in
+    Format.fprintf fmt {|<?xml version="1.0" encoding="UTF-8"?>|};
+    Format.pp_print_newline fmt ();
+    Format.fprintf fmt "<?xml-stylesheet type=\"text/xsl\" href=\"%s\"?>" cfg.stylesheet;
+    Format.pp_print_newline fmt ();
+    Dream_html.pp fmt node
   end
 
 let render_json ~cwd docs =
   let docs = Sem.Util.sort_for_index @@ List.of_seq @@ Seq.map snd @@ M.to_seq docs in
-  Yojson.Basic.to_file "./output/forest.json" (Render_json.render_trees ~dev:false docs)
+  Yojson.Basic.to_file "./output/forest.json" @@
+  Render_json.render_trees ~dev:false docs
 
 let is_hidden_file fname =
   String.starts_with ~prefix:"." fname
@@ -320,6 +322,7 @@ let render_trees ~cfg ~forest : unit =
   Eio_util.ensure_dir_path cwd ["output"; "resources"];
 
   run_renderer ~cfg forest @@ fun () ->
+  Render_dream.with_mainmatter_cache @@ fun () ->
   forest.trees
   |> M.to_seq
   |> Seq.map snd

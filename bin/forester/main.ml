@@ -12,7 +12,8 @@ struct
      assets : string list;
      theme : string;
      base_url : string option;
-     root : addr option}
+     root : addr option;
+     stylesheet : string}
   [@@deriving show]
 end
 
@@ -21,7 +22,8 @@ let default_forest_config : Forest_config.t =
    assets = [];
    theme = "theme";
    base_url = None;
-   root = None}
+   root = None;
+   stylesheet = "default.xsl"}
 
 let parse_forest_config_file filename =
   let ch = open_in filename in
@@ -47,9 +49,13 @@ let parse_forest_config_file filename =
       Option.value ~default:default_forest_config.theme @@
       get tbl (forest |-- key "theme" |-- string)
     in
+    let stylesheet =
+      Option.value ~default:default_forest_config.stylesheet @@
+      get tbl (forest |-- key "stylesheet" |-- string)
+    in
     let base_url = get tbl (forest |-- key "base_url" |-- string) in
     let root = get tbl (forest |-- key "root" |-- string) in
-    Forest_config.{assets; trees; theme; base_url; root}
+    Forest_config.{assets; trees; theme; base_url; root; stylesheet}
 
 let make_dir ~env dir =
   Eio.Path.(Eio.Stdenv.fs env / dir)
@@ -64,6 +70,7 @@ let internal_config_from_config ~env (config : Forest_config.t) =
      base_url = config.base_url;
      assets_dirs = make_dirs ~env config.assets;
      theme_dir = make_dir ~env config.theme;
+     stylesheet = config.stylesheet;
      max_fibers = 20;
      ignore_tex_cache = false;
      no_assets = false;
@@ -179,7 +186,7 @@ let query_all ~env config_filename =
 
 let arg_config =
   let doc = "A TOML file like $(i,forest.toml)" in
-  Arg.(value & pos 0 file "forest.toml" & info [] ~docv:"MSG" ~doc)
+  Arg.(value & pos 0 file "forest.toml" & info [] ~docv:"FOREST" ~doc)
 
 let build_cmd ~env =
   let arg_dev =

@@ -26,17 +26,17 @@ let rec render_node ~cfg : Sem.node Range.located -> Printer.t =
     Printer.text txt
   | Sem.Math (_, xs) ->
     render ~cfg xs
-  | Sem.Xml_tag (name, _, body) ->
-    render_tag ~cfg name body
+  | Sem.Xml_tag (_, _, body) ->
+    render ~cfg body
   | Sem.If_tex (x , y) ->
     if cfg.tex then render ~cfg x else render ~cfg y
   | Sem.Unresolved name ->
-    render_tag ~cfg name []
+    render_unresolved ~cfg name []
   | node ->
     Reporter.fatalf ?loc:located.loc Type_error "Render_verbatim: cannot render this kind of object"
 
 
-and render_tag ~cfg name body =
+and render_unresolved ~cfg name body =
   Printer.seq
     [Printer.text "\\";
      Printer.text name;

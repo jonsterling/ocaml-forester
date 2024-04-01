@@ -9,7 +9,7 @@ type node =
   | Subtree of transclusion_opts * tree
   | Query of transclusion_opts * t Query.t
   | Link of {dest : string; title : t option; modifier : [`Sentence_case] option}
-  | Xml_tag of string * (string * t) list * t
+  | Xml_tag of xml_resolved_qname * (xml_resolved_qname * t) list * t
   | Unresolved of string
   | Math of math_mode * t
   | Embed_tex of {preamble : t; source : t}
@@ -201,3 +201,12 @@ let empty_frontmatter =
    designated_parent = None;
    source_path = None;
    number = None}
+
+let default_transclusion_opts : transclusion_opts =
+  {title_override = None;
+   taxon_override = None;
+   show_heading = true;
+   show_metadata = true;
+   toc = true;
+   expanded = true;
+   numbered = true}

@@ -6,7 +6,7 @@ type node =
   | Group of delim * t
   | Math of math_mode * t
   | Ident of Trie.path * string list
-  | Xml_tag of string * (string * t) list * t
+  | Xml_tag of (string option * string) * ((string option * string) * t) list * t
   | Transclude of addr
   | Subtree of addr option * t
   | Embed_tex of t * t
@@ -29,6 +29,7 @@ type node =
 
   | Import of visibility * addr
   | Def of Trie.path * Trie.path list * t
+  | Decl_xmlns of string * string
   | Alloc of Trie.path
 
   | Namespace of Trie.path * t
@@ -42,8 +43,6 @@ type node =
   | Date of string
   | Parent of string
   | Number of string
-
-
 [@@deriving show]
 
 and t = node Range.located list

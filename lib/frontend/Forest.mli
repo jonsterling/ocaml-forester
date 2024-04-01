@@ -6,6 +6,7 @@ type config =
    theme_dir : Eio.Fs.dir_ty Eio.Path.t;
    root : addr option;
    base_url : string option;
+   stylesheet : string;
    ignore_tex_cache : bool;
    no_assets: bool;
    no_theme: bool;

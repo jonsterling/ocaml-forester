@@ -2,14 +2,14 @@ open Base
 open Bwd
 open Prelude
 
-module LexEnv = Algaeff.Reader.Make (struct type t = Sem.t Env.t end)
-module DynEnv = Algaeff.Reader.Make (struct type t = Sem.t Env.t end)
-module HeapState = Algaeff.State.Make (struct type t = Sem.obj Env.t end)
-module EmittedTrees = Algaeff.State.Make (struct type t = Sem.tree list end)
+module Lex_env = Algaeff.Reader.Make (struct type t = Sem.t Env.t end)
+module Dyn_env = Algaeff.Reader.Make (struct type t = Sem.t Env.t end)
+module Heap = Algaeff.State.Make (struct type t = Sem.obj Env.t end)
+module Emitted_trees = Algaeff.State.Make (struct type t = Sem.tree list end)
 module Fm = Algaeff.State.Make (struct type t = Sem.frontmatter end)
 
 let get_transclusion_opts () =
-  let dynenv = DynEnv.read () in
+  let dynenv = Dyn_env.read () in
   let title_override = Env.find_opt Expand.Builtins.Transclude.title_sym dynenv in
   let taxon_override =
     match Env.find_opt Expand.Builtins.Transclude.taxon_sym dynenv with
@@ -67,7 +67,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     let subtree = {subtree with fm = {subtree.fm with physical_parent = fm.addr; designated_parent = fm.addr}} in
     begin
       addr |> Option.iter @@ fun _ ->
-      EmittedTrees.modify @@ fun trees ->
+      Emitted_trees.modify @@ fun trees ->
       subtree :: trees
     end;
     {node with value = Sem.Subtree (opts, subtree)} :: eval rest
@@ -91,7 +91,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
       match xs, rest with
       | [], rest -> eval body, rest
       | x :: xs, Range.{value = Syn.Group (Braces, u); loc = loc'} :: rest ->
-        LexEnv.scope (Env.add x (eval u)) @@ fun () ->
+        Lex_env.scope (Env.add x (eval u)) @@ fun () ->
         loop xs rest
       | _ ->
         Reporter.fatalf Type_error ?loc:node.loc
@@ -102,7 +102,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     body @ eval rest
   | Object {self; methods} ->
     let table =
-      let env = LexEnv.read () in
+      let env = Lex_env.read () in
       let add (name, body) =
         let super = Symbol.fresh [] in
         Sem.MethodTable.add name Sem.{body; self; super; env}
@@ -110,14 +110,14 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
       List.fold_right add methods Sem.MethodTable.empty
     in
     let sym = Symbol.fresh ["obj"] in
-    HeapState.modify @@ Env.add sym Sem.{prototype = None; methods = table};
+    Heap.modify @@ Env.add sym Sem.{prototype = None; methods = table};
     {node with value = Sem.Object sym} :: eval rest
   | Patch {obj; self; super; methods} ->
     begin
       match eval_strip obj with
       | [Range.{value = Sem.Object obj_ptr; _}] as obj ->
         let table =
-          let env = LexEnv.read () in
+          let env = Lex_env.read () in
           let add (name, body) =
             Sem.MethodTable.add name
               Sem.{body; self; super; env}
@@ -125,7 +125,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
           List.fold_right add methods Sem.MethodTable.empty
         in
         let sym = Symbol.fresh ["obj"] in
-        HeapState.modify @@ Env.add sym Sem.{prototype = Some obj_ptr; methods = table};
+        Heap.modify @@ Env.add sym Sem.{prototype = Some obj_ptr; methods = table};
         {node with value = Sem.Object sym} :: eval rest
       | xs ->
         Reporter.fatalf ?loc:node.loc Type_error
@@ -150,18 +150,18 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
               | Some proto_val ->
                 Env.add mthd.super proto_val env
             in
-            LexEnv.scope (fun _ -> env) @@ fun () ->
+            Lex_env.scope (fun _ -> env) @@ fun () ->
             eval mthd.body
           | None ->
             match obj.prototype with
             | Some proto ->
-              call_method @@ Env.find proto @@ HeapState.get ()
+              call_method @@ Env.find proto @@ Heap.get ()
             | None ->
               Reporter.fatalf ?loc:node.loc Type_error
                 "tried to call unbound method `%s`" method_name
         in
 
-        let result = call_method @@ Env.find sym @@ HeapState.get () in
+        let result = call_method @@ Env.find sym @@ Heap.get () in
         result @ eval rest
       | xs ->
         Reporter.fatalf ?loc:node.loc Type_error
@@ -169,7 +169,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     end
   | Var x ->
     begin
-      match Env.find_opt x @@ LexEnv.read () with
+      match Env.find_opt x @@ Lex_env.read () with
       | None ->
         Reporter.fatalf ?loc:node.loc Resolution_error
           "could not find variable named %a"
@@ -178,21 +178,21 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     end
   | Put (k, v, body) ->
     let body =
-      DynEnv.scope (Env.add k @@ eval v) @@ fun () ->
+      Dyn_env.scope (Env.add k @@ eval v) @@ fun () ->
       eval body
     in
     body @ eval rest
   | Default (k, v, body) ->
     let body =
       let upd flenv = if Env.mem k flenv then flenv else Env.add k (eval v) flenv in
-      DynEnv.scope upd @@ fun () ->
+      Dyn_env.scope upd @@ fun () ->
       eval body
     in
     body @ eval rest
   | Get key ->
     begin
-      let env = DynEnv.read () in
-      match Env.find_opt key @@ DynEnv.read () with
+      let env = Dyn_env.read () in
+      match Env.find_opt key @@ Dyn_env.read () with
       | None ->
         Eio.traceln "getting %a from %a" Symbol.pp key (Env.pp Sem.pp) env;
         Reporter.fatalf ?loc:node.loc Resolution_error
@@ -304,10 +304,10 @@ and eval_tree_inner ~addr (tree : Syn.tree) : Sem.tree =
 let eval_tree ~addr ~source_path (tree : Syn.tree) : Sem.tree * Sem.tree list =
   let fm = {Sem.empty_frontmatter with addr = Some addr; source_path} in
   Fm.run ~init:fm @@ fun () ->
-  EmittedTrees.run ~init:[] @@ fun () ->
-  HeapState.run ~init:Env.empty @@ fun () ->
-  LexEnv.run ~env:Env.empty @@ fun () ->
-  DynEnv.run ~env:Env.empty @@ fun () ->
+  Emitted_trees.run ~init:[] @@ fun () ->
+  Heap.run ~init:Env.empty @@ fun () ->
+  Lex_env.run ~env:Env.empty @@ fun () ->
+  Dyn_env.run ~env:Env.empty @@ fun () ->
   let tree = eval_tree_inner ~addr:(Some addr) tree in
-  let emitted = EmittedTrees.get () in
+  let emitted = Emitted_trees.get () in
   tree, emitted

@@ -9,6 +9,8 @@ let digit = ['0'-'9']
 let alpha = ['a'-'z' 'A'-'Z']
 let int = '-'? digit+
 let ident = '\\' (alpha) (alpha|digit|'-'|'/'|'#')*
+let xml_base_ident = (alpha) (alpha|digit|'-'|'_')*
+let xml_qname = (xml_base_ident ':' xml_base_ident) | xml_base_ident
 let addr = (alpha) (alpha|digit|'_'|'-')*
 let wschar = [' ' '\t']
 let newline = '\r' | '\n' | "\r\n"
@@ -71,7 +73,6 @@ rule token =
   | "\\query/taxon" {Grammar.QUERY_TAXON }
   | "\\query/meta" {Grammar.QUERY_META }
   | "\\query" { Grammar.QUERY_TREE }
-  | "\\xml" { Grammar.XML_TAG }
   | "\\p" { Grammar.PRIM `P }
   | "\\em" { Grammar.PRIM `Em }
   | "\\strong" { Grammar.PRIM `Strong }
@@ -85,6 +86,15 @@ rule token =
   | "\\patch" { Grammar.PATCH }
   | "\\call" { Grammar.CALL }
   | "#" { Grammar.TEXT "#" }
+  | "\\<" { 
+      let qname = xml_qname lexbuf in 
+      let () = rangle lexbuf in
+      XML_ELT_IDENT qname
+    }
+  | "\\xmlns:" { 
+      let prefix = xml_base_ident lexbuf in
+      DECL_XMLNS prefix
+    }
   | ident { Grammar.IDENT (drop_sigil '\\' (Lexing.lexeme lexbuf)) }
   | '{' { Grammar.LBRACE }
   | '}' { Grammar.RBRACE }
@@ -92,6 +102,7 @@ rule token =
   | ']' { Grammar.RSQUARE }
   | '(' { Grammar.LPAREN }
   | ')' { Grammar.RPAREN }
+
   | text { Grammar.TEXT (Lexing.lexeme lexbuf) }
   | wschar+ { Grammar.WHITESPACE (Lexing.lexeme lexbuf) }
   | newline { Lexing.new_line lexbuf; Grammar.WHITESPACE (Lexing.lexeme lexbuf) }
@@ -110,3 +121,16 @@ and verbatim =
   | _ as c
     { Buffer.add_char verbatim_buff c;
       verbatim lexbuf }
+
+and xml_qname = 
+  parse 
+  | xml_qname as qname { qname } 
+
+
+and xml_base_ident = 
+  parse
+  | xml_base_ident as x { x } 
+  
+and rangle = 
+  parse 
+  | ">" { () }

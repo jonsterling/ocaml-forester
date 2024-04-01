@@ -1,15 +1,23 @@
 %{
   open Prelude
   open Core
+
+  let split_xml_qname str =
+    match String.split_on_char ':' str with
+    | [prefix; uname] -> Some prefix, uname
+    | [uname] -> None, uname
+    | _ -> failwith "split_xml_qname"
 %}
 
+%token <string> XML_ELT_IDENT
+%token <string> DECL_XMLNS
 %token <string> TEXT
 %token <string> WHITESPACE
 %token <string> IDENT
 %token <Core.Prim.t> PRIM
 %token TITLE PARENT IMPORT EXPORT DEF TAXON AUTHOR CONTRIBUTOR TAG DATE NUMBER NAMESPACE LET TEX META OPEN
 %token OBJECT PATCH CALL
-%token TRANSCLUDE SUBTREE SCOPE PUT GET DEFAULT ALLOC XML_TAG REF
+%token TRANSCLUDE SUBTREE SCOPE PUT GET DEFAULT ALLOC REF
 %token LBRACE RBRACE LSQUARE RSQUARE LPAREN RPAREN HASH_LBRACE HASH_HASH_LBRACE
 %token QUERY_AND QUERY_OR QUERY_NOT QUERY_AUTHOR QUERY_TAG QUERY_TAXON QUERY_META
 %token QUERY_TREE
@@ -71,7 +79,11 @@ let head_node :=
 | GET; ~ = ident; <Code.Get>
 | OPEN; ~ = ident; <Code.Open>
 | QUERY_TREE; ~ = braces(query); <Code.Query>
-| XML_TAG; ~ = txt_arg; ~ = list(xml_attr); ~ = arg; <Code.Xml_tag>
+| name = XML_ELT_IDENT; attrs = list(xml_attr); body = arg; {
+  let name = split_xml_qname name in
+  Code.Xml_tag (name, attrs, body)
+}
+| ~ = DECL_XMLNS; ~ = txt_arg; <Code.Decl_xmlns>
 | OBJECT; self = option(squares(bvar)); methods = braces(ws_list(method_decl)); { Code.Object {self;  methods } }
 | PATCH; obj = braces(code_expr); self = option(squares(bvar)); methods = braces(ws_list(method_decl)); { Code.Patch {obj; self; methods} }
 | CALL; ~ = braces(code_expr); ~ = txt_arg; <Code.Call>
@@ -83,11 +95,12 @@ let head_node :=
 | ~ = squares(textual_expr); <Code.squares>
 | ~ = parens(textual_expr); <Code.parens>
 
+
 let method_decl :=
 | k = squares(TEXT); list(WHITESPACE); v = arg; { k, v }
 
 let xml_attr :=
-| k = squares(TEXT); v = arg; { (k, v) }
+| k = squares(TEXT); v = arg; { (split_xml_qname k, v) }
 
 let ident :=
 | ident = IDENT;

@@ -7,10 +7,6 @@ let formatter_of_writer w =
   let flush () = () in
   Format.make_formatter out flush
 
-let xmlm_dest_of_writer w =
-  let write_byte b = Eio.Buf_write.char w @@ Char.chr b in
-  `Fun write_byte
-
 module NullSink : Flow.Pi.SINK with type t = unit =
 struct
   type t = unit

@@ -32,8 +32,6 @@
   (ocaml
    (>= 5.0.0))
   dune
-  (xmlm
-   (>= 1.4.0))
   ppx_deriving
   (cmdliner
    (>= 1.2.0))
@@ -47,12 +45,14 @@
   (asai
    (>= 0.2.0))
   (yuujinchou
-   (>= 5.1.0))
+   (>= 5.2.0))
   (bwd
    (>= 2.3.0))
   (algaeff
    (>= 2.0.0))
   (yojson
    (>= 2.1.2))
+  (dream-html
+   (>= 3.3.1))
   (toml
    (>= 7.1.0))))
