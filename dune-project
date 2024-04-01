@@ -39,7 +39,7 @@
    (>= 1.2.0))
   dune-build-info
   (eio_main
-   (>= 0.13))
+   (>= 1.0))
   (ptime
    (>= 1.1.0))
   (asai
