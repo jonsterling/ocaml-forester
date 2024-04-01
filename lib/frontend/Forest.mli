@@ -3,6 +3,7 @@ open Core
 type config =
   {env : Eio_unix.Stdenv.base;
    assets_dirs : Eio.Fs.dir_ty Eio.Path.t list;
+   theme_dir : Eio.Fs.dir_ty Eio.Path.t;
    root : addr option;
    base_url : string option;
    ignore_tex_cache : bool;
@@ -24,6 +25,5 @@ val complete : forest:forest -> string -> (addr * string) Seq.t
 val prefixes : addrs:addr Seq.t -> string list
 val taxa : forest:forest-> (addr * string) Seq.t
 val tags : forest:forest -> (addr * string list) Seq.t
-val run_renderer : cfg:config -> forest -> ( unit -> 'a) -> 'a 
-val render_json :
-  cwd:[> Eio__.Fs.dir_ty ] Eio.Path.t -> Core.Sem.tree Analysis.Map.t -> unit
+val run_renderer : cfg:config -> forest -> ( unit -> 'a) -> 'a
+val render_json : cwd:[> Eio__.Fs.dir_ty ] Eio.Path.t -> Core.Sem.tree Analysis.Map.t -> unit

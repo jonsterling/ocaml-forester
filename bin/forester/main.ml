@@ -5,11 +5,57 @@ open Cmdliner
 
 module Tty = Asai.Tty.Make (Core.Reporter.Message)
 
-let version =
-  Format.asprintf "%s" @@
-  match Build_info.V1.version () with
-  | None -> "n/a"
-  | Some v -> Build_info.V1.Version.to_string v
+module Forest_config =
+struct
+  type t =
+    {trees : string list;
+     assets : string list;
+     theme : string;
+     base_url : string option;
+     root : addr option}
+  [@@deriving show]
+end
+
+let default_forest_config : Forest_config.t =
+  {trees = ["trees"];
+   assets = [];
+   theme = "theme";
+   base_url = None;
+   root = None}
+
+let parse_forest_config contents =
+  match Toml.Parser.from_string contents with
+  | `Error (msg, location) ->
+    Reporter.emit Parse_error msg;
+    default_forest_config
+  | `Ok tbl ->
+    let open Toml.Lenses in
+    let forest = key "forest" |-- table in
+    let trees =
+      Option.value ~default:default_forest_config.trees @@
+      get tbl (forest |-- key "trees" |-- array |-- strings)
+    in
+    let assets =
+      Option.value ~default:default_forest_config.assets @@
+      get tbl (forest |-- key "assets" |-- array |-- strings)
+    in
+    let theme =
+      Option.value ~default:default_forest_config.theme @@
+      get tbl (forest |-- key "theme" |-- string)
+    in
+    let base_url = get tbl (forest |-- key "base_url" |-- string) in
+    let root = get tbl (forest |-- key "root" |-- string) in
+    Forest_config.{assets; trees; theme; base_url; root}
+
+let get_forest_config env config_filename =
+  let fs = Eio.Stdenv.fs env in
+  match Eio.Path.(load (fs / config_filename)) with
+  | exception Eio.Io (Eio.Fs.E (Eio.Fs.Not_found _), _) ->
+    default_forest_config
+  | exception _ -> failwith "fuck"
+  | contents ->
+    parse_forest_config contents
+
 
 let make_dir ~env dir =
   Eio.Path.(Eio.Stdenv.fs env / dir)
@@ -17,19 +63,43 @@ let make_dir ~env dir =
 let make_dirs ~env =
   List.map (make_dir ~env)
 
-let build ~env input_dirs assets_dirs root base_url dev max_fibers ignore_tex_cache no_assets no_theme =
-  let assets_dirs = if no_assets then [] else make_dirs ~env assets_dirs in
-  let cfg = Forest.{env; root; base_url; assets_dirs; max_fibers; ignore_tex_cache; no_assets; no_theme} in
+let internal_config_from_config ~env (config : Forest_config.t) =
+  Forest.
+    {env;
+     root = config.root;
+     base_url = config.base_url;
+     assets_dirs = make_dirs ~env config.assets;
+     theme_dir = make_dir ~env config.theme;
+     max_fibers = 20;
+     ignore_tex_cache = false;
+     no_assets = true;
+     no_theme = true}
+
+let version =
+  Format.asprintf "%s" @@
+  match Build_info.V1.version () with
+  | None -> "n/a"
+  | Some v -> Build_info.V1.Version.to_string v
+
+
+let build ~env config_filename dev ignore_tex_cache no_assets no_theme =
+  let config = get_forest_config env config_filename in
+  let internal_cfg = internal_config_from_config ~env config in
   let forest =
     Forest.plant_forest @@
     Process.read_trees_in_dirs ~dev @@
-    make_dirs ~env input_dirs
+    make_dirs ~env config.trees
   in
-  Forest.render_trees ~cfg ~forest
+  Forest.render_trees ~cfg:internal_cfg ~forest
 
-let new_tree ~env input_dirs dest_dir prefix template random =
-  let cfg = Forest.{env; root = None; base_url = None; assets_dirs = []; max_fibers = 20; ignore_tex_cache = true; no_assets = true; no_theme = true;} in
-  let input_dirs = make_dirs ~env @@ input_dirs in
+let new_tree ~env config_filename dest_dir prefix template random =
+  let config = get_forest_config env config_filename in
+  let internal_config =
+    {(internal_config_from_config ~env config) with
+     no_assets = true;
+     no_theme = true}
+  in
+  let input_dirs = make_dirs ~env config.trees in
   let forest =
     Forest.plant_forest @@
     Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true input_dirs
@@ -40,49 +110,53 @@ let new_tree ~env input_dirs dest_dir prefix template random =
     |> Seq.map fst
   in
   let mode = if random then `Random else `Sequential in
-  let addr = Forest.create_tree ~cfg ~dest:(make_dir ~env dest_dir) ~prefix ~template ~addrs ~mode in
+  let addr = Forest.create_tree ~cfg:internal_config ~dest:(make_dir ~env dest_dir) ~prefix ~template ~addrs ~mode in
   Format.printf "%s/%s.tree\n" dest_dir addr
 
-let complete ~env input_dirs title =
+let complete ~env config_filename title =
+  let config = get_forest_config env config_filename in
   let forest =
     Forest.plant_forest @@
     Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true @@
-    make_dirs ~env input_dirs
+    make_dirs ~env config.trees
   in
   let completions = Forest.complete ~forest title in
   completions |> Seq.iter @@ fun (addr, title) ->
   Format.printf "%s, %s\n" addr title
 
-let query_prefixes ~env input_dirs =
+let query_prefixes ~env config_filename =
+  let config = get_forest_config env config_filename in
   let forest =
     Forest.plant_forest @@
     Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true @@
-    make_dirs ~env input_dirs
+    make_dirs ~env config.trees
   in
   let addrs =
     Analysis.Map.bindings forest.trees
     |> List.to_seq
-    |> Seq.map fst 
+    |> Seq.map fst
   in
   let prefixes = Forest.prefixes ~addrs in
   prefixes |> List.iter @@ fun addr ->
   Format.printf "%s\n" addr
 
-let query_taxon ~env taxon input_dirs =
+let query_taxon ~env taxon config_filename =
+  let config = get_forest_config env config_filename in
   let forest =
     Forest.plant_forest @@
     Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true @@
-    make_dirs ~env input_dirs
+    make_dirs ~env config.trees
   in
   let taxa = Forest.taxa ~forest in
   taxa |> Seq.iter @@ fun (addr, taxon) ->
   Format.printf "%s, %s\n" addr taxon
 
-let query_tag ~env input_dirs =
+let query_tag ~env config_filename =
+  let config = get_forest_config env config_filename in
   let forest =
     Forest.plant_forest @@
     Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true @@
-    make_dirs ~env input_dirs
+    make_dirs ~env config.trees
   in
   let tags = Forest.tags ~forest in
   tags |> Seq.iter @@ fun (addr, tags) ->
@@ -92,69 +166,35 @@ let query_tag ~env input_dirs =
   in
   Format.printf "%s%s\n" addr (tag_string tags)
 
-let query_all ~env input_dirs = 
+let query_all ~env config_filename =
+  let config = get_forest_config env config_filename in
   let (forest : Forest.forest) =
     Forest.plant_forest @@
     Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true @@
-    make_dirs ~env input_dirs
+    make_dirs ~env config.trees
   in
-  let cfg = 
-    Forest.{
-      env; 
-      root = None; 
-      base_url = None; 
-      assets_dirs = [] ; 
-      max_fibers = 20; 
-      ignore_tex_cache = false; 
-      no_assets = true; 
-      no_theme = true}
-  in
-  Forest.run_renderer ~cfg forest @@ fun () ->
-  forest.trees 
-  |> Analysis.Map.to_list 
-  |> List.map snd 
+  let internal_config = internal_config_from_config ~env config in
+  Forest.run_renderer ~cfg:internal_config forest @@ fun () ->
+  forest.trees
+  |> Analysis.Map.to_list
+  |> List.map snd
   |> Render.Render_json.render_trees ~dev:true
-  |> Yojson.Basic.to_string 
+  |> Yojson.Basic.to_string
   |> Format.printf "%s"
 
+
+let arg_config =
+  let doc = "A TOML file like $(i,forest.toml)" in
+  Arg.(value & pos 0 file "forest.toml" & info [] ~docv:"MSG" ~doc)
+
 let build_cmd ~env =
-
-  let arg_input_dirs =
-    Arg.non_empty @@ Arg.pos_all Arg.dir [] @@
-    Arg.info [] ~docv:"INPUT_DIR"
-  in
-
-  let arg_assets_dirs =
-    let doc = "The contents of the $(i,ASSETS_DIRS) directories will be copied into the rendered forest." in
-    Arg.value @@ Arg.opt (Arg.list Arg.dir) ["assets"] @@
-    Arg.info ["assets-dirs"] ~docv:"ASSETS_DIRS" ~doc
-  in
-
-  let arg_root =
-    let doc = "The address of the root tree, e.g. $(i,jms-0001); if this option is supplied, the tree $(i,jms-0001) will be rendered to $(i,output/index.xml)." in
-    Arg.value @@ Arg.opt (Arg.some Arg.string) None @@
-    Arg.info ["root"] ~docv:"ADDR" ~doc
-  in
-
   let arg_dev =
     let doc = "Run forester in development mode; this will attach source file locations to the generated json." in
     Arg.value @@ Arg.flag @@ Arg.info ["dev"] ~doc
   in
 
-  let arg_base_url =
-    let doc = "Set the base URL for local hyperlinks." in
-    Arg.value @@ Arg.opt (Arg.some Arg.string) None @@
-    Arg.info ["base-url"] ~docv:"URL" ~doc
-  in
-
-  let arg_max_fibers =
-    let doc = "Maximum number of fibers with which to build LaTeX assets concurrently." in
-    Arg.value @@ Arg.opt Arg.int 20 @@
-    Arg.info ["max-fibers"] ~docv:"NUM" ~doc
-  in
-
   let arg_ignore_tex_cache =
-    let doc = "Ignore the SVG/PDF cache when building LaTeX assets." in
+    let doc = "Ignore the SVG cache when building LaTeX assets." in
     Arg.value @@ Arg.flag @@ Arg.info ["ignore-tex-cache"] ~doc
   in
 
@@ -178,12 +218,8 @@ let build_cmd ~env =
   Cmd.v info
     Term
     .(const (build ~env)
-      $ arg_input_dirs
-      $ arg_assets_dirs
-      $ arg_root
-      $ arg_base_url
+      $ arg_config
       $ arg_dev
-      $ arg_max_fibers
       $ arg_ignore_tex_cache
       $ arg_no_assets
       $ arg_no_theme)
@@ -199,11 +235,6 @@ let new_tree_cmd ~env =
     Arg.value @@ Arg.opt (Arg.some Arg.string) None @@
     Arg.info ["template"] ~docv:"XXX" ~doc
   in
-  let arg_input_dirs =
-    let doc = "The directories in which to scan tree identifiers. In the future, the $(i,--dir) spelling of this argument will be removed and $(i,--dirs) will be required." in
-    Arg.value @@ Arg.opt (Arg.list Arg.dir) [] @@
-    Arg.info ["dirs";"dir"] ~docv:"DIRS" ~doc
-  in
   let arg_dest_dir =
     let doc = "The directory in which to deposit created tree." in
     Arg.required @@ Arg.opt (Arg.some Arg.dir) None @@
@@ -218,7 +249,7 @@ let new_tree_cmd ~env =
   Cmd.v info
     Term
     .(const (new_tree ~env)
-      $ arg_input_dirs
+      $ arg_config
       $ arg_dest_dir
       $ arg_prefix
       $ arg_template
@@ -230,54 +261,34 @@ let complete_cmd ~env =
     Arg.value @@ Arg.opt Arg.string "" @@
     Arg.info ["title"] ~docv:"title" ~doc
   in
-  let arg_input_dirs =
-    Arg.non_empty @@ Arg.pos_all Arg.file [] @@
-    Arg.info [] ~docv:"INPUT_DIR"
-  in
   let doc = "Complete a tree title." in
   let info = Cmd.info "complete" ~version ~doc in
-  Cmd.v info Term.(const (complete ~env) $ arg_input_dirs $ arg_title)
+  Cmd.v info Term.(const (complete ~env) $ arg_config $ arg_title)
 
 
 let query_prefixes_cmd ~env =
-  let arg_input_dirs =
-    Arg.non_empty @@ Arg.pos_all Arg.file [] @@
-    Arg.info [] ~docv:"INPUT_DIR"
-  in
   let doc = "Get all prefixes of a forest" in
   let info = Cmd.info "prefix" ~version ~doc in
-  Cmd.v info Term.(const (query_prefixes ~env) $ arg_input_dirs)
+  Cmd.v info Term.(const (query_prefixes ~env) $ arg_config)
 
 let query_taxon_cmd ~env =
-  let arg_input_dirs =
-    Arg.non_empty @@ Arg.pos_all Arg.file [] @@
-    Arg.info [] ~docv:"INPUT_DIR"
-  in
   let arg_taxon =
     Arg.non_empty @@ Arg.pos_all Arg.file [] @@
     Arg.info [] ~docv:"TAXON"
   in
   let doc = "List all trees of taxon TAXON" in
   let info = Cmd.info "taxon" ~version ~doc in
-  Cmd.v info Term.(const (query_taxon ~env) $ arg_taxon $ arg_input_dirs)
+  Cmd.v info Term.(const (query_taxon ~env) $ arg_taxon $ arg_config)
 
 let query_tag_cmd ~env =
-  let arg_input_dirs =
-    Arg.non_empty @@ Arg.pos_all Arg.file [] @@
-    Arg.info [] ~docv:"INPUT_DIR"
-  in
   let doc = "List all trees with tag TAG" in
   let info = Cmd.info "tag" ~version ~doc in
-  Cmd.v info Term.(const (query_tag ~env) $ arg_input_dirs)
+  Cmd.v info Term.(const (query_tag ~env) $ arg_config)
 
 let query_all_cmd ~env =
-  let arg_input_dirs =
-    Arg.non_empty @@ Arg.pos_all Arg.file [] @@
-    Arg.info [] ~docv:"INPUT_DIR"
-  in
   let doc = "List all trees in JSON format" in
   let info = Cmd.info "all" ~version ~doc in
-  Cmd.v info Term.(const (query_all ~env) $ arg_input_dirs)
+  Cmd.v info Term.(const (query_all ~env) $ arg_config)
 
 let query_cmd ~env =
   let doc = "Query your forest" in
@@ -297,6 +308,7 @@ let cmd ~env =
 
   let info = Cmd.info "forester" ~version ~doc ~man in
   Cmd.group info [build_cmd ~env; new_tree_cmd ~env; complete_cmd ~env; query_cmd ~env]
+
 
 let () =
   let fatal diagnostics =

@@ -23,6 +23,7 @@ depends: [
   "bwd" {>= "2.3.0"}
   "algaeff" {>= "2.0.0"}
   "yojson" {>= "2.1.2"}
+  "toml" {>= "7.1.0"}
   "odoc" {with-doc}
 ]
 build: [

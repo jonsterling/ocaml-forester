@@ -3,7 +3,16 @@
  (name main)
  (flags (-g))
  (link_flags (-g))
- (libraries forester.frontend cmdliner dune-build-info eio_main asai yojson))
+ (preprocess
+  (pps ppx_deriving.show))
+ (libraries
+  forester.frontend
+  cmdliner
+  dune-build-info
+  eio_main
+  asai
+  yojson
+  toml))
 
 (env
  (dev

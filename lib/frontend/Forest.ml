@@ -11,6 +11,7 @@ module Gph = A.Gph
 type config =
   {env : Eio_unix.Stdenv.base;
    assets_dirs : Eio.Fs.dir_ty Eio.Path.t list;
+   theme_dir : Eio.Fs.dir_ty Eio.Path.t;
    root : addr option;
    base_url : string option;
    ignore_tex_cache : bool;
@@ -275,13 +276,13 @@ let render_json ~cwd docs =
 let is_hidden_file fname =
   String.starts_with ~prefix:"." fname
 
-let copy_theme ~env =
+let copy_theme ~env ~theme_dir =
   let cwd = Eio.Stdenv.cwd env in
   let fs = Eio.Stdenv.fs env in
-  Eio.Path.with_open_dir Eio.Path.(fs / "theme") @@ fun theme ->
+  Eio.Path.with_open_dir theme_dir @@ fun theme ->
   Eio.Path.read_dir theme |> List.iter @@ fun fname ->
   if not @@ is_hidden_file fname then
-    let source = "theme/" ^ fname in
+    Eio.Path.native @@ Eio.Path.(theme_dir / fname) |> Option.iter @@ fun source ->
     Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"output"
 
 let copy_assets ~env ~assets_dirs =
@@ -329,6 +330,6 @@ let render_trees ~cfg ~forest : unit =
   if not cfg.no_assets then
     copy_assets ~env ~assets_dirs:cfg.assets_dirs;
   if not cfg.no_theme then
-    copy_theme ~env;
+    copy_theme ~env ~theme_dir:cfg.theme_dir;
   let _ = LaTeX_queue.process ~env ~max_fibers:cfg.max_fibers ~ignore_tex_cache:cfg.ignore_tex_cache in
   copy_resources ~env
