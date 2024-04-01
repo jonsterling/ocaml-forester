@@ -2,9 +2,10 @@
   inputs = {
     opam-nix.url = "github:tweag/opam-nix";
     flake-utils.url = "github:numtide/flake-utils";
-    nixpkgs.follows = "opam-nix/nixpkgs";
+    opam-repository.url = "github:ocaml/opam-repository";
+    opam-repository.flake = false;
   };
-  outputs = { self, flake-utils, opam-nix, nixpkgs }@inputs:
+  outputs = { self, flake-utils, opam-nix, nixpkgs, opam-repository }@inputs:
     let package = "forester";
     in flake-utils.lib.eachDefaultSystem (system:
       let
@@ -15,11 +16,11 @@
           ocaml-lsp-server = "*";
         };
         query = devPackagesQuery // { };
-        scope = on.buildOpamProject' { } ./. query;
+        scope =
+          on.buildOpamProject' { repos = [ "${opam-repository}" ]; } ./. query;
         overlay = final: prev: {
-          ${package} = prev.${package}.overrideAttrs (_: {
-            doNixSupport = false;
-          });
+          ${package} =
+            prev.${package}.overrideAttrs (_: { doNixSupport = false; });
         };
         scope' = scope.overrideScope' overlay;
         main = scope'.${package};
@@ -30,9 +31,7 @@
         packages.default = main;
         devShells.default = pkgs.mkShell {
           inputsFrom = [ main ];
-          buildInputs = devPackages ++ [
-            pkgs.texlive.combined.scheme-full
-          ];
+          buildInputs = devPackages;
         };
       });
 }
