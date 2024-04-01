@@ -66,8 +66,8 @@ let internal_config_from_config ~env (config : Forest_config.t) =
      theme_dir = make_dir ~env config.theme;
      max_fibers = 20;
      ignore_tex_cache = false;
-     no_assets = true;
-     no_theme = true}
+     no_assets = false;
+     no_theme = false}
 
 let version =
   Format.asprintf "%s" @@
