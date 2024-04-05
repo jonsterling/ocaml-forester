@@ -1,22 +1,29 @@
-let index_of_first_ascii_char word =
-  let rx = Str.regexp "\\([A-za-z]\\)" in
-  try Option.some @@ Str.search_forward rx word 0 with _ -> None
-
-let title_case_word ix word =
-  if ix = 0 then
-    begin
-      match index_of_first_ascii_char word with
-      | None -> word
-      | Some i ->
-        word |> String.mapi @@ fun j c ->
-        if i = j then Char.uppercase_ascii c else c
-    end
-  else
-    word
+(* Based on cmap_utf_8 from https://erratique.ch/software/uucp/doc/Uucp/Case/index.html#caseexamples *)
+let title_case_word s =
+  let did_uppercase = ref false in
+  let rec loop buf s i max =
+    if i > max then Buffer.contents buf else
+      let dec = String.get_utf_8_uchar s i in
+      let u = Uchar.utf_decode_uchar dec in
+      let should_ignore = Uucp.Case.is_case_ignorable u || not (Uucp.Case.is_cased u) in
+      let () =
+        match should_ignore || !did_uppercase with
+        | true ->
+          Buffer.add_utf_8_uchar buf u
+        | false ->
+          did_uppercase := true;
+          match Uucp.Case.Map.to_upper u with
+          | `Self -> Buffer.add_utf_8_uchar buf u
+          | `Uchars us -> List.iter (Buffer.add_utf_8_uchar buf) us
+      in
+      loop buf s (i + Uchar.utf_decode_length dec) max
+  in
+  let buf = Buffer.create @@ String.length s * 2 in
+  loop buf s 0 @@ String.length s - 1
 
 let sentence_case str =
   let words = String.split_on_char ' ' str in
-  String.concat " " @@ List.mapi title_case_word words
+  String.concat " " @@ List.mapi (fun i word -> if i = 0 then title_case_word word else word) words
 
 let trim_newlines str =
   let rec process_lines lines =

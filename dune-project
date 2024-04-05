@@ -38,6 +38,8 @@
   (cmdliner
    (>= 1.2.0))
   dune-build-info
+  (uucp
+   (>= 15.1.0))
   (eio_main
    (>= 1.0))
   (ptime

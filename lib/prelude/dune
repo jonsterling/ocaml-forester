@@ -1,6 +1,6 @@
 (library
  (name Prelude)
- (libraries unix str ptime eio)
+ (libraries unix str ptime eio uucp)
  (public_name forester.prelude))
 
 (env
