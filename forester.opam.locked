@@ -1,6 +1,6 @@
 opam-version: "2.0"
 name: "forester"
-version: "3.1.0"
+version: "4.0.0"
 synopsis: "A tool for tending mathematical forests"
 maintainer: "Jonathan Sterling"
 authors: "Jonathan Sterling"
