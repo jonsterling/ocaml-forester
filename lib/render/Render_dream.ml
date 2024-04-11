@@ -318,6 +318,13 @@ and render_meta (key, body) =
     render_nodes body
   ]
 
+and render_last_changed (fm : Sem.frontmatter) =
+  match fm.addr with
+  | Some addr ->
+    let date = E.last_changed addr in
+    date |> optional @@ fun date -> F.last_changed [] [render_date date]
+  | None -> F.null []
+
 and render_frontmatter ~opts (fm : Sem.frontmatter) =
   let anchor = string_of_int @@ Oo.id (object end) in
   let contributors =
@@ -359,7 +366,8 @@ and render_frontmatter ~opts (fm : Sem.frontmatter) =
     render_authors ~contributors ~authors;
     fm.number |> optional @@ F.number [] "%s";
     fm.designated_parent |> optional @@ F.parent [] "%s";
-    F.null @@ List.map render_meta fm.metas
+    F.null @@ List.map render_meta fm.metas;
+    render_last_changed fm
   ]
 
 and render_mainmatter nodes =

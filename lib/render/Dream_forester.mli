@@ -33,6 +33,7 @@ val addr : _ text_tag
 val route : _ text_tag
 val source_path : _ text_tag
 val date : std_tag
+val last_changed : std_tag
 val title : std_tag
 
 val href : _ string_attr

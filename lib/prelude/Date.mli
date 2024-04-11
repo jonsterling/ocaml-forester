@@ -1,4 +1,4 @@
-type t
+type t = {yyyy : int; mm : int option; dd : int option}
 
 val pp : Format.formatter -> t -> unit
 val pp_human : Format.formatter -> t -> unit

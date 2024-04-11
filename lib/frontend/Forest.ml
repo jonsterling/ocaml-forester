@@ -103,6 +103,18 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
     let run_query query =
       get_sorted_trees @@ S.of_seq @@ Seq.map fst @@ M.to_seq @@
       M.filter (fun _ -> Sem.Query.test query) forest.trees
+
+    let last_changed scope =
+      let ( let* ) = Option.bind in
+      let tree = M.find scope forest.trees in
+      let* source_path = tree.fm.source_path in
+      let env = cfg.env in
+      let path = Eio.Path.(Eio.Stdenv.fs env / source_path) in
+      let stat  = Eio.Path.stat ~follow:true path in
+      let* mtime = Some stat.mtime in
+      let* ptime = Ptime.of_float_s mtime in
+      let (yyyy, mm, dd) = (ptime |> Ptime.to_date_time |> fst) in
+      Some Prelude.Date.{yyyy; mm = Some mm; dd = Some dd}
   end
   in
   let module Run = Render_effect.Run (H) in

@@ -41,6 +41,7 @@ let route attrs = f_text_tag "route" attrs
 let source_path attrs = f_text_tag "source-path" attrs
 let href fmt = uri_attr "href" fmt
 let date = f_std_tag "date"
+let last_changed = f_std_tag "last-changed"
 let year attrs = f_text_tag "year" attrs
 let month attrs = f_text_tag "month" attrs
 let day attrs = f_text_tag "day" attrs

@@ -14,6 +14,7 @@ sig
   val enqueue_latex : name:string -> preamble:string -> source:string -> unit
   val get_doc : addr -> Sem.tree option
   val run_query : Sem.t Query.t -> Sem.tree list
+  val last_changed : addr -> Prelude.Date.t option
 end
 
 type _ Effect.t +=
@@ -29,6 +30,7 @@ type _ Effect.t +=
   | Enqueue_latex : {name : string; preamble : string; source : string} -> unit Effect.t
   | Get_doc : addr -> Sem.tree option Effect.t
   | Run_query : Sem.t Query.t -> Sem.tree list Effect.t
+  | Last_changed : addr -> Prelude.Date.t option Effect.t
 
 module Perform : Handler =
 struct
@@ -44,6 +46,7 @@ struct
   let enqueue_latex ~name ~preamble ~source = Effect.perform @@ Enqueue_latex {name; preamble; source}
   let get_doc addr = Effect.perform @@ Get_doc addr
   let run_query query = Effect.perform @@ Run_query query
+  let last_changed addr = Effect.perform @@ Last_changed addr
 end
 
 module Run (H : Handler) =
@@ -81,6 +84,8 @@ struct
            resume @@ fun () -> H.get_doc addr
          | Run_query query ->
            resume @@ fun () -> H.run_query query
+         | Last_changed addr ->
+           resume @@ fun () -> H.last_changed addr
          | _ ->
            None}
 end

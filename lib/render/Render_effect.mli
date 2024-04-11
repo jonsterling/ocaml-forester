@@ -14,6 +14,7 @@ sig
   val enqueue_latex : name:string -> preamble:string -> source:string -> unit
   val get_doc : addr -> Sem.tree option
   val run_query : Sem.t Query.t -> Sem.tree list
+  val last_changed : addr -> Prelude.Date.t option
 end
 
 module Perform : Handler
