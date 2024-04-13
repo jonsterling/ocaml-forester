@@ -20,7 +20,7 @@ type config =
    no_theme: bool;
    max_fibers : int}
 
-type raw_forest = Code.tree Seq.t
+type raw_forest = Code.tree list
 
 type forest =
   {trees : Sem.tree Analysis.Map.t;
@@ -138,7 +138,7 @@ let plant_forest (trees : raw_forest) : forest =
       | Some addr -> add_tree addr tree acc
       | None -> acc
     in
-    Seq.fold_left alg M.empty trees
+    List.fold_left alg M.empty trees
   in
 
   let _, trees =

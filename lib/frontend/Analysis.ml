@@ -6,7 +6,7 @@ module Topo = Graph.Topological.Make (Gph)
 
 module Tbl = Hashtbl.Make (String)
 
-let build_import_graph (trees : Code.tree Seq.t) =
+let build_import_graph (trees : Code.tree list) =
   let import_graph = Gph.create () in
 
   let rec analyse_tree roots (tree : Code.tree) =
@@ -21,7 +21,7 @@ let build_import_graph (trees : Code.tree Seq.t) =
     | _ -> ()
   in
 
-  trees |> Seq.iter (analyse_tree []);
+  trees |> List.iter (analyse_tree []);
   import_graph
 
 type analysis =

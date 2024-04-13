@@ -17,7 +17,7 @@ module Topo : sig
   val fold : (addr -> 'a -> 'a) -> Gph.t -> 'a -> 'a
 end
 
-val build_import_graph : Code.tree Seq.t -> Gph.t
+val build_import_graph : Code.tree list -> Gph.t
 
 type analysis =
   {transclusion_graph : Gph.t;
