@@ -25,6 +25,7 @@ let toc = bool_attr "toc"
 let expanded = bool_attr "expanded"
 let show_heading = bool_attr "show-heading"
 let show_metadata = bool_attr "show-metadata"
+let root = bool_attr "root"
 
 let frontmatter = f_std_tag "frontmatter"
 let mainmatter = f_std_tag "mainmatter"

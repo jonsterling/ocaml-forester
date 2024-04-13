@@ -407,7 +407,8 @@ and render_tree ?(backmatter = false) ~opts (tree : Sem.tree) =
     F.numbered opts.numbered;
     F.show_heading opts.show_heading;
     F.show_metadata opts.show_metadata;
-    F.expanded opts.expanded
+    F.expanded opts.expanded;
+    F.root @@ Option.value ~default:false @@ Option.map E.is_root tree.fm.addr
   ] [
     render_frontmatter ~opts tree.fm;
     begin
