@@ -42,8 +42,8 @@ and render_unresolved ~cfg name body =
      Printer.text name;
      render_arg ~cfg Braces body]
 
-and render ~cfg xs =
-  Printer.iter ~sep:Printer.space (render_node ~cfg) xs
+and render ~cfg ?(sep = Printer.space) xs =
+  Printer.iter ~sep (render_node ~cfg) xs
 
 and render_arg ~cfg delim (arg : Sem.t) : Printer.t =
   match arg with

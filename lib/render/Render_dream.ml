@@ -166,7 +166,7 @@ let rec render_located (located : Sem.node Range.located) =
           in
           string_attr name "%s" @@
           Render_verbatim.Printer.contents @@
-          Render_verbatim.render ~cfg:{tex = false} v
+          Render_verbatim.render ~sep:Render_verbatim.Printer.nil ~cfg:{tex = false} v
         in
         fold_attrs tag_prefix (updates @ updates') (xml_attr :: acc) attrs
     in
