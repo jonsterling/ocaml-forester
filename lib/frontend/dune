@@ -1,7 +1,8 @@
 (ocamllex Lexer)
 
 (menhir
- (modules Grammar))
+ (modules Grammar)
+ (flags --table))
 
 (library
  (name Forester)
@@ -13,6 +14,7 @@
   forester.prelude
   forester.core
   forester.render
+  menhirLib
   ocamlgraph
   eio_main
   str

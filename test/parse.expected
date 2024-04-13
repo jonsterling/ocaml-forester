@@ -1,0 +1,66 @@
+parse_good_result:
+[(Code.Title [(Code.Text "Good")]); (Code.Taxon "Test");
+  (Code.Author "Testy");
+  (Code.Prim (`P,
+     [(Code.Text "\n"); (Code.Text "      "); (Code.Text "This");
+       (Code.Text " "); (Code.Text "should"); (Code.Text " ");
+       (Code.Text "parse"); (Code.Text " "); (Code.Text "correctly.");
+       (Code.Text "\n"); (Code.Text "    ")]
+     ))
+  ]
+
+error: syntax error, unexpected `Invalid` 
+error: syntax error, unexpected `naked` 
+error: syntax error, unexpected `text` 
+error: syntax error, unexpected `here.` 
+error: syntax error, unexpected `}` 
+error: syntax error, unexpected `]` 
+error: syntax error, unexpected `` 
+parse_bad_result:
+[(Code.Title [(Code.Text "Error"); (Code.Text " "); (Code.Text "recovery")]);
+  (Code.Taxon "Test"); (Code.Author "Testy");
+  (Code.Prim (`P,
+     [(Code.Text "\n"); (Code.Text "      "); (Code.Text "This");
+       (Code.Text " "); (Code.Text "has"); (Code.Text " ");
+       (Code.Text "some"); (Code.Text " "); (Code.Text "syntax");
+       (Code.Text " "); (Code.Text "errors,"); (Code.Text " ");
+       (Code.Text "but"); (Code.Text " "); (Code.Text "the");
+       (Code.Text " "); (Code.Text "parser"); (Code.Text " ");
+       (Code.Text "should"); (Code.Text " "); (Code.Text "recover");
+       (Code.Text " "); (Code.Text "as"); (Code.Text " ");
+       (Code.Text "much"); (Code.Text " "); (Code.Text "as");
+       (Code.Text " "); (Code.Text "possible."); (Code.Text "\n");
+       (Code.Text "    ")]
+     ));
+  (Code.Prim (`P,
+     [(Code.Text "\n"); (Code.Text "      "); (Code.Text "More");
+       (Code.Text " "); (Code.Text "good"); (Code.Text " ");
+       (Code.Text "text."); (Code.Text "\n"); (Code.Text "    ")]
+     ));
+  (Code.Prim (`P,
+     [(Code.Text "\n"); (Code.Text "      "); (Code.Text "Some");
+       (Code.Text " "); (Code.Text "bad"); (Code.Text " ");
+       (Code.Text "text"); (Code.Text " ");
+       (Code.Group (Base.Squares, [(Code.Text "\n"); (Code.Text "    ")]))]
+     ));
+  (Code.Prim (`P,
+     [(Code.Text "\n"); (Code.Text "      "); (Code.Text "Even");
+       (Code.Text " "); (Code.Text "more"); (Code.Text " ");
+       (Code.Text "good"); (Code.Text " "); (Code.Text "text.");
+       (Code.Text "\n"); (Code.Text "    ")]
+     ));
+  (Code.Prim (`P,
+     [(Code.Text "\n"); (Code.Text "      "); (Code.Text "Some");
+       (Code.Text " "); (Code.Text "more"); (Code.Text " ");
+       (Code.Text "bad"); (Code.Text " "); (Code.Text " ");
+       (Code.Text "text"); (Code.Text "\n"); (Code.Text "    ")]
+     ));
+  (Code.Prim (`P,
+     [(Code.Text "\n"); (Code.Text "      "); (Code.Text "Skipped");
+       (Code.Text " "); (Code.Text "an"); (Code.Text " ");
+       (Code.Text "ending"); (Code.Text " "); (Code.Text "brace");
+       (Code.Text " "); (Code.Text "here."); (Code.Text "\n");
+       (Code.Text "    ")]
+     ))
+  ]
+
