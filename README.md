@@ -6,11 +6,7 @@ You need to have [OCaml 5](https://ocaml.org) and [opam](https://opam.ocaml.org)
 
 ### Installation
 
-You can install forester by running `opam install forester`. **For the current prerelease, you must first pin an unreleased version of dream-html; we will wait until the latter is released until we release a new version of Forester.**
-
-```
-opam pin add dream-html git+https://github.com/yawaramin/dream-html
-```
+You can install forester by running `opam install forester`.
 
 #### Using nix (Optional)
 
