@@ -89,32 +89,37 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
       get_sorted_trees @@ S.of_list @@ Tbl.find_all analysis.author_pages scope
 
     let contributors scope =
-      let tree = M.find scope forest.trees in
-      let authors = S.of_list tree.fm.authors in
-      let contributors = S.union (S.of_list tree.fm.contributors) @@ S.of_list @@ Tbl.find_all analysis.contributors scope in
-      let proper_contributors =
-        contributors |> S.filter @@ fun contr ->
-        not @@ S.mem contr authors
-      in
-      let by_title = Compare.under addr_peek_title @@ Compare.option String.compare in
-      let compare = Compare.cascade by_title String.compare in
-      List.sort compare @@ S.elements proper_contributors
+      try
+        let tree = M.find scope forest.trees in
+        let authors = S.of_list tree.fm.authors in
+        let contributors = S.union (S.of_list tree.fm.contributors) @@ S.of_list @@ Tbl.find_all analysis.contributors scope in
+        let proper_contributors =
+          contributors |> S.filter @@ fun contr ->
+          not @@ S.mem contr authors
+        in
+        let by_title = Compare.under addr_peek_title @@ Compare.option String.compare in
+        let compare = Compare.cascade by_title String.compare in
+        List.sort compare @@ S.elements proper_contributors
+      with Not_found -> []
 
     let run_query query =
       get_sorted_trees @@ S.of_seq @@ Seq.map fst @@ M.to_seq @@
       M.filter (fun _ -> Sem.Query.test query) forest.trees
 
     let last_changed scope =
-      let ( let* ) = Option.bind in
-      let tree = M.find scope forest.trees in
-      let* source_path = tree.fm.source_path in
-      let env = cfg.env in
-      let path = Eio.Path.(Eio.Stdenv.fs env / source_path) in
-      let stat  = Eio.Path.stat ~follow:true path in
-      let* mtime = Some stat.mtime in
-      let* ptime = Ptime.of_float_s mtime in
-      let (yyyy, mm, dd) = (ptime |> Ptime.to_date_time |> fst) in
-      Some Prelude.Date.{yyyy; mm = Some mm; dd = Some dd}
+      try
+        let ( let* ) = Option.bind in
+        let tree = M.find scope forest.trees in
+        let* source_path = tree.fm.source_path in
+        let env = cfg.env in
+        let path = Eio.Path.(Eio.Stdenv.fs env / source_path) in
+        let stat  = Eio.Path.stat ~follow:true path in
+        let* mtime = Some stat.mtime in
+        let* ptime = Ptime.of_float_s mtime in
+        let (yyyy, mm, dd) = (ptime |> Ptime.to_date_time |> fst) in
+        Some Prelude.Date.{yyyy; mm = Some mm; dd = Some dd}
+      with
+        Not_found -> None
   end
   in
   let module Run = Render_effect.Run (H) in
@@ -151,9 +156,7 @@ let plant_forest (trees : raw_forest) : forest =
         let units, syn = Expand.expand_tree units tree in
         let tree, emitted_trees = Eval.eval_tree ~addr ~source_path:tree.source_path syn in
         let add trees tree =
-          match Sem.(tree.fm.addr) with
-          | None -> trees
-          | Some addr -> add_tree addr tree trees
+          add_tree Sem.(tree.fm.addr) tree trees
         in
         units, List.fold_left add trees @@ tree :: emitted_trees
     in
@@ -266,7 +269,7 @@ let tags ~forest =
 module E = Render_effect.Perform
 
 let render_tree ~cfg ~cwd (tree : Sem.tree) =
-  tree.fm.addr |> Option.iter @@ fun addr ->
+  let addr = tree.fm.addr in
   let create = `Or_truncate 0o644 in
   let base_url = cfg.base_url in
   begin

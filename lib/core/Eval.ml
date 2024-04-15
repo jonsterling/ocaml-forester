@@ -61,12 +61,17 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     let opts = get_transclusion_opts () in
     {node with value = Sem.Transclude (opts, addr)} :: eval rest
   | Subtree (addr, nodes) ->
+    let addr =
+      match addr with
+      | Some addr -> addr
+      | None ->
+        Format.sprintf "anon-%i" (Oo.id (object end))
+    in
     let opts = get_transclusion_opts () in
     let subtree = eval_tree_inner ~addr nodes in
     let fm = Fm.get () in
-    let subtree = {subtree with fm = {subtree.fm with physical_parent = fm.addr; designated_parent = fm.addr}} in
+    let subtree = {subtree with fm = {subtree.fm with physical_parent = Some fm.addr; designated_parent = Some fm.addr}} in
     begin
-      addr |> Option.iter @@ fun _ ->
       Emitted_trees.modify @@ fun trees ->
       subtree :: trees
     end;
@@ -287,8 +292,7 @@ and eval_textual prefix : Syn.t -> Sem.t =
 and eval_tree_inner ~addr (tree : Syn.tree) : Sem.tree =
   let outer_fm = Fm.get () in
   let fm =
-    {Sem.empty_frontmatter with
-     addr;
+    {(Sem.empty_frontmatter ~addr) with
      source_path = outer_fm.source_path;
      authors = outer_fm.authors;
      contributors = outer_fm.contributors;
@@ -302,12 +306,12 @@ and eval_tree_inner ~addr (tree : Syn.tree) : Sem.tree =
 
 
 let eval_tree ~addr ~source_path (tree : Syn.tree) : Sem.tree * Sem.tree list =
-  let fm = {Sem.empty_frontmatter with addr = Some addr; source_path} in
+  let fm = {(Sem.empty_frontmatter ~addr) with source_path} in
   Fm.run ~init:fm @@ fun () ->
   Emitted_trees.run ~init:[] @@ fun () ->
   Heap.run ~init:Env.empty @@ fun () ->
   Lex_env.run ~env:Env.empty @@ fun () ->
   Dyn_env.run ~env:Env.empty @@ fun () ->
-  let tree = eval_tree_inner ~addr:(Some addr) tree in
+  let tree = eval_tree_inner ~addr tree in
   let emitted = Emitted_trees.get () in
   tree, emitted

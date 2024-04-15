@@ -262,6 +262,10 @@ and expand_ident loc path =
       Trie.pp_path path
       xmlns
       prefix
+  | Some (Tree_set addrs, ()), _ ->
+    Reporter.fatalf ?loc Resolution_error
+      "path %a resolved to tree set instead of term"
+      Trie.pp_path path
 
 and expand_sym loc path =
   match Scope.resolve path, path with

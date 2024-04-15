@@ -46,7 +46,7 @@ and frontmatter =
    authors : addr list;
    contributors : addr list;
    dates : Date.t list;
-   addr : addr option;
+   addr : addr;
    metas : (string * t) list;
    tags: string list;
    physical_parent : addr option;
@@ -152,8 +152,7 @@ struct
       Compare.option Date.compare
     in
     let by_title = Compare.under peek_title @@ Compare.option String.compare in
-    let by_addr = Compare.under (fun x -> x.fm.addr) @@ Compare.option String.compare in
-    Compare.cascade by_date @@ Compare.cascade by_title by_addr
+    Compare.cascade by_date by_title
 
   let sort =
     List.sort basic_comparator
@@ -188,8 +187,8 @@ struct
 
 end
 
-let empty_frontmatter =
-  {addr = None;
+let empty_frontmatter ~addr =
+  {addr;
    title = None;
    taxon = None;
    dates = [];

@@ -9,7 +9,7 @@ module F = Dream_forester
 module String_map = Map.Make (String)
 
 module Ancestors = Algaeff.Reader.Make (struct type t = addr list end)
-module Current_addr = Algaeff.Reader.Make (struct type t = addr option end)
+module Current_addr = Algaeff.Reader.Make (struct type t = addr end)
 module Mainmatter_cache = Algaeff.State.Make (struct type t = node String_map.t end)
 
 module Xmlns_map =
@@ -211,15 +211,17 @@ let rec render_located (located : Sem.node Range.located) =
   | Sem.Query (opts, query) ->
     let trees = E.run_query query in
     match trees with
-    | [] -> F.null []
+    | [] ->
+      F.prim `P [] [
+        F.info [] [txt "Query returned no results"]
+      ]
     | _ ->
-      let body =
-        trees |> List.filter_map @@ fun (tree : Sem.tree) ->
-        tree.fm.addr |> Option.map @@ fun addr ->
+      render_nodes begin
+        trees |> List.map @@ fun (tree : Sem.tree) ->
+        let addr = tree.fm.addr in
         let opts = Sem.{expanded = false; show_heading = true; title_override = None; taxon_override = None; toc = false; numbered = false; show_metadata = true} in
         Range.locate_opt None @@ Sem.Transclude (opts, addr)
-      in
-      render_transclusion ~opts {fm = Sem.empty_frontmatter; body}
+      end
 
 and render_nodes nodes =
   F.null @@ List.map render_located nodes
@@ -227,11 +229,7 @@ and render_nodes nodes =
 
 and render_transclusion ~opts (tree : Sem.tree) =
   let current = Current_addr.read () in
-  let update old_ancestors =
-    match current with
-    | None -> old_ancestors
-    | Some addr -> addr :: old_ancestors
-  in
+  let update old_ancestors = current :: old_ancestors in
   Ancestors.scope update @@ fun () ->
   render_tree ~opts tree
 
@@ -282,19 +280,17 @@ and render_author_name author =
     match E.get_doc author with
     | None -> raise Untitled
     | Some biotree ->
-      match biotree.fm.addr with
-      | None -> raise Untitled
-      | Some addr ->
-        let url = E.route addr in
-        F.link [
-          F.href "%s" url;
-          F.type_ "local";
-          F.addr_ "%s" addr
-        ] [
-          match biotree.fm.title with
-          | None -> raise Untitled
-          | Some title -> render_nodes title
-        ]
+      let addr = biotree.fm.addr in
+      let url = E.route addr in
+      F.link [
+        F.href "%s" url;
+        F.type_ "local";
+        F.addr_ "%s" addr
+      ] [
+        match biotree.fm.title with
+        | None -> raise Untitled
+        | Some title -> render_nodes title
+      ]
   with Untitled ->
     txt "%s" author
 
@@ -319,19 +315,13 @@ and render_meta (key, body) =
   ]
 
 and render_last_changed (fm : Sem.frontmatter) =
-  match fm.addr with
-  | Some addr ->
-    let date = E.last_changed addr in
-    date |> optional @@ fun date -> F.last_changed [] [render_date date]
-  | None -> F.null []
+  let addr = fm.addr in
+  let date = E.last_changed addr in
+  date |> optional @@ fun date -> F.last_changed [] [render_date date]
 
 and render_frontmatter ~opts (fm : Sem.frontmatter) =
   let anchor = string_of_int @@ Oo.id (object end) in
-  let contributors =
-    match fm.addr with
-    | Some addr -> E.contributors addr
-    | None -> []
-  in
+  let contributors = E.contributors fm.addr in
   let authors = fm.authors in
 
   F.frontmatter [] [
@@ -349,7 +339,7 @@ and render_frontmatter ~opts (fm : Sem.frontmatter) =
     end;
 
     begin
-      fm.addr |> optional @@ fun addr ->
+      let addr = fm.addr in
       F.null [
         F.addr [] "%s" addr;
         F.route [] "%s" @@ E.route addr
@@ -408,20 +398,18 @@ and render_tree ?(backmatter = false) ~opts (tree : Sem.tree) =
     F.show_heading opts.show_heading;
     F.show_metadata opts.show_metadata;
     F.expanded opts.expanded;
-    F.root @@ Option.value ~default:false @@ Option.map E.is_root tree.fm.addr
+    F.root @@ E.is_root tree.fm.addr
   ] [
     render_frontmatter ~opts tree.fm;
     begin
       match tree.fm.addr with
-      | None ->
-        render_mainmatter tree.body
-      | Some addr when List.mem addr ancestors ->
+      | addr when List.mem addr ancestors ->
         F.mainmatter [] [
           F.prim `P [] [
             F.info [] [txt "Transclusion cycle"]
           ]
         ]
-      | Some addr ->
+      | addr ->
         let cache = Mainmatter_cache.get () in
         match String_map.find_opt addr cache with
         | Some cached -> cached
@@ -430,14 +418,13 @@ and render_tree ?(backmatter = false) ~opts (tree : Sem.tree) =
           Mainmatter_cache.modify (String_map.add addr result);
           result
     end;
-    match backmatter, tree.fm.addr with
-    | true, Some addr -> render_backmatter addr
+    match backmatter with
+    | true -> render_backmatter tree.fm.addr
     | _ -> F.null []
   ]
 
 let render_tree_top (tree : Sem.tree) =
   Ancestors.run ~env:[] @@ fun () ->
-  Current_addr.run ~env:None @@ fun () ->
   let env = Xmlns_map.assoc ~prefix:F.reserved_prefix ~xmlns:F.forester_xmlns Xmlns_map.empty in
   Xmlns_prefixes.run ~env @@ fun () ->
   render_tree ~backmatter:true ~opts:Sem.default_transclusion_opts tree
