@@ -9,7 +9,7 @@ sig
   val bibliography : addr -> Sem.tree list
   val parents : addr -> Sem.tree list
   val children : addr -> Sem.tree list
-  val contributors : addr -> string list
+  val contributors : addr -> addr list
   val contributions : addr -> Sem.tree list
   val enqueue_latex : name:string -> preamble:string -> source:string -> unit
   val get_doc : addr -> Sem.tree option

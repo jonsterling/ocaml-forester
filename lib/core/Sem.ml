@@ -8,7 +8,7 @@ type node =
   | Transclude of transclusion_opts * addr
   | Subtree of transclusion_opts * tree
   | Query of transclusion_opts * t Query.t
-  | Link of {dest : string; title : t option; modifier : [`Sentence_case] option}
+  | Link of {dest : addr; title : t option; modifier : [`Sentence_case] option}
   | Xml_tag of xml_resolved_qname * (xml_resolved_qname * t) list * t
   | Unresolved of string
   | Math of math_mode * t
@@ -17,7 +17,7 @@ type node =
   | If_tex of t * t
   | Prim of Prim.t * t
   | Object of Symbol.t
-  | Ref of {addr : string}
+  | Ref of {addr : addr}
 [@@deriving show]
 
 and transclusion_opts =
@@ -116,13 +116,11 @@ let string_of_nodes =
     match Range.(located.value) with
     | Text s -> Some s
     | Link {title = Some title; _} -> Some (render title)
-    | Link {title = None; dest; _} -> Some dest
-    | Ref {addr} -> Some addr
     | Xml_tag (_, _, bdy) | Math (_, bdy) -> Some (render bdy)
     | Embed_tex {source; _} -> Some (render source)
     | If_tex (_, x) -> Some (render x)
     | Prim (_, x) -> Some (render x)
-    | Transclude _ | Subtree _ | Query _ | Unresolved _ | Img _ | Object _ -> None
+    | Transclude _ | Subtree _ | Query _ | Unresolved _ | Img _ | Object _ | Link _ | Ref _ -> None
   in
   render
 
@@ -168,7 +166,7 @@ struct
   let rec test query (doc : tree) =
     match query with
     | Query.Author [Range.{value = Text addr; _}] ->
-      List.mem addr doc.fm.authors
+      List.mem (User_addr addr) doc.fm.authors
     | Query.Tag [{value = Text addr; _}] ->
       List.mem addr doc.fm.tags
     | Query.Meta (key, value) ->

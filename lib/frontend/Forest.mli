@@ -4,7 +4,7 @@ type config =
   {env : Eio_unix.Stdenv.base;
    assets_dirs : Eio.Fs.dir_ty Eio.Path.t list;
    theme_dir : Eio.Fs.dir_ty Eio.Path.t;
-   root : addr option;
+   root : string option;
    base_url : string option;
    stylesheet : string;
    ignore_tex_cache : bool;
@@ -20,11 +20,11 @@ type forest =
 
 val plant_forest : raw_forest -> forest
 val render_trees : cfg:config -> forest:forest -> unit
-val create_tree : cfg:config -> addrs:addr Seq.t -> dest:Eio.Fs.dir_ty Eio.Path.t -> prefix:string -> template:string option -> mode:[`Sequential | `Random] -> addr
+val create_tree : cfg:config -> addrs:string Seq.t -> dest:Eio.Fs.dir_ty Eio.Path.t -> prefix:string -> template:string option -> mode:[`Sequential | `Random] -> string
 
-val complete : forest:forest -> string -> (addr * string) Seq.t
-val prefixes : addrs:addr Seq.t -> string list
-val taxa : forest:forest-> (addr * string) Seq.t
-val tags : forest:forest -> (addr * string list) Seq.t
+val complete : forest:forest -> string -> (string * string) Seq.t
+val prefixes : addrs:string Seq.t -> string list
+val taxa : forest:forest-> (string * string) Seq.t
+val tags : forest:forest -> (string * string list) Seq.t
 val run_renderer : cfg:config -> forest -> ( unit -> 'a) -> 'a
 val render_json : cwd:[> Eio__.Fs.dir_ty ] Eio.Path.t -> Core.Sem.tree Analysis.Map.t -> unit

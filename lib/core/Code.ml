@@ -7,8 +7,8 @@ type node =
   | Math of math_mode * t
   | Ident of Trie.path * string list
   | Xml_tag of (string option * string) * ((string option * string) * t) list * t
-  | Transclude of addr
-  | Subtree of addr option * t
+  | Transclude of string
+  | Subtree of string option * t
   | Embed_tex of t * t
   | Let of Trie.path * Trie.path list * t
   | Open of Trie.path
@@ -27,7 +27,7 @@ type node =
 
   | Query of t Query.t
 
-  | Import of visibility * addr
+  | Import of visibility * string
   | Def of Trie.path * Trie.path list * t
   | Decl_xmlns of string * string
   | Alloc of Trie.path
@@ -50,7 +50,7 @@ and t = node Range.located list
 
 and tree =
   {source_path : string option;
-   addr : addr option;
+   addr : string option;
    code : t}
 [@@deriving show]
 

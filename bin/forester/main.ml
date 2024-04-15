@@ -12,7 +12,7 @@ struct
      assets : string list;
      theme : string;
      base_url : string option;
-     root : addr option;
+     root : string option;
      stylesheet : string}
   [@@deriving show]
 end
@@ -109,6 +109,7 @@ let new_tree ~env config_filename dest_dir prefix template random =
     Analysis.Map.bindings forest.trees
     |> List.to_seq
     |> Seq.map fst
+    |> Seq.filter_map Addr.to_user_addr
   in
   let mode = if random then `Random else `Sequential in
   let addr = Forest.create_tree ~cfg:internal_config ~dest:(make_dir ~env dest_dir) ~prefix ~template ~addrs ~mode in
@@ -136,6 +137,7 @@ let query_prefixes ~env config_filename =
     Analysis.Map.bindings forest.trees
     |> List.to_seq
     |> Seq.map fst
+    |> Seq.filter_map Addr.to_user_addr
   in
   let prefixes = Forest.prefixes ~addrs in
   prefixes |> List.iter @@ fun addr ->

@@ -40,10 +40,10 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
   match node.value with
   | Link {title; dest} ->
     let title = Option.map eval title in
-    let dest = Sem.string_of_nodes @@ eval_textual [] dest in
+    let dest = User_addr (Sem.string_of_nodes @@ eval_textual [] dest) in
     {node with value = Sem.Link {dest; title; modifier = None}} :: eval rest
   | Ref dest ->
-    let addr = Sem.string_of_nodes @@ eval_textual [] dest in
+    let addr = User_addr (Sem.string_of_nodes @@ eval_textual [] dest) in
     {node with value = Sem.Ref {addr}} :: eval rest
   | Math (mmode, e) ->
     {node with value = Sem.Math (mmode, eval e)} :: eval rest
@@ -59,13 +59,12 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     {node with value = Sem.Unresolved name} :: eval rest
   | Transclude addr ->
     let opts = get_transclusion_opts () in
-    {node with value = Sem.Transclude (opts, addr)} :: eval rest
+    {node with value = Sem.Transclude (opts, User_addr addr)} :: eval rest
   | Subtree (addr, nodes) ->
     let addr =
       match addr with
-      | Some addr -> addr
-      | None ->
-        Format.sprintf "anon-%i" (Oo.id (object end))
+      | Some addr -> User_addr addr
+      | None -> Machine_addr (Oo.id (object end))
     in
     let opts = get_transclusion_opts () in
     let subtree = eval_tree_inner ~addr nodes in
@@ -214,7 +213,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     eval rest
 
   | Parent addr ->
-    Fm.modify (fun fm -> {fm with designated_parent = Some addr});
+    Fm.modify (fun fm -> {fm with designated_parent = Some (User_addr addr)});
     eval rest
 
   | Meta (k, v) ->
@@ -228,14 +227,14 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
   | Author author ->
     begin
       Fm.modify @@ fun fm ->
-      {fm with authors = fm.authors @ [author]}
+      {fm with authors = fm.authors @ [User_addr author]}
     end;
     eval rest
 
   | Contributor author ->
     begin
       Fm.modify @@ fun fm ->
-      {fm with contributors = fm.contributors @ [author]}
+      {fm with contributors = fm.contributors @ [User_addr author]}
     end;
     eval rest
 

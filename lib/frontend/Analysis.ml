@@ -1,21 +1,24 @@
 open Core
 
-module Map = Map.Make (String)
-module Gph = Graph.Imperative.Digraph.Concrete (String)
+module Map = Map.Make (Addr)
+module Gph = Graph.Imperative.Digraph.Concrete (Addr)
 module Topo = Graph.Topological.Make (Gph)
 
-module Tbl = Hashtbl.Make (String)
+module Tbl = Hashtbl.Make (Addr)
 
 let build_import_graph (trees : Code.tree list) =
   let import_graph = Gph.create () in
 
   let rec analyse_tree roots (tree : Code.tree) =
     let roots = Option.fold ~none:roots ~some:(fun x -> x :: roots) tree.addr in
-    tree.addr |> Option.iter @@ Gph.add_vertex import_graph;
+    begin
+      tree.addr |> Option.iter @@ fun addr ->
+      Gph.add_vertex import_graph @@ User_addr addr
+    end;
     tree.code |> List.iter @@ fun node ->
     match Asai.Range.(node.value) with
     | Code.Import (_, dep) ->
-      roots |> List.iter @@ Gph.add_edge import_graph dep
+      roots |> List.iter @@ fun addr -> Gph.add_edge import_graph (User_addr dep) (User_addr addr)
     | Code.Subtree (addr, code) ->
       analyse_tree roots @@ Code.{tree with addr; code}
     | _ -> ()

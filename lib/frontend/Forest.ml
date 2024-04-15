@@ -12,7 +12,7 @@ type config =
   {env : Eio_unix.Stdenv.base;
    assets_dirs : Eio.Fs.dir_ty Eio.Path.t list;
    theme_dir : Eio.Fs.dir_ty Eio.Path.t;
-   root : addr option;
+   root : string option;
    base_url : string option;
    stylesheet : string;
    ignore_tex_cache : bool;
@@ -29,20 +29,23 @@ type forest =
 module LaTeX_queue = LaTeX_queue.Make ()
 
 let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
-  let module S = Set.Make (String) in
+  let module S = Set.Make (Addr) in
   let module H : Render_effect.Handler =
   struct
     let analysis = Lazy.force forest.analysis
 
     let is_root addr =
-      cfg.root = Some addr
+      Option.map (fun x -> User_addr x) cfg.root = Some addr
 
     let route addr =
       let ext = "xml" in
       let base =
         match is_root addr with
         | true -> "index"
-        | false -> addr
+        | false ->
+          match addr with
+          | User_addr addr -> addr
+          | Machine_addr ix -> Format.sprintf "unstable-%i" ix
       in
       Format.asprintf "%s.%s" base ext
 
@@ -98,8 +101,8 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
           not @@ S.mem contr authors
         in
         let by_title = Compare.under addr_peek_title @@ Compare.option String.compare in
-        let compare = Compare.cascade by_title String.compare in
-        List.sort compare @@ S.elements proper_contributors
+        (* let compare = Compare.cascade by_title String.compare in *)
+        List.sort by_title @@ S.elements proper_contributors
       with Not_found -> []
 
     let run_query query =
@@ -130,7 +133,7 @@ let plant_forest (trees : raw_forest) : forest =
   let add_tree addr tree trees =
     if M.mem addr trees then
       begin
-        Reporter.emitf Duplicate_tree "skipping duplicate tree at address `%s`" addr;
+        Reporter.emitf Duplicate_tree "skipping duplicate tree at address `%a`" pp_addr addr;
         trees
       end
     else
@@ -140,7 +143,7 @@ let plant_forest (trees : raw_forest) : forest =
   let unexpanded_trees =
     let alg acc (tree : Code.tree) =
       match tree.addr with
-      | Some addr -> add_tree addr tree acc
+      | Some addr -> add_tree (User_addr addr) tree acc
       | None -> acc
     in
     List.fold_left alg M.empty trees
@@ -172,7 +175,7 @@ let rec random_not_in keys =
   else
     attempt
 
-let next_addr ~prefix ~mode (forest : addr Seq.t) =
+let next_addr ~prefix ~mode (forest : string Seq.t) =
   let keys =
     forest |> Seq.filter_map @@ fun addr ->
     match String.split_on_char '-' addr with
@@ -207,8 +210,9 @@ let complete ~forest prefix =
   |> M.filter_map (fun _ -> Sem.Util.peek_title)
   |> M.filter (fun _ -> String.starts_with ~prefix)
   |> M.to_seq
+  |> Seq.filter_map (fun (addr, x) -> Addr.to_user_addr addr |> Option.map (fun s -> s, x))
 
-let prefixes ~(addrs : addr Seq.t) : string list =
+let prefixes ~(addrs : string Seq.t) : string list =
   let first_segment s = match String.split_on_char '-' s  with
       [] -> "" | [x] -> s | x::_ -> x
   in
@@ -259,12 +263,15 @@ let taxa ~forest =
   forest.trees
   |> M.filter_map (fun _ -> Sem.Util.taxon)
   |> M.to_seq
+  |> Seq.filter_map (fun (addr, x) -> Addr.to_user_addr addr |> Option.map (fun s -> s, x))
 
 let tags ~forest =
   forest.trees
   |> M.map Sem.Util.tags
   |> M.filter (fun _ -> fun tags -> not @@ List.is_empty tags)
   |> M.to_seq
+  |> Seq.filter_map (fun (addr, x) -> Addr.to_user_addr addr |> Option.map (fun s -> s, x))
+
 
 module E = Render_effect.Perform
 

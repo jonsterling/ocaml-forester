@@ -9,7 +9,7 @@ sig
   val bibliography : addr -> Sem.tree list
   val parents : addr -> Sem.tree list
   val children : addr -> Sem.tree list
-  val contributors : addr -> string list
+  val contributors : addr -> addr list
   val contributions : addr -> Sem.tree list
   val enqueue_latex : name:string -> preamble:string -> source:string -> unit
   val get_doc : addr -> Sem.tree option
@@ -26,7 +26,7 @@ type _ Effect.t +=
   | Parents : addr -> Sem.tree list Effect.t
   | Children : addr -> Sem.tree list Effect.t
   | Contributions : addr -> Sem.tree list Effect.t
-  | Contributors : addr -> string list Effect.t
+  | Contributors : addr -> addr list Effect.t
   | Enqueue_latex : {name : string; preamble : string; source : string} -> unit Effect.t
   | Get_doc : addr -> Sem.tree option Effect.t
   | Run_query : Sem.t Query.t -> Sem.tree list Effect.t

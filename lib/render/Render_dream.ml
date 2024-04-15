@@ -7,10 +7,11 @@ module E = Render_effect.Perform
 module F = Dream_forester
 
 module String_map = Map.Make (String)
+module Addr_map = Map.Make (Addr)
 
 module Ancestors = Algaeff.Reader.Make (struct type t = addr list end)
 module Current_addr = Algaeff.Reader.Make (struct type t = addr end)
-module Mainmatter_cache = Algaeff.State.Make (struct type t = node String_map.t end)
+module Mainmatter_cache = Algaeff.State.Make (struct type t = node Addr_map.t end)
 
 module Xmlns_map =
 struct
@@ -73,7 +74,7 @@ let optional_ kont opt =
   | None -> F.null_
 
 let render_date (date : Date.t) =
-  let date_addr = Format.asprintf "%a" Date.pp date in
+  let date_addr = User_addr (Format.asprintf "%a" Date.pp date) in
   F.date [
     E.get_doc date_addr |> optional_ @@ fun _ ->
     F.href "%s" @@ E.route date_addr
@@ -113,18 +114,19 @@ let rec render_located (located : Sem.node Range.located) =
       | Some tree ->
         render_internal_link ~title ~modifier ~addr:dest ~dest:tree
       | None ->
-        render_external_link ~title ~modifier ~url:dest
+        let url = Format.asprintf "%a" pp_addr dest in
+        render_external_link ~title ~modifier ~url
     end
 
   | Sem.Ref {addr} ->
     begin
       match E.get_doc addr with
       | None ->
-        Reporter.fatalf ?loc:located.loc Tree_not_found "could not find tree at address `%s` for reference" addr
+        Reporter.fatalf ?loc:located.loc Tree_not_found "could not find tree at address `%a` for reference" pp_addr addr
       | Some tree ->
         let url = E.route addr in
         F.ref [
-          F.addr_ "%s" addr;
+          F.addr_ "%s" (Format.asprintf "%a" pp_addr addr);
           F.href "%s" url;
           tree.fm.taxon |> Option.map String_util.sentence_case |> optional_ @@ F.taxon_ "%s";
           tree.fm.number |> optional_ @@ F.number_ "%s"
@@ -200,7 +202,7 @@ let rec render_located (located : Sem.node Range.located) =
     begin
       match E.get_doc addr with
       | None ->
-        Reporter.fatalf ?loc:located.loc Tree_not_found "could not find tree at address `%s` for transclusion" addr
+        Reporter.fatalf ?loc:located.loc Tree_not_found "could not find tree at address `%a` for transclusion" pp_addr addr
       | Some doc ->
         render_transclusion ~opts doc
     end
@@ -255,12 +257,12 @@ and render_internal_link ~title ~modifier ~addr ~dest =
     title
     |> Option.fold ~none:dest_title ~some:Option.some
     |> Option.map (Sem.apply_modifier modifier)
-    |> Option.value ~default:[Range.locate_opt None @@ Sem.Text addr]
+    |> Option.value ~default:[Range.locate_opt None @@ Sem.Text "Untitled"]
   in
   F.link [
     F.href "%s" url;
     F.type_ "local";
-    F.addr_ "%s" addr
+    F.addr_ "%s" (Format.asprintf "%a" pp_addr addr);
   ] [render_nodes title]
 
 and render_external_link ~title ~modifier ~url =
@@ -285,14 +287,14 @@ and render_author_name author =
       F.link [
         F.href "%s" url;
         F.type_ "local";
-        F.addr_ "%s" addr
+        F.addr_ "%s" (Format.asprintf "%a" pp_addr addr)
       ] [
         match biotree.fm.title with
         | None -> raise Untitled
         | Some title -> render_nodes title
       ]
   with Untitled ->
-    txt "%s" author
+    txt "%s" (Format.asprintf "%a" pp_addr author)
 
 and render_author author =
   F.author [] [render_author_name author]
@@ -341,7 +343,7 @@ and render_frontmatter ~opts (fm : Sem.frontmatter) =
     begin
       let addr = fm.addr in
       F.null [
-        F.addr [] "%s" addr;
+        F.addr [] "%s" (Format.asprintf "%a" pp_addr addr);
         F.route [] "%s" @@ E.route addr
       ]
     end;
@@ -355,7 +357,10 @@ and render_frontmatter ~opts (fm : Sem.frontmatter) =
     render_dates fm.dates;
     render_authors ~contributors ~authors;
     fm.number |> optional @@ F.number [] "%s";
-    fm.designated_parent |> optional @@ F.parent [] "%s";
+    begin
+      fm.designated_parent |> optional @@ fun addr ->
+      F.parent [] "%s" (Format.asprintf "%a" pp_addr addr)
+    end;
     F.null @@ List.map render_meta fm.metas;
     render_last_changed fm
   ]
@@ -411,11 +416,11 @@ and render_tree ?(backmatter = false) ~opts (tree : Sem.tree) =
         ]
       | addr ->
         let cache = Mainmatter_cache.get () in
-        match String_map.find_opt addr cache with
+        match Addr_map.find_opt addr cache with
         | Some cached -> cached
         | None ->
           let result = render_mainmatter tree.body in
-          Mainmatter_cache.modify (String_map.add addr result);
+          Mainmatter_cache.modify (Addr_map.add addr result);
           result
     end;
     match backmatter with
@@ -430,4 +435,4 @@ let render_tree_top (tree : Sem.tree) =
   render_tree ~backmatter:true ~opts:Sem.default_transclusion_opts tree
 
 let with_mainmatter_cache kont =
-  Mainmatter_cache.run ~init:String_map.empty kont
+  Mainmatter_cache.run ~init:Addr_map.empty kont

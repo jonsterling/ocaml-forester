@@ -2,7 +2,6 @@ open Prelude
 open Resolver
 open Bwd
 
-module Set = Set.Make (String)
 module UnitMap = Map.Make (String)
 
 type exports = P.data Trie.Untagged.t
@@ -165,7 +164,9 @@ let rec expand : Code.t -> Syn.t =
     let import = UnitMap.find_opt dep @@ U.get () in
     begin
       match import with
-      | None -> Reporter.emitf ?loc:loc Tree_not_found "Could not find tree %s" dep; expand rest
+      | None ->
+        Reporter.emitf ?loc:loc Tree_not_found "Could not find tree %s" dep;
+        expand rest
       | Some tree -> begin
           match vis with
           | Public -> Resolver.Scope.include_subtree ([], tree)

@@ -6,8 +6,8 @@ type node =
   | Group of delim * t
   | Math of math_mode * t
   | Link of {dest : t; title : t option}
-  | Transclude of addr
-  | Subtree of addr option * tree
+  | Transclude of string
+  | Subtree of string option * tree
   | Query of t Query.t
   | Embed_tex of {preamble : t; source : t}
   | Lam of Symbol.t list * t
@@ -25,7 +25,7 @@ type node =
   | Ref of t
 
   | Title of t
-  | Parent of addr
+  | Parent of string
   | Taxon of string
   | Meta of string * t
   | Author of string

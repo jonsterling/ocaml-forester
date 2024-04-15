@@ -46,16 +46,19 @@ let render_tree ~dev (doc : Sem.tree) =
       | None -> []
     else []
   in
-  Some
-    (addr,
-     `Assoc
-       ( path @
-         [("title", title);
-          ("taxon", taxon);
-          ("tags", tags);
-          ("route",route);
-          ("metas", metas);
-         ]))
+  match addr with
+  | User_addr addr ->
+    Some
+      (addr,
+       `Assoc
+         ( path @
+           [("title", title);
+            ("taxon", taxon);
+            ("tags", tags);
+            ("route",route);
+            ("metas", metas);
+           ]))
+  | _ -> None
 
 let render_trees ~(dev : bool) (docs : Sem.tree list) : Yojson.Basic.t =
   `Assoc (List.filter_map (render_tree ~dev) docs)
