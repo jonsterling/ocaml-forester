@@ -17,8 +17,8 @@ let string_of_token token =
   | Grammar.WHITESPACE w -> w
   | Grammar.TEXT s -> s
   | Grammar.EOF -> "EOF"
-  | Grammar.IDENT s -> Printf.sprintf "IDENT(%s)" s
-  | _ -> "unimplemented"
+  | Grammar.IDENT s -> Format.sprintf "IDENT(%s)" s
+  | _ -> "<unimplemented>"
 
 let char_of_token token =
   match token with
@@ -39,11 +39,7 @@ let rec resumes checkpoint =
   | I.Shifting _ | I.AboutToReduce _ -> resumes @@ I.resume checkpoint
   | _ -> assert false
 
-(* strategy: whenever we hit an unexpected closing delimiter, we look for a *)
-(*     matching opening delimiter in the past *)
-(*   if we find one, close all intermediate (hanging) delimiters and then continue parsing *)
-(*   otherwise just continue parsing *)
-(*   if we hit a premature EOF, try to close all delimiters *)
+(* strategy: whenever we hit an unexpected closing delimiter, we look for a matching opening delimiter in the past if we find one, close all intermediate (hanging) delimiters and then continue parsing otherwise just continue parsing if we hit a premature EOF, try to close all delimiters *)
 let try_parse lexbuf =
   let rec fail bracketing last_token before supplier chkpt =
     match chkpt with
@@ -76,6 +72,7 @@ let try_parse lexbuf =
           run bracketing Grammar.EOF before supplier before
       end
     | _ -> Reporter.fatal Parse_error "unreachable parser state"
+
   and run bracketing last_token last_input_needed supplier checkpoint =
     match checkpoint with
     | I.InputNeeded _ ->

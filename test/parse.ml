@@ -17,7 +17,7 @@ let _ =
     }
     |}
   in
-  Printf.printf "parse_good_result:\n%s\n\n" (Code.show good)
+  Format.printf "parse_good_result:\n%s\n\n" (Code.show good)
 
 let _ =
   Core.Reporter.run ~emit ~fatal @@ fun () ->
@@ -52,5 +52,5 @@ let _ =
       Skipped an ending brace here.
     |}
   in
-  errors |> List.iter (fun (e : Core.Reporter.Message.t Asai.Diagnostic.t) -> Printf.printf "error: %s\n" (Asai.Diagnostic.string_of_text e.explanation.value));
-  Printf.printf "parse_bad_result:\n%s\n\n" (Code.show bad)
+  errors |> List.iter (fun (e : Core.Reporter.Message.t Asai.Diagnostic.t) -> Format.printf "error: %s\n" (Asai.Diagnostic.string_of_text e.explanation.value));
+  Format.printf "parse_bad_result:\n%s\n\n" (Code.show bad)
