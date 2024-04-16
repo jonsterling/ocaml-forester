@@ -310,12 +310,6 @@ and expand_tree_inner (tree : Code.tree) : Syn.tree =
 
 
 let expand_tree (units : exports UnitMap.t) (tree : Code.tree) =
-  let trace f =
-    match tree.addr with
-    | Some addr -> Reporter.tracef "when expanding tree at address `%s`" addr f
-    | None -> f ()
-  in
-
   U.run ~init:units @@ fun () ->
   Resolver.Scope.run @@ fun () ->
   Builtins.Transclude.alloc_title ();
