@@ -108,17 +108,17 @@ let rec render_located (located : Sem.node Range.located) =
       | Display -> F.display "block"
     ] "%s" rendered
 
-  | Sem.Link {title; dest; modifier} ->
+  | Sem.Link (addr, title, modifier) ->
     begin
-      match E.get_doc dest with
+      match E.get_doc addr with
       | Some tree ->
-        render_internal_link ~title ~modifier ~addr:dest ~dest:tree
+        render_internal_link ~title ~modifier ~addr ~dest:tree
       | None ->
-        let url = Format.asprintf "%a" pp_addr dest in
+        let url = Format.asprintf "%a" pp_addr addr in
         render_external_link ~title ~modifier ~url
     end
 
-  | Sem.Ref {addr} ->
+  | Sem.Ref addr ->
     begin
       match E.get_doc addr with
       | None ->
@@ -133,7 +133,7 @@ let rec render_located (located : Sem.node Range.located) =
         ]
     end
 
-  | Sem.Img {path} ->
+  | Sem.Img path ->
     F.img [F.src "%s" path]
 
   | Sem.If_tex (_, x) ->

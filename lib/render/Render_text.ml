@@ -28,12 +28,12 @@ let rec render_node : Sem.node Range.located -> Printer.t =
     render xs
   | Sem.Xml_tag (name, _, body) ->
     render body
-  | Sem.Link {title = None; dest; modifier} ->
+  | Sem.Link (addr, None, modifier) ->
     render @@
     Option.value ~default:[Range.locate_opt None @@ Sem.Text "Untitled"] @@
-    Option.bind (E.get_doc dest) @@ fun doc ->
+    Option.bind (E.get_doc addr) @@ fun doc ->
     Option.map (Sem.apply_modifier modifier) doc.fm.title
-  | Sem.Link {title = Some title; dest; modifier} ->
+  | Sem.Link (addr, Some title, modifier) ->
     render @@ Sem.apply_modifier modifier title
   | Sem.If_tex (_, y) ->
     render y

@@ -3,21 +3,33 @@ open Prelude
 
 module MethodTable = Map.Make (String)
 
+module Text_modifier =
+struct
+  type t = Sentence_case | Identity
+  [@@deriving show]
+end
+
+type modifier = Text_modifier.t
+let pp_modifier = Text_modifier.pp
+
 type node =
   | Text of string
   | Transclude of transclusion_opts * addr
   | Subtree of transclusion_opts * tree
   | Query of transclusion_opts * t Query.t
-  | Link of {dest : addr; title : t option; modifier : [`Sentence_case] option}
+  | Link of addr * t option * modifier
   | Xml_tag of xml_resolved_qname * (xml_resolved_qname * t) list * t
   | Unresolved of string
   | Math of math_mode * t
-  | Embed_tex of {preamble : t; source : t}
-  | Img of {path : string}
+  | Embed_tex of embedded_tex
+  | Img of string
   | If_tex of t * t
   | Prim of Prim.t * t
   | Object of Symbol.t
-  | Ref of {addr : addr}
+  | Ref of addr
+[@@deriving show]
+
+and embedded_tex = {preamble : t; source : t}
 [@@deriving show]
 
 and transclusion_opts =
@@ -96,14 +108,14 @@ let sentence_case nodes =
   in
   nodes |> map_head @@ map_located @@ function
   | Text str -> Text (String_util.sentence_case str)
-  | Link link -> Link {link with modifier = Some `Sentence_case}
+  | Link (addr, title, _) -> Link (addr, title, Sentence_case)
   | node -> node
 
 
 let apply_modifier =
   function
-  | Some `Sentence_case -> sentence_case
-  | None -> Fun.id
+  | Text_modifier.Sentence_case -> sentence_case
+  | Text_modifier.Identity -> Fun.id
 
 
 
@@ -115,7 +127,7 @@ let string_of_nodes =
   and render_node located =
     match Range.(located.value) with
     | Text s -> Some s
-    | Link {title = Some title; _} -> Some (render title)
+    | Link (_, Some title, _) -> Some (render title)
     | Xml_tag (_, _, bdy) | Math (_, bdy) -> Some (render bdy)
     | Embed_tex {source; _} -> Some (render source)
     | If_tex (_, x) -> Some (render x)
