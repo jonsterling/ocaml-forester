@@ -34,12 +34,11 @@ rule token =
   | "\\}" { Grammar.IDENT {|}|} }
   | "\\[" { Grammar.IDENT {|[|} }
   | "\\]" { Grammar.IDENT {|]|} }
-  | "\\startverb" {
-      Buffer.clear verbatim_buff;
+  | "\\startverb"
+    { Buffer.clear verbatim_buff;
       verbatim lexbuf;
       let text = String_util.trim_trailing_whitespace @@ String_util.trim_newlines @@ Buffer.contents verbatim_buff in
-      Grammar.TEXT text
-    }
+      Grammar.TEXT text }
   | "\\ " { Grammar.IDENT {| |} }
   | "\\title" { Grammar.TITLE }
   | "\\parent" { Grammar.PARENT }
@@ -86,15 +85,13 @@ rule token =
   | "\\patch" { Grammar.PATCH }
   | "\\call" { Grammar.CALL }
   | "#" { Grammar.TEXT "#" }
-  | "\\<" { 
-      let qname = xml_qname lexbuf in 
+  | "\\<"
+    { let qname = xml_qname lexbuf in 
       let () = rangle lexbuf in
-      XML_ELT_IDENT qname
-    }
-  | "\\xmlns:" { 
-      let prefix = xml_base_ident lexbuf in
-      DECL_XMLNS prefix
-    }
+      XML_ELT_IDENT qname }
+  | "\\xmlns:"
+    { let prefix = xml_base_ident lexbuf in
+      DECL_XMLNS prefix }
   | ident { Grammar.IDENT (drop_sigil '\\' (Lexing.lexeme lexbuf)) }
   | '{' { Grammar.LBRACE }
   | '}' { Grammar.RBRACE }
@@ -118,6 +115,10 @@ and comment =
 and verbatim =
   parse
   | "\\stopverb" { () }
+  | newline as c 
+    { Lexing.new_line lexbuf; 
+      Buffer.add_string verbatim_buff c;
+      verbatim lexbuf; }
   | _ as c
     { Buffer.add_char verbatim_buff c;
       verbatim lexbuf }
