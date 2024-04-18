@@ -139,7 +139,7 @@ let rec render_located (located : Sem.node Range.located) =
   | Sem.If_tex (_, x) ->
     render_nodes x
 
-  | Sem.Xml_tag (Xml_resolved_qname name, attrs, xs) ->
+  | Sem.Xml_tag (name, attrs, xs) ->
 
     let rec fold_attrs tag_prefix updates acc attrs  =
       match attrs with
@@ -158,7 +158,7 @@ let rec render_located (located : Sem.node Range.located) =
           (xmlns_attrs @ List.rev acc)
           [render_nodes xs]
 
-      | (Xml_resolved_qname k, v) :: attrs ->
+      | (k, v) :: attrs ->
         normalise_prefix ?loc:located.loc ~prefix:k.prefix ~xmlns:k.xmlns @@ fun (updates', prefix) ->
         let xml_attr =
           let name =

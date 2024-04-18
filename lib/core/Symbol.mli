@@ -1,4 +1,4 @@
-type t
+type t = Trie.path * int
 
 val pp : Format.formatter -> t -> unit
 

@@ -211,6 +211,10 @@ let empty_frontmatter ~addr =
    source_path = None;
    number = None}
 
+let empty_tree ~addr =
+  {fm = empty_frontmatter ~addr;
+   body = []}
+
 let default_transclusion_opts : transclusion_opts =
   {title_override = None;
    taxon_override = None;
