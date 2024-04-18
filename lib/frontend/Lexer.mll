@@ -2,7 +2,6 @@
   open Prelude
   exception SyntaxError of string
   let drop_sigil c str = 1 |> List.nth @@ String.split_on_char c str
-  let verbatim_buff = Buffer.create 1000
 }
 
 let digit = ['0'-'9']
@@ -34,11 +33,7 @@ rule token =
   | "\\}" { Grammar.IDENT {|}|} }
   | "\\[" { Grammar.IDENT {|[|} }
   | "\\]" { Grammar.IDENT {|]|} }
-  | "\\startverb"
-    { Buffer.clear verbatim_buff;
-      verbatim lexbuf;
-      let text = String_util.trim_trailing_whitespace @@ String_util.trim_newlines @@ Buffer.contents verbatim_buff in
-      Grammar.TEXT text }
+  | "\\startverb" { verbatim (Buffer.create 2000) lexbuf }
   | "\\ " { Grammar.IDENT {| |} }
   | "\\title" { Grammar.TITLE }
   | "\\parent" { Grammar.PARENT }
@@ -112,16 +107,22 @@ and comment =
   | eof { Grammar.EOF }
   | _ { comment lexbuf }
 
-and verbatim =
+and verbatim buffer =
   parse
-  | "\\stopverb" { () }
+  | "\\stopverb" 
+    { let text = 
+        String_util.trim_trailing_whitespace @@
+        String_util.trim_newlines @@
+        Buffer.contents buffer
+      in
+      Grammar.TEXT text }
   | newline as c 
     { Lexing.new_line lexbuf; 
-      Buffer.add_string verbatim_buff c;
-      verbatim lexbuf; }
+      Buffer.add_string buffer c;
+      verbatim buffer lexbuf; }
   | _ as c
-    { Buffer.add_char verbatim_buff c;
-      verbatim lexbuf }
+    { Buffer.add_char buffer c;
+      verbatim buffer lexbuf }
 
 and xml_qname = 
   parse 
