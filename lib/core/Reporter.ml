@@ -7,6 +7,7 @@ struct
     | Type_error
     | Resolution_error
     | Expansion_error
+    | Duplicate_attribute
     | Created_tree
     | Frontmatter_in_body
     | Unhandled_case
@@ -23,6 +24,7 @@ struct
     | Type_error -> Error
     | Resolution_error -> Error
     | Expansion_error -> Error
+    | Duplicate_attribute -> Error
     | Created_tree -> Info
     | Frontmatter_in_body -> Error
     | Unhandled_case -> Bug

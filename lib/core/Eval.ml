@@ -50,11 +50,18 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
   | Prim (p, body) ->
     {node with value = Sem.Prim (p, eval_trim body)} :: eval rest
   | Xml_tag (name, attrs, body) ->
-    let attrs =
-      attrs |> List.map @@ fun (k, v) ->
-      k, eval v
+    let rec process attrs = match attrs with
+      | [] -> []
+      | (k,v) :: attrs ->
+        let processed = process attrs in
+        if List.mem_assoc k processed then begin
+          Reporter.emitf ?loc:node.loc Duplicate_attribute
+            "skipping duplicate XML attribute `%a`" pp_xml_resolved_qname k;
+          processed
+        end else
+          (k, eval v) :: processed
     in
-    {node with value = Sem.Xml_tag (name, attrs, eval body)} :: eval rest
+    {node with value = Sem.Xml_tag (name, process attrs, eval body)} :: eval rest
   | Unresolved name ->
     {node with value = Sem.Unresolved name} :: eval rest
   | Transclude addr ->
