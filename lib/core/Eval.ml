@@ -301,7 +301,6 @@ and eval_tree_inner ~addr (tree : Syn.tree) : Sem.tree =
     {(Sem.empty_frontmatter ~addr) with
      source_path = outer_fm.source_path;
      authors = outer_fm.authors;
-     contributors = outer_fm.contributors;
      dates = outer_fm.dates}
   in
   Fm.run ~init:fm @@ fun () ->
