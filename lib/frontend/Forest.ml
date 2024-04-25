@@ -68,11 +68,16 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
       in
       Sem.Util.sort @@ List.concat_map find @@ S.elements addrs
 
+    let is_user_addr =
+      function
+      | User_addr _ -> true
+      | _ -> false
+
     let get_all_links scope =
-      get_sorted_trees @@ S.of_list @@ Gph.pred analysis.link_graph scope
+      get_sorted_trees @@ S.filter is_user_addr @@ S.of_list @@ Gph.pred analysis.link_graph scope
 
     let backlinks scope =
-      get_sorted_trees @@ S.of_list @@ Gph.succ analysis.link_graph scope
+      get_sorted_trees @@ S.filter is_user_addr @@ S.of_list @@ Gph.succ analysis.link_graph scope
 
     let related scope =
       get_all_links scope |> List.filter @@ fun (doc : Sem.tree) ->
