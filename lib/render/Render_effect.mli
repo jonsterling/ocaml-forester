@@ -8,7 +8,6 @@ sig
   val related : addr -> Sem.tree list
   val bibliography : addr -> Sem.tree list
   val parents : addr -> Sem.tree list
-  val children : addr -> Sem.tree list
   val contributors : addr -> addr list
   val contributions : addr -> Sem.tree list
   val enqueue_latex : name:string -> preamble:string -> source:string -> unit

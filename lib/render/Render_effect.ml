@@ -8,7 +8,6 @@ sig
   val related : addr -> Sem.tree list
   val bibliography : addr -> Sem.tree list
   val parents : addr -> Sem.tree list
-  val children : addr -> Sem.tree list
   val contributors : addr -> addr list
   val contributions : addr -> Sem.tree list
   val enqueue_latex : name:string -> preamble:string -> source:string -> unit
@@ -24,7 +23,6 @@ type _ Effect.t +=
   | Related : addr -> Sem.tree list Effect.t
   | Bibliography : addr -> Sem.tree list Effect.t
   | Parents : addr -> Sem.tree list Effect.t
-  | Children : addr -> Sem.tree list Effect.t
   | Contributions : addr -> Sem.tree list Effect.t
   | Contributors : addr -> addr list Effect.t
   | Enqueue_latex : {name : string; preamble : string; source : string} -> unit Effect.t
@@ -41,7 +39,6 @@ struct
   let bibliography addr = Effect.perform @@ Bibliography addr
   let contributions addr = Effect.perform @@ Contributions addr
   let parents addr = Effect.perform @@ Parents addr
-  let children addr = Effect.perform @@ Children addr
   let contributors addr = Effect.perform @@ Contributors addr
   let enqueue_latex ~name ~preamble ~source = Effect.perform @@ Enqueue_latex {name; preamble; source}
   let get_doc addr = Effect.perform @@ Get_doc addr
@@ -72,8 +69,6 @@ struct
            resume @@ fun () -> H.bibliography addr
          | Parents addr ->
            resume @@ fun () -> H.parents addr
-         | Children addr ->
-           resume @@ fun () -> H.children addr
          | Contributors addr ->
            resume @@ fun () -> H.contributors addr
          | Contributions addr ->

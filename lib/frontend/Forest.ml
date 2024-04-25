@@ -85,9 +85,6 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
     let parents scope =
       get_sorted_trees @@ S.of_list @@ Gph.succ analysis.transclusion_graph scope
 
-    let children scope =
-      get_sorted_trees @@ S.of_list @@ Gph.pred analysis.transclusion_graph scope
-
     let contributions scope =
       get_sorted_trees @@ S.of_list @@ Tbl.find_all analysis.author_pages scope
 
