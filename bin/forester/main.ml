@@ -186,86 +186,6 @@ let query_all ~env config_filename =
   |> Format.printf "%s"
 
 
-let init ~env () =
-  let default_theme_url =
-    "https://git.sr.ht/~jonsterling/forester-base-theme"
-  in
-  let theme_version = "4.0.0" in
-  let ( / ) = Eio.Path.( / ) in
-  let fs = Eio.Stdenv.fs env in
-  let try_create_dir name =
-    try Eio.Path.mkdir ~perm:0o700 (fs / name)
-    with _ ->
-      Reporter.emitf Initialization_warning "Directory `%s` already exists" name
-  in
-
-  let default_config_str =
-    (* More convenient to just write this string instead of constructing it with the toml library*)
-    {|[forest]
-trees = ["trees" ]                   # The directories in which your trees are stored
-assets = ["assets"]                  # The directories in which your assets are stored
-theme = "theme"                      # The directory in which your theme is stored
-root = "hello"                       # The address of the root tree
-base_url = "https://www.example.com" # The base URL of your site
-|}
-  in
-
-  let hello_tree_str =
-    {|
-\title{Hello, World!}
-\p{
-  Welcome to your first tree! This tree is the root of your forest.
-  \ul{
-    \li{[Build and view your forest for the first time](http://www.jonmsterling.com/jms-007D.xml)}
-    \li{[Overview of the Forester markup language](http://www.jonmsterling.com/jms-007N.xml)}
-    \li{[Creating new trees](http://www.jonmsterling.com/jms-007H.xml)}
-    \li{[Creating your personal biographical tree](http://www.jonmsterling.com/jms-007K.xml)}
-  }
-}
-|}
-  in
-  (if Eio.Path.is_file (Eio.Stdenv.fs env / "forest.toml") then
-     Reporter.emitf Initialization_warning "forest.toml already exists"
-   else
-     Eio.Path.(
-       save ~create:(`Exclusive 0o600) (fs / "forest.toml") default_config_str));
-
-  let proc_mgr = Eio.Stdenv.process_mgr env in
-  (try
-     let shut_up = Stdlib.Buffer.create 1 |> Eio.Flow.buffer_sink in
-     let quietly_run cmd =
-       Eio.Process.run proc_mgr ~stdout:shut_up ~stderr:shut_up cmd
-     in
-     [
-       [ "git"; "init" ];
-       [ "git"; "branch"; "-m"; "main" ];
-       [ "git"; "submodule"; "add"; default_theme_url; "theme" ];
-       [ "git"; "-C"; "theme"; "checkout"; theme_version ];
-     ]
-     |> List.iter quietly_run
-   with _ ->
-     Reporter.fatalf Configuration_error
-       {|Failed to set up theme. To perform this step manually, run the commands
-
-   git init
-   git submodule add %s
-   git -C theme checkout %s|}
-       default_theme_url theme_version);
-
-  [ "trees"; "assets" ] |> List.iter try_create_dir;
-
-  (try
-     Eio.Path.(
-       save ~create:(`Exclusive 0o600)
-         (fs / "trees" / "hello.tree")
-         hello_tree_str)
-   with _ ->
-     Reporter.with_backtrace Emp @@ fun () ->
-     Reporter.emitf Initialization_warning "`hello.tree` already exists");
-
-  build ~env "forest.toml" true false false false;
-  Format.printf "%s" "Initialized forest, try editing `trees/hello.tree` and running `forester build`\n"
-
 let arg_config =
   let doc = "A TOML file like $(i,forest.toml)" in
   Arg.(value & pos 0 file "forest.toml" & info [] ~docv:"FOREST" ~doc)
@@ -378,15 +298,6 @@ let query_cmd ~env =
   let info = Cmd.info "query" ~version ~doc in
   Cmd.group info [query_prefixes_cmd ~env; query_taxon_cmd ~env; query_tag_cmd ~env; query_all_cmd ~env]
 
-let init_cmd ~env =
-  let doc = "Initialize a new forest" in
-  let man = [
-    `S Manpage.s_description;
-    `P "The $(tname) command initializes a $(b,forest) in the current directory. This involves setting up a git submodule for the theme, creating an asset and tree directory, as well as a config file."
-  ] 
-  in
-  let info = Cmd.info "init" ~version ~doc ~man in
-  Cmd.v info Term.(const (init ~env) $ const ())
 
 let cmd ~env =
   let doc = "a tool for tending mathematical forests" in
@@ -399,7 +310,7 @@ let cmd ~env =
   in
 
   let info = Cmd.info "forester" ~version ~doc ~man in
-  Cmd.group info [build_cmd ~env; new_tree_cmd ~env; complete_cmd ~env; query_cmd ~env; init_cmd ~env;]
+  Cmd.group info [build_cmd ~env; new_tree_cmd ~env; complete_cmd ~env; query_cmd ~env]
 
 
 let () =
