@@ -224,47 +224,48 @@ base_url = "https://www.example.com" # The base URL of your site
 }
 |} in
   let gitignore = {|output/|} in
-  (if Eio.Path.is_file (Eio.Stdenv.fs env / "forest.toml") then
-     Reporter.emitf Initialization_warning "forest.toml already exists"
-   else
-     Eio.Path.(
-       save ~create:(`Exclusive 0o600) (fs / "forest.toml") default_config_str));
+  begin
+    if Eio.Path.is_file (Eio.Stdenv.fs env / "forest.toml") then
+      Reporter.emitf Initialization_warning "forest.toml already exists"
+    else
+      Eio.Path.(save ~create:(`Exclusive 0o600) (fs / "forest.toml") default_config_str)
+  end;
 
-  Eio.Path.(
-    save ~create:(`Exclusive 0o600) (fs / ".gitignore") gitignore);
+  Eio.Path.(save ~create:(`Exclusive 0o600) (fs / ".gitignore") gitignore);
 
   let proc_mgr = Eio.Stdenv.process_mgr env in
-  (try
-     let shut_up = Stdlib.Buffer.create 1 |> Eio.Flow.buffer_sink in
-     let quietly_run cmd =
-       Eio.Process.run proc_mgr ~stdout:shut_up ~stderr:shut_up cmd
-     in
-     [
-       [ "git"; "init" ];
-       [ "git"; "branch"; "-m"; "main" ];
-       [ "git"; "submodule"; "add"; default_theme_url; "theme" ];
-       [ "git"; "-C"; "theme"; "checkout"; theme_version ];
-     ]
-     |> List.iter quietly_run
-   with _ ->
-     Reporter.fatalf Configuration_error
-       {|Failed to set up theme. To perform this step manually, run the commands
+  begin
+    try
+      let shut_up = Stdlib.Buffer.create 1 |> Eio.Flow.buffer_sink in
+      let quietly_run cmd =
+        Eio.Process.run proc_mgr ~stdout:shut_up ~stderr:shut_up cmd
+      in
+      [
+        [ "git"; "init" ];
+        [ "git"; "branch"; "-m"; "main" ];
+        [ "git"; "submodule"; "add"; default_theme_url; "theme" ];
+        [ "git"; "-C"; "theme"; "checkout"; theme_version ];
+      ]
+      |> List.iter quietly_run
+    with _ ->
+      Reporter.fatalf Configuration_error
+        {|Failed to set up theme. To perform this step manually, run the commands
 
    git init
    git submodule add %s
    git -C theme checkout %s|}
-       default_theme_url theme_version);
+        default_theme_url theme_version
+  end;
 
   [ "trees"; "assets" ] |> List.iter try_create_dir;
 
-  (try
-     Eio.Path.(
-       save ~create:(`Exclusive 0o600)
-         (fs / "trees" / "hello.tree")
-         hello_tree_str)
-   with _ ->
-     Reporter.with_backtrace Emp @@ fun () ->
-     Reporter.emitf Initialization_warning "`hello.tree` already exists");
+  begin
+    try
+      Eio.Path.(save ~create:(`Exclusive 0o600) (fs / "trees" / "hello.tree") hello_tree_str)
+    with _ ->
+      Reporter.with_backtrace Emp @@ fun () ->
+      Reporter.emitf Initialization_warning "`hello.tree` already exists"
+  end;
 
   build ~env "forest.toml" true false false false;
   Format.printf "%s" "Initialized forest, try editing `trees/hello.tree` and running `forester build`. Afterwards, you can open `output/index.xml` in your browser to view your forest."
@@ -385,8 +386,8 @@ let init_cmd ~env =
   let doc = "Initialize a new forest" in
   let man = [
     `S Manpage.s_description;
-    `P "The $(tname) command initializes a $(b,forest) in the current directory. This involves setting up a git submodule for the theme, creating an asset and tree directory, as well as a config file."
-  ] 
+    `P "The $(tname) command initializes a $(b,forest) in the current directory. This involves setting up a git submodule for the theme, creating an assets and trees directory, as well as a config file."
+  ]
   in
   let info = Cmd.info "init" ~version ~doc ~man in
   Cmd.v info Term.(const (init ~env) $ const ())
