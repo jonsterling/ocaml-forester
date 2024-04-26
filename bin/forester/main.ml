@@ -386,7 +386,7 @@ let init_cmd ~env =
   let doc = "Initialize a new forest" in
   let man = [
     `S Manpage.s_description;
-    `P "The $(tname) command initializes a $(b,forest) in the current directory. This involves setting up a git submodule for the theme, creating an assets and trees directory, as well as a config file."
+    `P "The $(tname) command initializes a $(b,forest) in the current directory. This involves initialising a git repository, setting up a git submodule for the theme, creating an assets and trees directory, as well as a config file."
   ]
   in
   let info = Cmd.info "init" ~version ~doc ~man in
