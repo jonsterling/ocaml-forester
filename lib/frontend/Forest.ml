@@ -180,8 +180,8 @@ let rec random_not_in keys =
 let split_addr addr =
   (* primitively check for address of form YYYY-MM-DD *)
   let date_regex = Str.regexp {|^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$|} in
-  if Str.string_match date_regex addr 0
-  then (addr, None)
+  if Str.string_match date_regex addr 0 then
+    (addr, None)
   else
     match String.rindex_opt addr '-' with
     | Some i ->
@@ -231,13 +231,17 @@ let complete ~forest prefix =
 
 module Prefix_map = Map.Make (String)
 let prefixes ~addrs =
-  let cat_maybes xs =
-    List.fold_left (fun acc x -> match x with Some x -> x :: acc | None -> acc) [] xs
+  let cat_maybes  =
+    List.fold_left
+      (fun acc x -> match x with Some x -> x :: acc | None -> acc)
+      []
   in
-  addrs |> Seq.fold_left (fun acc addr ->
-      let prefix, ix = split_addr addr in
-      Prefix_map.add_to_list prefix ix acc
-    ) Prefix_map.empty
+  let split_and_add_to_map map addr =
+    let prefix, ix = split_addr addr in
+    Prefix_map.add_to_list prefix ix map
+  in
+  addrs
+  |> Seq.fold_left split_and_add_to_map Prefix_map.empty
   |> Prefix_map.map cat_maybes
 
 let taxa ~forest =
