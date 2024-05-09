@@ -23,7 +23,11 @@ val render_trees : cfg:config -> forest:forest -> unit
 val create_tree : cfg:config -> addrs:string Seq.t -> dest:Eio.Fs.dir_ty Eio.Path.t -> prefix:string -> template:string option -> mode:[`Sequential | `Random] -> string
 
 val complete : forest:forest -> string -> (string * string) Seq.t
-val prefixes : addrs:string Seq.t -> string list
+
+module Prefix_map : Map.S with type key = string
+val prefixes : addrs:string Seq.t -> int list Prefix_map.t
+(** [prefixes addrs] is a map keyed by prefixes, valued by a list of ids. **)
+
 val taxa : forest:forest-> (string * string) Seq.t
 val tags : forest:forest -> (string * string list) Seq.t
 val run_renderer : cfg:config -> forest -> ( unit -> 'a) -> 'a

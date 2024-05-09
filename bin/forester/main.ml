@@ -134,14 +134,13 @@ let query_prefixes ~env config_filename =
     make_dirs ~env config.trees
   in
   let addrs =
-    Analysis.Map.bindings forest.trees
-    |> List.to_seq
+    Analysis.Map.to_seq forest.trees
     |> Seq.map fst
     |> Seq.filter_map Addr.to_user_addr
   in
   let prefixes = Forest.prefixes ~addrs in
-  prefixes |> List.iter @@ fun addr ->
-  Format.printf "%s\n" addr
+  prefixes |> Forest.Prefix_map.iter @@ fun prefix _ixs ->
+  Format.printf "%s\n" prefix
 
 let query_taxon ~env taxon config_filename =
   let config = parse_forest_config_file config_filename in

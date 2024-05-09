@@ -177,13 +177,28 @@ let rec random_not_in keys =
   else
     attempt
 
+let split_addr addr =
+  (* primitively check for address of form YYYY-MM-DD *)
+  let date_regex = Str.regexp {|^[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]$|} in
+  if Str.string_match date_regex addr 0
+  then (addr, None)
+  else
+    match String.rindex_opt addr '-' with
+    | Some i ->
+      let prefix = String.sub addr 0 i
+      and suffix = String.sub addr (i + 1) (String.length addr - i - 1) in
+      begin
+        match BaseN.Base36.int_of_string suffix with
+        | Some key -> (prefix, Some key)
+        | None -> (addr, None)
+      end
+    | _ -> (addr, None)
+
 let next_addr ~prefix ~mode (forest : string Seq.t) =
   let keys =
     forest |> Seq.filter_map @@ fun addr ->
-    match String.split_on_char '-' addr with
-    | [prefix'; str] when prefix' = prefix ->
-      BaseN.Base36.int_of_string str
-    | _ -> None
+    let prefix', key = split_addr addr in
+    if prefix = prefix' then key else None
   in
   let next =
     match mode with
@@ -214,52 +229,16 @@ let complete ~forest prefix =
   |> M.to_seq
   |> Seq.filter_map (fun (addr, x) -> Addr.to_user_addr addr |> Option.map (fun s -> s, x))
 
-let prefixes ~(addrs : string Seq.t) : string list =
-  let first_segment s = match String.split_on_char '-' s  with
-      [] -> "" | [x] -> s | x::_ -> x
+module Prefix_map = Map.Make (String)
+let prefixes ~addrs =
+  let cat_maybes xs =
+    List.fold_left (fun acc x -> match x with Some x -> x :: acc | None -> acc) [] xs
   in
-
-  let matches_prefix_scheme addr =
-    match String.split_on_char '-' addr with
-    | [] | [_] -> false
-    | prefix :: [id] -> String.length id = 4
-    | _ -> false
-  in
-
-  let is_already ~addr ~known =
-    match List.find_opt (fun c -> first_segment c = first_segment addr) known with
-    | Some _ -> true
-    | None -> false
-  in
-
-  let exists_first ~addr ~queue =
-    match List.find_opt (fun q -> (q = first_segment addr ^ "-0000") || (q = first_segment addr ^ "-0001")) queue with
-    | Some _ -> true
-    | None -> false
-  in
-
-  let should_add ~candidate ~known ~queue =
-    if not (matches_prefix_scheme candidate) then false else
-      (not @@ is_already ~addr:candidate ~known) && (exists_first ~addr:candidate ~queue)
-  in
-
-  let remove_addrs ~addr ~queue =
-    List.filter (fun q ->
-        (not (first_segment q = first_segment addr))) queue
-  in
-
-  let queue = addrs |> List.of_seq |> List.sort String.compare in
-
-  let rec step known queue =
-    match queue with
-    | [] -> known
-    | addr :: rest ->
-      if (should_add ~candidate:addr ~known ~queue) then
-        step (first_segment addr :: known) (remove_addrs ~addr ~queue)
-      else
-        step known (remove_addrs ~addr ~queue)
-  in
-  step [] queue
+  addrs |> Seq.fold_left (fun acc addr ->
+      let prefix, ix = split_addr addr in
+      Prefix_map.add_to_list prefix ix acc
+    ) Prefix_map.empty
+  |> Prefix_map.map cat_maybes
 
 let taxa ~forest =
   forest.trees
