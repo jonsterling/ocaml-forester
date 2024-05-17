@@ -156,9 +156,13 @@ struct
     tree.fm.authors
 
   let basic_comparator =
+    let latest_date tree =
+      let sorted_dates = tree.fm.dates |> List.sort (Compare.invert Date.compare) in
+      List.nth_opt sorted_dates 0
+    in
     let by_date =
       Fun.flip @@
-      Compare.under (fun x -> List.nth_opt x.fm.dates 0) @@
+      Compare.under latest_date @@
       Compare.option Date.compare
     in
     let by_title = Compare.under peek_title @@ Compare.option String.compare in

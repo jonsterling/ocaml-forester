@@ -15,3 +15,5 @@ let option compare x y =
 
 let sort_map f compare xs =
   List.sort compare @@ List.map f xs
+
+let invert compare x y = 0 - compare x y
