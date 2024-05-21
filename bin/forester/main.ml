@@ -410,6 +410,7 @@ let () =
     Tty.display diagnostics;
     exit 1
   in
+  Random.self_init ();
   Printexc.record_backtrace true;
   Eio_main.run @@ fun env ->
   Core.Reporter.run ~emit:Tty.display ~fatal @@ fun () ->
