@@ -11,8 +11,7 @@
   dune-build-info
   eio_main
   asai
-  yojson
-  toml))
+  yojson))
 
 (env
  (dev

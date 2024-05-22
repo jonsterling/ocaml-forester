@@ -18,6 +18,7 @@
   ocamlgraph
   eio_main
   str
+  toml
   yuujinchou))
 
 (env
