@@ -54,3 +54,27 @@ let _ =
   in
   errors |> List.iter (fun (e : Core.Reporter.Message.t Asai.Diagnostic.t) -> Format.printf "error: %s\n" (Asai.Diagnostic.string_of_text e.explanation.value));
   Format.printf "parse_bad_result:\n%s\n\n" (Code.show bad)
+
+let _ =
+  Core.Reporter.run ~emit ~fatal @@ fun () ->
+  (* Incomplete \p (brackets not unbalanced) should error *)
+  let bad, errors = Result.get_error @@ parse_string {|
+    \p{Keep me}
+    \p
+    |}
+  in
+  errors |> List.iter (fun (e : Core.Reporter.Message.t Asai.Diagnostic.t) -> Format.printf "error: %s\n" (Asai.Diagnostic.string_of_text e.explanation.value));
+  Format.printf "parse_bad_result:\n%s\n\n" (Code.show bad)
+
+let _ =
+  Core.Reporter.run ~emit ~fatal @@ fun () ->
+  (* Incomplete XML literal should error *)
+  let bad, errors = Result.get_error @@ parse_string {|
+    \p{Keep me}
+    \<foo>[bar]{
+      Incomplete fragment, needs another {} at the end.
+    }
+    |}
+  in
+  errors |> List.iter (fun (e : Core.Reporter.Message.t Asai.Diagnostic.t) -> Format.printf "error: %s\n" (Asai.Diagnostic.string_of_text e.explanation.value));
+  Format.printf "parse_bad_result:\n%s\n\n" (Code.show bad)

@@ -64,3 +64,15 @@ parse_bad_result:
      ))
   ]
 
+error: syntax error, unexpected ` ` 
+error: syntax error, unexpected `    ` 
+error: syntax error, unexpected `` 
+parse_bad_result:
+[(Code.Prim (`P, [(Code.Text "Keep"); (Code.Text " "); (Code.Text "me")]))]
+
+error: syntax error, unexpected ` ` 
+error: syntax error, unexpected `    ` 
+error: syntax error, unexpected `` 
+parse_bad_result:
+[(Code.Prim (`P, [(Code.Text "Keep"); (Code.Text " "); (Code.Text "me")]))]
+

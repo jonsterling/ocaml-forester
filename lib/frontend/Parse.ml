@@ -39,9 +39,13 @@ let rec resumes checkpoint =
   | I.Shifting _ | I.AboutToReduce _ -> resumes @@ I.resume checkpoint
   | _ -> assert false
 
-(* strategy: whenever we hit an unexpected closing delimiter, we look for a matching opening delimiter in the past if we find one, close all intermediate (hanging) delimiters and then continue parsing otherwise just continue parsing if we hit a premature EOF, try to close all delimiters *)
+(* strategy: whenever we hit an unexpected closing delimiter, we look for a matching opening delimiter in the past
+   if we find one, close all intermediate (hanging) delimiters and then continue parsing
+   otherwise just continue parsing
+   if we hit a premature EOF, try to close all delimiters, and if that fails return the last good parse
+   (on each token, we test if the ending here would have produced a valid parse) *)
 let try_parse lexbuf =
-  let rec fail bracketing last_token before supplier chkpt =
+  let rec fail bracketing last_token last_accept before supplier chkpt =
     match chkpt with
     | I.HandlingError env ->
       let loc = Asai.Range.of_lexbuf lexbuf in
@@ -59,21 +63,26 @@ let try_parse lexbuf =
               let consume = List.to_seq bracketing |> Seq.take (i + 1) in
               let remaining = List.to_seq bracketing |> Seq.drop i |> List.of_seq in
               let continue = Seq.fold_left (fun acc t -> resumes @@ I.offer acc (t, lexbuf.lex_curr_p, lexbuf.lex_curr_p)) before consume in
-              run remaining last_token before supplier continue
+              run remaining last_token last_accept before supplier continue
             | None ->
               (* ignore this token and move on *)
-              run bracketing Grammar.EOF before supplier before
+              run bracketing Grammar.EOF last_accept before supplier before
           end
         | Grammar.EOF ->
-          let continue = List.fold_left (fun acc t -> resumes @@ I.offer acc (t, lexbuf.lex_curr_p, lexbuf.lex_curr_p)) before bracketing in
-          run [] last_token before supplier continue
+          if not @@ List.is_empty bracketing then
+            (* have hanging delimiters to close *)
+            let continue = List.fold_left (fun acc t -> resumes @@ I.offer acc (t, lexbuf.lex_curr_p, lexbuf.lex_curr_p)) before bracketing in
+            run [] last_token last_accept before supplier continue
+          else
+            (* can't continue, give up and use last_accept *)
+            run [] last_token last_accept before supplier last_accept
         | _ ->
           (* ignore this token and move on *)
-          run bracketing Grammar.EOF before supplier before
+          run bracketing Grammar.EOF last_accept before supplier before
       end
     | _ -> Reporter.fatal Parse_error "unreachable parser state"
 
-  and run bracketing last_token last_input_needed supplier checkpoint =
+  and run bracketing last_token last_accept last_input_needed supplier checkpoint =
     match checkpoint with
     | I.InputNeeded _ ->
       (* last_token has been accepted, update bracketing *)
@@ -96,18 +105,24 @@ let try_parse lexbuf =
           -> Grammar.RBRACE :: bracketing
         | _ -> bracketing
       in
-      run bracketing token checkpoint supplier @@ I.offer checkpoint (token, start, end_)
+      (* check if it's possible to end parsing here, update last_accept *)
+      let la =
+        if I.acceptable checkpoint Grammar.EOF start
+        then checkpoint
+        else last_accept
+      in
+      run bracketing token la checkpoint supplier @@ I.offer checkpoint (token, start, end_)
     | I.Accepted v -> v
     | I.Rejected
     | I.HandlingError _ ->
-      fail bracketing last_token last_input_needed supplier checkpoint
+      fail bracketing last_token last_accept last_input_needed supplier checkpoint
     | I.Shifting _
     | I.AboutToReduce _ ->
-      run bracketing last_token last_input_needed supplier @@ I.resume checkpoint
+      run bracketing last_token last_accept last_input_needed supplier @@ I.resume checkpoint
   in
   let checkpoint = Grammar.Incremental.main lexbuf.lex_curr_p in
   let supplier = I.lexer_lexbuf_to_supplier Lexer.token lexbuf in
-  run [] Grammar.EOF checkpoint supplier checkpoint
+  run [] Grammar.EOF checkpoint checkpoint supplier checkpoint
 
 let maybe_with_errors (f : unit -> 'a) : ('a, 'a * 'b list) result =
   let errors = ref [] in
