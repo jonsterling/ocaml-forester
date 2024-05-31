@@ -158,7 +158,7 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
     variant "node"
       (fun
         text
-        char_data
+        verbatim
         transclude
         subtree
         query
@@ -174,7 +174,7 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
         ref
         -> function
           | Text s -> text s
-          | Verbatim s -> char_data s
+          | Verbatim s -> verbatim s
           | Transclude (x, y) -> transclude (x, y)
           | Subtree (x, y) -> subtree (x, y)
           | Query (x, y) -> query (x, y)
