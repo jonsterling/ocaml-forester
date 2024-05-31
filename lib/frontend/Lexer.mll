@@ -14,8 +14,8 @@ let addr = (alpha) (alpha|digit|'_'|'-')*
 let wschar = [' ' '\t']
 let newline = '\r' | '\n' | "\r\n"
 let text = [^ ' ' '%' '#' '\\' '{' '}' '[' ']' '(' ')' '\r' '\n']+
-
-let verbatim_herald = [^ ' ' '\t' '\r' '\n' ]+
+let verbatim_herald = [^ ' ' '\t' '\r' '\n' '|' ]+
+let verbatim_herald_sep = '|'
 
 rule token =
   parse
@@ -36,7 +36,7 @@ rule token =
   | "\\[" { Grammar.IDENT {|[|} }
   | "\\]" { Grammar.IDENT {|]|} }
   | "\\verb" { custom_verbatim_herald lexbuf }
-  | "\\startverb" { verbatim (Buffer.create 2000) lexbuf }
+  | "\\startverb" { custom_verbatim "\\stopverb" (Buffer.create 2000) lexbuf }
   | "\\ " { Grammar.IDENT {| |} }
   | "\\title" { Grammar.TITLE }
   | "\\parent" { Grammar.PARENT }
@@ -110,38 +110,20 @@ and comment =
   | eof { Grammar.EOF }
   | _ { comment lexbuf }
 
-and verbatim buffer =
-  parse
-  | "\\stopverb"
-    { let text =
-        String_util.trim_trailing_whitespace @@
-        String_util.trim_newlines @@
-        Buffer.contents buffer
-      in
-      Grammar.VERBATIM text }
-  | newline as c
-    { Lexing.new_line lexbuf;
-      Buffer.add_string buffer c;
-      verbatim buffer lexbuf; }
-  | _ as c
-    { Buffer.add_char buffer c;
-      verbatim buffer lexbuf }
-
 and custom_verbatim_herald =
   parse
   | verbatim_herald as herald
     { let buffer = Buffer.create 2000 in
-      eat_newline (custom_verbatim herald buffer) lexbuf }
+      eat_verbatim_herald_sep (custom_verbatim herald buffer) lexbuf }
   | _ as c
     { raise @@ SyntaxError (Lexing.lexeme lexbuf) }
 
-and eat_newline kont =
-  parse
-  | newline as c
-    { Lexing.new_line lexbuf;
-      kont lexbuf }
-  | _ as c
-    { raise @@ SyntaxError (Lexing.lexeme lexbuf) }
+and eat_verbatim_herald_sep kont = 
+  parse 
+  | verbatim_herald_sep 
+    { kont lexbuf }
+  | _ as c 
+   { raise @@ SyntaxError (Lexing.lexeme lexbuf) }
 
 and custom_verbatim herald buffer =
   parse
