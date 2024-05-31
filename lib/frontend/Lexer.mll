@@ -127,33 +127,33 @@ and verbatim buffer =
     { Buffer.add_char buffer c;
       verbatim buffer lexbuf }
 
-and custom_verbatim_herald = 
-  parse 
+and custom_verbatim_herald =
+  parse
   | verbatim_herald as herald
-    { let buffer = Buffer.create 2000 in 
+    { let buffer = Buffer.create 2000 in
       eat_newline (custom_verbatim herald buffer) lexbuf }
-  | _ as c 
+  | _ as c
     { raise @@ SyntaxError (Lexing.lexeme lexbuf) }
 
-and eat_newline kont = 
+and eat_newline kont =
   parse
-  | newline as c 
-    { Lexing.new_line lexbuf; 
+  | newline as c
+    { Lexing.new_line lexbuf;
       kont lexbuf }
   | _ as c
     { raise @@ SyntaxError (Lexing.lexeme lexbuf) }
 
-and custom_verbatim herald buffer = 
+and custom_verbatim herald buffer =
   parse
-  | newline as c 
+  | newline as c
     { Lexing.new_line lexbuf;
       Buffer.add_string buffer c;
       custom_verbatim herald buffer lexbuf; }
   | _ as c
     { Buffer.add_char buffer c;
       let buff_len = Buffer.length buffer in
-      let herald_len = String.length herald in 
-      let offset = buff_len - herald_len in 
+      let herald_len = String.length herald in
+      let offset = buff_len - herald_len in
       if offset >= 0 && Buffer.sub buffer offset herald_len = herald then
         let text =
           String_util.trim_trailing_whitespace @@
@@ -161,7 +161,7 @@ and custom_verbatim herald buffer =
           Buffer.sub buffer 0 offset
         in
         Grammar.VERBATIM text
-      else 
+      else
         custom_verbatim herald buffer lexbuf }
 
 and xml_qname =
