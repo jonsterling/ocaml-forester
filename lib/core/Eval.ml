@@ -116,6 +116,10 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
       | x :: xs, Range.{value = Syn.Group (Braces, u); loc = loc'} :: rest ->
         Lex_env.scope (Env.add x (eval u)) @@ fun () ->
         loop xs rest
+      | x :: xs, Range.{value = Syn.Verbatim str; loc = loc'} :: rest ->
+        let verb = [Range.{value = Sem.Verbatim str; loc = loc'}] in
+        Lex_env.scope (Env.add x verb) @@ fun () ->
+        loop xs rest
       | _ ->
         Reporter.fatalf Type_error ?loc:node.loc
           "expected function to be applied to `%i` additional arguments"

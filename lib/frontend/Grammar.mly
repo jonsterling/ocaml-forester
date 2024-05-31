@@ -47,7 +47,6 @@ let ws_list(p) := flatten(list(ws_or(p)))
 
 let textual_node :=
 | ~ = TEXT; <Code.Text>
-| ~ = VERBATIM; <Code.Verbatim>
 | ~ = WHITESPACE; <Code.Text>
 | ~ = head_node; <Fun.id>
 
@@ -95,6 +94,7 @@ let head_node :=
 | ~ = braces(textual_expr); <Code.braces>
 | ~ = squares(textual_expr); <Code.squares>
 | ~ = parens(textual_expr); <Code.parens>
+| ~ = VERBATIM; <Code.Verbatim>
 
 
 let method_decl :=
@@ -137,7 +137,12 @@ let ws_or_text :=
 let wstext :=
 | xs = list(ws_or_text); { String.concat "" xs }
 
-let arg == braces(textual_expr)
+let arg :=
+| braces(textual_expr)
+| located_str = locate(VERBATIM);
+  { [{located_str with value = Code.Verbatim located_str.value}] }
+
+
 let txt_arg == braces(wstext)
 let fun_spec == ~ = ident; ~ = binder; ~ = arg; <>
 
