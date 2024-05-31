@@ -69,7 +69,7 @@ let rec expand : Code.t -> Syn.t =
     {value = Syn.Group (d, expand xs); loc} :: expand rest
 
   | {value = Transclude addr; loc} :: rest ->
-    {value = Syn.Transclude addr; loc} :: expand rest
+    {value = Syn.Transclude (expand addr); loc} :: expand rest
 
   | {value = Subtree (addr, nodes); loc} :: rest ->
     let subtree = expand_tree_inner @@ Code.{source_path = None; addr = addr; code = nodes} in

@@ -6,7 +6,7 @@ type node =
   | Group of delim * t
   | Math of math_mode * t
   | Link of {dest : t; title : t option}
-  | Transclude of string
+  | Transclude of t
   | Subtree of string option * tree
   | Query of t Query.t
   | Embed_tex of {preamble : t; source : t}

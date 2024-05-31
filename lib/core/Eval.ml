@@ -66,7 +66,8 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     {node with value = Sem.Unresolved name} :: eval rest
   | Transclude addr ->
     let opts = get_transclusion_opts () in
-    {node with value = Sem.Transclude (opts, User_addr addr)} :: eval rest
+    let addr = User_addr (Sem.string_of_nodes @@ eval_textual [] addr) in
+    {node with value = Sem.Transclude (opts, addr)} :: eval rest
   | Subtree (addr, nodes) ->
     let addr =
       match addr with

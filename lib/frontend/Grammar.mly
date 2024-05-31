@@ -68,7 +68,7 @@ let head_node :=
 | EXPORT; ~ = txt_arg; <Code.import_public>
 | TAG; ~ = txt_arg; <Code.Tag>
 | NAMESPACE; ~ = ident; ~ = braces(code_expr); <Code.Namespace>
-| TRANSCLUDE; ~ = txt_arg; <Code.Transclude>
+| TRANSCLUDE; ~ = arg; <Code.Transclude>
 | SUBTREE; addr = option(squares(wstext)); body = braces(ws_list(locate(head_node))); <Code.Subtree>
 | LET; (~,~,~) = fun_spec; <Code.Let>
 | TEX; pkgs = arg; src = arg; <Code.Embed_tex>

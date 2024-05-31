@@ -7,7 +7,7 @@ type node =
   | Math of math_mode * t
   | Ident of Trie.path * string list
   | Xml_tag of (string option * string) * ((string option * string) * t) list * t
-  | Transclude of string
+  | Transclude of t
   | Subtree of string option * t
   | Embed_tex of t * t
   | Let of Trie.path * Trie.path list * t
