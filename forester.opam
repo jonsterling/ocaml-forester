@@ -10,20 +10,20 @@ bug-reports: "https://todo.sr.ht/~jonsterling/forester"
 depends: [
   "menhir" {>= "20211230"}
   "ocamlgraph" {>= "2.1.0"}
-  "ocaml" {>= "5.0.0"}
+  "ocaml" {>= "5.1.1"}
   "dune" {>= "3.7"}
   "ppx_deriving"
   "cmdliner" {>= "1.2.0"}
   "dune-build-info"
   "uucp" {>= "15.1.0"}
-  "eio_main" {>= "1.0"}
+  "eio_main" {>= "1.1"}
   "ptime" {>= "1.1.0"}
-  "asai" {>= "0.2.0"}
+  "asai" {>= "0.3.0"}
   "yuujinchou" {>= "5.2.0"}
   "bwd" {>= "2.3.0"}
   "algaeff" {>= "2.0.0"}
   "yojson" {>= "2.1.2"}
-  "dream-html" {>= "3.3.1"}
+  "dream-html" {>= "3.4.1"}
   "toml" {>= "7.1.0"}
   "irmin-git" {>= "3.9.0"}
   "odoc" {with-doc}

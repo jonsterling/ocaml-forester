@@ -30,7 +30,7 @@
   (ocamlgraph
    (>= 2.1.0))
   (ocaml
-   (>= 5.0.0))
+   (>= 5.1.1))
   dune
   ppx_deriving
   (cmdliner
@@ -39,11 +39,11 @@
   (uucp
    (>= 15.1.0))
   (eio_main
-   (>= 1.0))
+   (>= 1.1))
   (ptime
    (>= 1.1.0))
   (asai
-   (>= 0.2.0))
+   (>= 0.3.0))
   (yuujinchou
    (>= 5.2.0))
   (bwd
@@ -53,7 +53,7 @@
   (yojson
    (>= 2.1.2))
   (dream-html
-   (>= 3.3.1))
+   (>= 3.4.1))
   (toml
    (>= 7.1.0))
   (irmin-git
