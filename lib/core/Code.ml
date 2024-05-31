@@ -3,6 +3,7 @@ open Base
 
 type node =
   | Text of string
+  | Verbatim of string
   | Group of delim * t
   | Math of math_mode * t
   | Ident of Trie.path * string list

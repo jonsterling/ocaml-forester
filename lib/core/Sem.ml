@@ -14,6 +14,7 @@ let pp_modifier = Text_modifier.pp
 
 type node =
   | Text of string
+  | Verbatim of string
   | Transclude of transclusion_opts * addr
   | Subtree of transclusion_opts * tree
   | Query of transclusion_opts * t Query.t
@@ -127,6 +128,7 @@ let string_of_nodes =
   and render_node located =
     match Range.(located.value) with
     | Text s -> Some s
+    | Verbatim s -> Some s
     | Link (_, Some title, _) -> Some (render title)
     | Xml_tag (_, _, bdy) | Math (_, bdy) -> Some (render bdy)
     | Embed_tex {source; _} -> Some (render source)

@@ -12,7 +12,7 @@ let string_source : Range.string_source t =
 let source_repr : Range.source ty =
   let open Range in
   variant "source" (fun file string -> function
-    | `File s -> file s | `String s -> string s)
+      | `File s -> file s | `String s -> string s)
   |~ case1 "File" string (fun s -> `File s)
   |~ case1 "String" string_source (fun s -> `String s)
   |> sealv
@@ -29,14 +29,14 @@ let position : Range.position ty =
 
 let range : Range.t ty =
 
-(*  NOTE:
-    For the irmin-git backend, the functions we need are pp, of_string and
-    equal. I've worked around the need for a full of_string implementation
-    (parser), since in `located_sem_node` I am simply returning `None` for the
-    value of `loc`. This means even though we can serialize ranges, we can't
-    retrieve them. This is fine for now, since we don't need that info for
-    rendering, which is our primary use case.
-*)
+  (*  NOTE:
+      For the irmin-git backend, the functions we need are pp, of_string and
+      equal. I've worked around the need for a full of_string implementation
+      (parser), since in `located_sem_node` I am simply returning `None` for the
+      value of `loc`. This means even though we can serialize ranges, we can't
+      retrieve them. This is fine for now, since we don't need that info for
+      rendering, which is our primary use case.
+  *)
 
   let open Range in
   let pp = Range.dump in
@@ -44,13 +44,13 @@ let range : Range.t ty =
     { source = `File "todo"; offset = 0; start_of_line = 0; line_num = 0 }
   in
 
-  let of_string str = 
-  (*  HACK: Should parse this kind of string (produced by Range.dump):
+  let of_string str =
+    (*  HACK: Should parse this kind of string (produced by Range.dump):
 
-    Range
-      ({source=(`File "todo"); offset=0; start_of_line=0; line_num=0},
-       {source=(`File "todo"); offset=0; start_of_line=0; line_num=0})
-  *)
+        Range
+        ({source=(`File "todo"); offset=0; start_of_line=0; line_num=0},
+         {source=(`File "todo"); offset=0; start_of_line=0; line_num=0})
+    *)
     Ok (Range.make (pos, pos))
   in
 
@@ -59,40 +59,40 @@ let range : Range.t ty =
   let decode _ = Ok r in
   let encode_bin : _ encode_bin = fun _ _ -> () in
   let decode_bin _ _ = r in
-  let size_of : _ size_of = 
-    (* NOTE: Named args of_value and of_encoding are optional. 
+  let size_of : _ size_of =
+    (* NOTE: Named args of_value and of_encoding are optional.
        Precompute the size that will be used by `encode_bin`. `of_encoding`
        unused nowadays
     *)
     Size.custom_dynamic () in
 
-  let compare_pos p q = 
-    p.source = q.source && 
-    p.offset = q.offset && 
-    p.start_of_line = q.start_of_line && 
+  let compare_pos p q =
+    p.source = q.source &&
+    p.offset = q.offset &&
+    p.start_of_line = q.start_of_line &&
     p.line_num = q.line_num
   in
 
-  let equal r1 r2 = 
+  let equal r1 r2 =
     match Range.view r1, Range.view r2 with
     | `End_of_file p, `End_of_file q -> compare_pos p q
     | `Range (p1, p2), `Range (q1, q2) ->
-        compare_pos p1 q1 && compare_pos p2 q2
+      compare_pos p1 q1 && compare_pos p2 q2
     | _ -> false
   in
-  let compare r1 r2 = 
+  let compare r1 r2 =
     if equal r1 r2 then 0 else
-    (*  FIXME: Is this used by the git-backend? If not, remove it.
-    *)
-    match Range.view r1, Range.view r2 with
-    | `End_of_file p, `End_of_file q -> 
+      (*  FIXME: Is this used by the git-backend? If not, remove it.
+      *)
+      match Range.view r1, Range.view r2 with
+      | `End_of_file p, `End_of_file q ->
         (if p.source = q.source then match p.source, q.source with
-          | `String s1, `String s2 -> String.compare s1.content s2.content
-          | `File s1, `File s2 -> String.compare s1 s2
-          | _ -> -1
-        else -1)
-    | `Range (p1, p2), `Range (q1, q2) -> -1
-    | _ -> -1
+            | `String s1, `String s2 -> String.compare s1.content s2.content
+            | `File s1, `File s2 -> String.compare s1 s2
+            | _ -> -1
+         else -1)
+      | `Range (p1, p2), `Range (q1, q2) -> -1
+      | _ -> -1
   in
   let short_hash ?seed a = 0 in
   let pre_hash _ _ = () in
@@ -117,7 +117,7 @@ let prim : Prim.t ty=
     ]
 
 let date : Prelude.Date.t ty =
-  let open Prelude.Date in 
+  let open Prelude.Date in
   record "date" (fun yyyy mm dd -> {yyyy; mm; dd})
   |+ field "yyyy" int (fun t -> t.yyyy)
   |+ field "mm" (option int) (fun t -> t.mm)
@@ -128,7 +128,7 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
   type t = Sem.tree
 
   let math_mode : Base.math_mode ty =
-    let open Base in 
+    let open Base in
     enum "math_mode" [ ("inline", Inline); ("display", Display) ]
 
   let addr : Base.Addr.t ty =
@@ -136,10 +136,10 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
     variant "addr"
       (fun
         user_addr
-        machine_addr 
-      -> function
-      | User_addr x -> user_addr x
-      | Machine_addr x -> machine_addr x)
+        machine_addr
+        -> function
+          | User_addr x -> user_addr x
+          | Machine_addr x -> machine_addr x)
     |~ case1 "User_addr" string (fun x -> User_addr x)
     |~ case1 "Machine_addr" int (fun x -> Machine_addr x)
     |> sealv
@@ -147,7 +147,7 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
   let xml_resolved_qname : Base.xml_resolved_qname ty =
     let open Base in
     record "xml_resolved_qname"
-    (fun prefix uname xmlns -> {prefix; uname; xmlns})
+      (fun prefix uname xmlns -> {prefix; uname; xmlns})
     |+ field "prefix" (option string) (fun r -> r.prefix)
     |+ field "uname" string (fun r -> r.uname)
     |+ field "xmlns" (option string) (fun r -> r.xmlns)
@@ -158,6 +158,7 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
     variant "node"
       (fun
         text
+        char_data
         transclude
         subtree
         query
@@ -171,35 +172,37 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
         prim
         object_
         ref
-      -> function
-      | Text s -> text s
-      | Transclude (x, y) -> transclude (x, y)
-      | Subtree (x, y) -> subtree (x, y)
-      | Query (x, y) -> query (x, y)
-      | Link (x, y, z) -> link (x, y, z)
-      | Xml_tag (x, y, z) -> xml_tag (x, y, z)
-      | Unresolved x -> unresolved x
-      | Math (x, y) -> math (x, y)
-      | Embed_tex x -> embed_tex x
-      | Img x -> img x
-      | If_tex (x, y) -> if_tex (x, y)
-      | Prim (x, y) -> prim (x, y)
-      | Object x -> object_ x
-      | Ref x -> ref x)
+        -> function
+          | Text s -> text s
+          | Verbatim s -> char_data s
+          | Transclude (x, y) -> transclude (x, y)
+          | Subtree (x, y) -> subtree (x, y)
+          | Query (x, y) -> query (x, y)
+          | Link (x, y, z) -> link (x, y, z)
+          | Xml_tag (x, y, z) -> xml_tag (x, y, z)
+          | Unresolved x -> unresolved x
+          | Math (x, y) -> math (x, y)
+          | Embed_tex x -> embed_tex x
+          | Img x -> img x
+          | If_tex (x, y) -> if_tex (x, y)
+          | Prim (x, y) -> prim (x, y)
+          | Object x -> object_ x
+          | Ref x -> ref x)
     |~ case1 "Text" string (fun s -> Text s)
+    |~ case1 "Verbatim" string (fun s -> Verbatim s)
     |~ case1 "Transclude"
-         (pair (tranclusion_opts t) addr)
-         (fun (x, y) -> Transclude (x, y))
+      (pair (tranclusion_opts t) addr)
+      (fun (x, y) -> Transclude (x, y))
     |~ case1 "Subtree"
-         (pair (tranclusion_opts t) tree)
-         (fun (x, y) -> Subtree (x, y))
+      (pair (tranclusion_opts t) tree)
+      (fun (x, y) -> Subtree (x, y))
     |~ case1 "Query"
-         (pair (tranclusion_opts t) (query tree t t))
-         (fun (x, y) -> Query (x, y))
+      (pair (tranclusion_opts t) (query tree t t))
+      (fun (x, y) -> Query (x, y))
     |~ case1 "Link" (triple addr (option t) modifier) (fun (x, y, z) -> Link (x, y, z))
     |~ case1 "Xml_tag"
-         (triple xml_resolved_qname (list @@ pair xml_resolved_qname t) t)
-         (fun (x, y, z) -> Xml_tag (x, y, z))
+      (triple xml_resolved_qname (list @@ pair xml_resolved_qname t) t)
+      (fun (x, y, z) -> Xml_tag (x, y, z))
     |~ case1 "Unresolved" string (fun s -> Unresolved s)
     |~ case1 "Math" (pair math_mode t) (fun (x, y) -> Math (x, y))
     |~ case1 "Embed_tex" (embed_tex t) (fun s -> Embed_tex s)
@@ -221,22 +224,22 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
     let open Sem.Text_modifier in
     enum "modifier" [ ("sentence_case", Sentence_case); ("identity", Identity)]
 
-  and symbol : Symbol.t ty = 
+  and symbol : Symbol.t ty =
     let open Symbol in
     pair (list string) int
 
   and query (tree : Sem.tree ty) (t : Sem.t ty) a : 'a Query.t ty =
     let open Query in
-    mu @@ fun query -> 
+    mu @@ fun query ->
     variant "query" (fun author tag taxon meta or_ and_ not_ true_ -> function
-      | Author x -> author x
-      | Tag x -> tag x
-      | Taxon x -> taxon x
-      | Meta (x, y) -> meta (x, y)
-      | Or x -> or_ x
-      | And x -> and_ x
-      | Not x -> not_ x
-      | True -> true_)
+        | Author x -> author x
+        | Tag x -> tag x
+        | Taxon x -> taxon x
+        | Meta (x, y) -> meta (x, y)
+        | Or x -> or_ x
+        | And x -> and_ x
+        | Not x -> not_ x
+        | True -> true_)
     |~ case1 "Author" a (fun x -> Author x)
     |~ case1 "Tag" a (fun x -> Tag x)
     |~ case1 "Taxon" a (fun x -> Taxon x)
@@ -258,22 +261,22 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
         taxon_override
         expanded
         numbered
-      ->
-        {
-          toc;
-          show_heading;
-          show_metadata;
-          title_override;
-          taxon_override;
-          expanded;
-          numbered;
-        })
+        ->
+          {
+            toc;
+            show_heading;
+            show_metadata;
+            title_override;
+            taxon_override;
+            expanded;
+            numbered;
+          })
     |+ field "toc" bool (fun t -> t.toc)
     |+ field "show_heading" bool (fun t -> t.show_heading)
     |+ field "show_metadata" bool (fun t -> t.show_metadata)
     |+ field "title_override"
-         (option t)
-         (fun t -> t.title_override)
+      (option t)
+      (fun t -> t.title_override)
     |+ field "taxon_override" (option string) (fun t -> t.taxon_override)
     |+ field "expanded" bool (fun t -> t.expanded)
     |+ field "numbered" bool (fun t -> t.numbered)
@@ -295,21 +298,21 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
         designated_parent
         source_path
         number
-      ->
-        {
-          title;
-          taxon;
-          authors;
-          contributors;
-          dates;
-          addr;
-          metas;
-          tags;
-          physical_parent;
-          designated_parent;
-          source_path;
-          number;
-        })
+        ->
+          {
+            title;
+            taxon;
+            authors;
+            contributors;
+            dates;
+            addr;
+            metas;
+            tags;
+            physical_parent;
+            designated_parent;
+            source_path;
+            number;
+          })
     |+ field "title" (option t) (fun t -> t.title)
     |+ field "taxon" (option string) (fun t -> t.taxon)
     |+ field "authors" (list addr) (fun t -> t.authors)
@@ -335,12 +338,12 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
   let tree  : Sem.tree ty =
     let open Sem in
     mu (fun tree ->
-    let t = mu (fun t -> list (located_sem_node t tree)) in
-      record "tree" (fun fm body : Sem.tree -> { fm; body })
-      |+ field "fm" (frontmatter t) (fun t -> t.fm)
-      |+ field "body" t (fun (t : Sem.tree) -> t.body)
-      |> sealr)
+        let t = mu (fun t -> list (located_sem_node t tree)) in
+        record "tree" (fun fm body : Sem.tree -> { fm; body })
+        |+ field "fm" (frontmatter t) (fun t -> t.fm)
+        |+ field "body" t (fun (t : Sem.tree) -> t.body)
+        |> sealr)
 
-  let t = tree 
+  let t = tree
   let merge = Irmin.Merge.(option (idempotent t))
 end

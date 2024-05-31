@@ -96,6 +96,9 @@ let rec render_located (located : Sem.node Range.located) =
   | Sem.Text text ->
     txt "%s" text
 
+  | Sem.Verbatim cdata ->
+    txt ~raw:true "<![CDATA[%s]]>" cdata
+
   | Sem.Math (mode, body) ->
     let rendered =
       let module TP = Render_verbatim.Printer in

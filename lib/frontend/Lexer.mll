@@ -118,7 +118,7 @@ and verbatim buffer =
         String_util.trim_newlines @@
         Buffer.contents buffer
       in
-      Grammar.TEXT text }
+      Grammar.VERBATIM text }
   | newline as c
     { Lexing.new_line lexbuf;
       Buffer.add_string buffer c;
@@ -160,7 +160,7 @@ and custom_verbatim herald buffer =
           String_util.trim_newlines @@
           Buffer.sub buffer 0 offset
         in
-        Grammar.TEXT text
+        Grammar.VERBATIM text
       else 
         custom_verbatim herald buffer lexbuf }
 

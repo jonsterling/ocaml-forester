@@ -3,6 +3,7 @@ open Prelude
 
 type node =
   | Text of string
+  | Verbatim of string
   | Group of delim * t
   | Math of math_mode * t
   | Link of {dest : t; title : t option}

@@ -22,7 +22,7 @@ type cfg = {tex : bool}
 let rec render_node ~cfg : Sem.node Range.located -> Printer.t =
   fun located ->
   match located.value with
-  | Sem.Text txt ->
+  | Sem.Text txt | Sem.Verbatim txt ->
     Printer.text txt
   | Sem.Math (_, xs) ->
     render ~cfg xs

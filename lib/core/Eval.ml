@@ -42,13 +42,17 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     let title = Option.map eval title in
     let dest = User_addr (Sem.string_of_nodes @@ eval_textual [] dest) in
     {node with value = Sem.Link (dest, title, Identity)} :: eval rest
+
   | Ref dest ->
     let addr = User_addr (Sem.string_of_nodes @@ eval_textual [] dest) in
     {node with value = Sem.Ref addr} :: eval rest
+
   | Math (mmode, e) ->
     {node with value = Sem.Math (mmode, eval e)} :: eval rest
+
   | Prim (p, body) ->
     {node with value = Sem.Prim (p, eval_trim body)} :: eval rest
+
   | Xml_tag (name, attrs, body) ->
     let rec process attrs = match attrs with
       | [] -> []
@@ -62,12 +66,15 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
           (k, eval v) :: processed
     in
     {node with value = Sem.Xml_tag (name, process attrs, eval body)} :: eval rest
+
   | Unresolved name ->
     {node with value = Sem.Unresolved name} :: eval rest
+
   | Transclude addr ->
     let opts = get_transclusion_opts () in
     let addr = User_addr (Sem.string_of_nodes @@ eval_textual [] addr) in
     {node with value = Sem.Transclude (opts, addr)} :: eval rest
+
   | Subtree (addr, nodes) ->
     let addr =
       match addr with
@@ -83,10 +90,12 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
       subtree :: trees
     end;
     {node with value = Sem.Subtree (opts, subtree)} :: eval rest
+
   | If_tex (x , y) ->
     let x = eval x in
     let y = eval y in
     {node with value = Sem.If_tex (x, y)} :: eval rest
+
   | Query query ->
     let opts = get_transclusion_opts () in
     let opts =
@@ -96,8 +105,10 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     in
     let query = Query.map eval query in
     {node with value = Sem.Query (opts, query)} :: eval rest
+
   | Embed_tex {preamble; source} ->
     {node with value = Sem.Embed_tex {preamble = eval preamble; source = eval source}} :: eval rest
+
   | Lam (xs, body) ->
     let rec loop xs rest =
       match xs, rest with
@@ -112,6 +123,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     in
     let body, rest = loop xs rest in
     body @ eval rest
+
   | Object {self; methods} ->
     let table =
       let env = Lex_env.read () in
@@ -124,6 +136,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     let sym = Symbol.fresh ["obj"] in
     Heap.modify @@ Env.add sym Sem.{prototype = None; methods = table};
     {node with value = Sem.Object sym} :: eval rest
+
   | Patch {obj; self; super; methods} ->
     begin
       match eval_strip obj with
@@ -143,6 +156,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
         Reporter.fatalf ?loc:node.loc Type_error
           "tried to patch non-object"
     end
+
   | Call (obj, method_name) ->
     begin
       match eval_strip obj with
@@ -179,6 +193,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
         Reporter.fatalf ?loc:node.loc Type_error
           "tried to call method `%s` on non-object: %a" method_name Sem.pp xs
     end
+
   | Var x ->
     begin
       match Env.find_opt x @@ Lex_env.read () with
@@ -188,12 +203,14 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
           Symbol.pp x
       | Some v -> v @ eval rest
     end
+
   | Put (k, v, body) ->
     let body =
       Dyn_env.scope (Env.add k @@ eval v) @@ fun () ->
       eval body
     in
     body @ eval rest
+
   | Default (k, v, body) ->
     let body =
       let upd flenv = if Env.mem k flenv then flenv else Env.add k (eval v) flenv in
@@ -201,6 +218,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
       eval body
     in
     body @ eval rest
+
   | Get key ->
     begin
       let env = Dyn_env.read () in
@@ -212,6 +230,10 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
           Symbol.pp key
       | Some v -> v @ eval rest
     end
+
+  | Verbatim str ->
+    {node with value = Sem.Verbatim str} :: eval rest
+
   | Group _ | Text _ ->
     eval_textual [] @@ node :: rest
 

@@ -11,7 +11,7 @@
 
 %token <string> XML_ELT_IDENT
 %token <string> DECL_XMLNS
-%token <string> TEXT
+%token <string> TEXT VERBATIM
 %token <string> WHITESPACE
 %token <string> IDENT
 %token <Core.Prim.t> PRIM
@@ -47,6 +47,7 @@ let ws_list(p) := flatten(list(ws_or(p)))
 
 let textual_node :=
 | ~ = TEXT; <Code.Text>
+| ~ = VERBATIM; <Code.Verbatim>
 | ~ = WHITESPACE; <Code.Text>
 | ~ = head_node; <Fun.id>
 

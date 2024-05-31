@@ -22,7 +22,7 @@ end
 let rec render_node : Sem.node Range.located -> Printer.t =
   fun node ->
   match node.value with
-  | Sem.Text txt ->
+  | Sem.Text txt | Sem.Verbatim txt ->
     Printer.text txt
   | Sem.Math (_, xs) ->
     render xs

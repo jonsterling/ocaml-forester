@@ -37,6 +37,9 @@ let rec expand : Code.t -> Syn.t =
   | {value = Text x; loc} :: rest ->
     {value = Syn.Text x; loc} :: expand rest
 
+  | {value = Verbatim x; loc} :: rest ->
+    {value = Syn.Verbatim x; loc} :: expand rest
+
   | {value = Namespace (path, body); loc} :: rest ->
     let result =
       Scope.section path @@ fun () ->
