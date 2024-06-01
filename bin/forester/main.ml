@@ -74,22 +74,6 @@ let complete ~env config_filename title =
   completions |> Seq.iter @@ fun (addr, title) ->
   Format.printf "%s, %s\n" addr title
 
-let query_prefixes ~env config_filename =
-  let config = Forester.Config.parse_forest_config_file config_filename in
-  let forest =
-    Forest.plant_forest @@
-    Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true @@
-    make_dirs ~env config.trees
-  in
-  let addrs =
-    Analysis.Map.to_seq forest.trees
-    |> Seq.map fst
-    |> Seq.filter_map Addr.to_user_addr
-  in
-  let prefixes = Forest.prefixes ~addrs in
-  prefixes |> Forest.Prefix_map.iter @@ fun prefix _ixs ->
-  Format.printf "%s\n" prefix
-
 let query_taxon ~env taxon config_filename =
   let config = Forester.Config.parse_forest_config_file config_filename in
   let forest =
@@ -299,12 +283,6 @@ let complete_cmd ~env =
   let info = Cmd.info "complete" ~version ~doc in
   Cmd.v info Term.(const (complete ~env) $ arg_config $ arg_title)
 
-
-let query_prefixes_cmd ~env =
-  let doc = "Get all prefixes of a forest" in
-  let info = Cmd.info "prefix" ~version ~doc in
-  Cmd.v info Term.(const (query_prefixes ~env) $ arg_config)
-
 let query_taxon_cmd ~env =
   let arg_taxon =
     Arg.non_empty @@ Arg.pos_all Arg.file [] @@
@@ -327,7 +305,7 @@ let query_all_cmd ~env =
 let query_cmd ~env =
   let doc = "Query your forest" in
   let info = Cmd.info "query" ~version ~doc in
-  Cmd.group info [query_prefixes_cmd ~env; query_taxon_cmd ~env; query_tag_cmd ~env; query_all_cmd ~env]
+  Cmd.group info [query_taxon_cmd ~env; query_tag_cmd ~env; query_all_cmd ~env]
 
 let init_cmd ~env =
   let doc = "Initialize a new forest" in

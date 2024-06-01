@@ -24,10 +24,6 @@ val create_tree : cfg:config -> addrs:string Seq.t -> dest:Eio.Fs.dir_ty Eio.Pat
 
 val complete : forest:forest -> string -> (string * string) Seq.t
 
-module Prefix_map : Map.S with type key = string
-val prefixes : addrs:string Seq.t -> int list Prefix_map.t
-(** [prefixes addrs] is a map keyed by prefixes, valued by a list of ids. **)
-
 val taxa : forest:forest-> (string * string) Seq.t
 val tags : forest:forest -> (string * string list) Seq.t
 val run_renderer : cfg:config -> forest -> ( unit -> 'a) -> 'a
