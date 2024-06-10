@@ -1,7 +1,10 @@
 {
   open Prelude
-  exception Syntax_error of string
   let drop_sigil c str = 1 |> List.nth @@ String.split_on_char c str
+  let raise_err lexbuf =
+    let loc = Asai.Range.of_lexbuf lexbuf in
+    Core.Reporter.fatalf ~loc Core.Reporter.Message.Parse_error "unrecognized token `%s`" @@
+    String.escaped @@ Lexing.lexeme lexbuf
 }
 
 let digit = ['0'-'9']
@@ -102,7 +105,7 @@ rule token =
   | wschar+ { Grammar.WHITESPACE (Lexing.lexeme lexbuf) }
   | newline { Lexing.new_line lexbuf; Grammar.WHITESPACE (Lexing.lexeme lexbuf) }
   | eof { Grammar.EOF }
-  | _ { raise @@ Syntax_error (Lexing.lexeme lexbuf) }
+  | _ { raise_err lexbuf }
 
 and comment =
   parse
@@ -116,14 +119,14 @@ and custom_verbatim_herald =
     { let buffer = Buffer.create 2000 in
       eat_verbatim_herald_sep (custom_verbatim herald buffer) lexbuf }
   | _ as c
-    { raise @@ Syntax_error (Lexing.lexeme lexbuf) }
+    { raise_err lexbuf }
 
 and eat_verbatim_herald_sep kont = 
   parse 
   | verbatim_herald_sep 
     { kont lexbuf }
   | _ as c 
-   { raise @@ Syntax_error (Lexing.lexeme lexbuf) }
+   { raise_err lexbuf }
 
 and custom_verbatim herald buffer =
   parse
