@@ -46,18 +46,3 @@ let rec render_node : Sem.node Range.located -> Printer.t =
 
 and render xs =
   Printer.iter render_node xs
-
-and render_arg delim (arg : Sem.t) : Printer.t =
-  match arg with
-  | [] -> Printer.nil
-  | _ ->
-    let l, r =
-      match delim with
-      | Braces -> "{", "}"
-      | Squares -> "[", "]"
-      | Parens -> "(", ")"
-    in
-    Printer.seq
-      [Printer.text l;
-       render arg;
-       Printer.text r]
