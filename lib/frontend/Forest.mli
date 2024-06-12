@@ -19,7 +19,7 @@ type forest =
    analysis : Analysis.analysis Lazy.t}
 
 val plant_forest : raw_forest -> forest
-val render_trees : cfg:config -> forest:forest -> unit
+val render_trees : cfg:config -> forest:forest -> render_only:addr list option -> unit
 val create_tree : cfg:config -> addrs:string Seq.t -> dest:Eio.Fs.dir_ty Eio.Path.t -> prefix:string -> template:string option -> mode:[`Sequential | `Random] -> string
 
 val complete : forest:forest -> string -> (string * string) Seq.t

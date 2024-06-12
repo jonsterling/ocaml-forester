@@ -31,7 +31,7 @@ let version =
   | Some v -> Build_info.V1.Version.to_string v
 
 
-let build ~env config_filename dev ignore_tex_cache no_assets no_theme =
+let build ~env config_filename dev render_only ignore_tex_cache no_assets no_theme  =
   let config = Forester.Config.parse_forest_config_file config_filename in
   let internal_cfg = internal_config_from_config ~env config in
   let forest =
@@ -39,7 +39,13 @@ let build ~env config_filename dev ignore_tex_cache no_assets no_theme =
     Process.read_trees_in_dirs ~dev @@
     make_dirs ~env config.trees
   in
-  Forest.render_trees ~cfg:internal_cfg ~forest
+  let render_only =
+    render_only |>
+    Option.map @@
+    List.map @@ fun addr ->
+    User_addr addr
+  in
+  Forest.render_trees ~cfg:internal_cfg ~forest ~render_only
 
 let new_tree ~env config_filename dest_dir prefix template random =
   let config = Forester.Config.parse_forest_config_file config_filename in
@@ -198,7 +204,7 @@ base_url = "https://www.example.com" # The base URL of your site
       Reporter.emitf Initialization_warning "`hello.tree` already exists"
   end;
 
-  build ~env "forest.toml" true false false false;
+  build ~env "forest.toml" true None false false false ;
   Format.printf "%s" "Initialized forest, try editing `trees/hello.tree` and running `forester build`. Afterwards, you can open `output/index.xml` in your browser to view your forest."
 
 let arg_config =
@@ -226,6 +232,11 @@ let build_cmd ~env =
     Arg.value @@ Arg.flag @@ Arg.info ["no-theme"] ~doc
   in
 
+  let arg_render_only =
+    let doc = "Builds the entire forest but renders only the specified comma-separated list of trees" in
+    Arg.value @@ Arg.opt (Arg.some' (Arg.list Arg.string)) None @@ Arg.info ["render-only"] ~docv:"TREES" ~doc
+  in
+
   let doc = "Build the forest" in
   let man = [
     `S Manpage.s_description;
@@ -238,6 +249,7 @@ let build_cmd ~env =
     .(const (build ~env)
       $ arg_config
       $ arg_dev
+      $ arg_render_only
       $ arg_ignore_tex_cache
       $ arg_no_assets
       $ arg_no_theme)

@@ -321,7 +321,7 @@ let copy_resources ~env =
     if not @@ Eio_util.file_exists Eio.Path.(cwd / dest_dir / fname) then
       Eio_util.copy_to_dir ~cwd ~env ~source:fp ~dest_dir
 
-let render_trees ~cfg ~forest : unit =
+let render_trees ~cfg ~forest ~render_only : unit =
   let env = cfg.env in
   let cwd = Eio.Stdenv.cwd env in
 
@@ -330,10 +330,17 @@ let render_trees ~cfg ~forest : unit =
 
   run_renderer ~cfg forest @@ fun () ->
   Render_dream.with_mainmatter_cache @@ fun () ->
-  forest.trees
-  |> M.to_seq
-  |> Seq.map snd
-  |> List.of_seq
+  let trees =
+    match render_only with
+    | None -> forest.trees |> M.to_seq |> Seq.map snd |> List.of_seq
+    | Some addrs ->
+      addrs |> List.map @@ fun addr ->
+      match M.find_opt addr forest.trees with
+      | Some tree -> tree
+      | None ->
+        Reporter.fatalf Tree_not_found "Could not find tree with address `%a` when rendering forest" pp_addr addr
+  in
+  trees
   |> Sem.Util.sort
   |> List.iter (render_tree ~cfg ~cwd);
   render_json ~cwd forest.trees;
