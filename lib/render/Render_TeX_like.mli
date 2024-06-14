@@ -10,4 +10,4 @@ end
 
 type cfg = {tex : bool}
 
-val render : cfg:cfg -> ?sep:Printer.t -> Sem.t -> Printer.t
+val render : cfg:cfg -> Sem.t -> Printer.t

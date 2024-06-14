@@ -101,9 +101,9 @@ let rec render_located (located : Sem.node Range.located) =
 
   | Sem.Math (mode, body) ->
     let rendered =
-      let module TP = Render_verbatim.Printer in
+      let module TP = Render_TeX_like.Printer in
       Str.global_replace (Str.regexp "\n") " " @@
-      TP.contents @@ Render_verbatim.render ~cfg:{tex = false} body
+      TP.contents @@ Render_TeX_like.render ~cfg:{tex = false} body
     in
     F.tex [
       match mode with
@@ -189,8 +189,8 @@ let rec render_located (located : Sem.node Range.located) =
 
   | Sem.Embed_tex {preamble; source} ->
     let as_tex x =
-      Render_verbatim.Printer.contents @@
-      Render_verbatim.render ~cfg:{tex = true} x
+      Render_TeX_like.Printer.contents @@
+      Render_TeX_like.render ~cfg:{tex = true} x
     in
     let preamble = as_tex preamble in
     let source = as_tex source in
