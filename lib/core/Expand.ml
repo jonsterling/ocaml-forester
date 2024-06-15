@@ -190,7 +190,6 @@ let rec expand : Code.t -> Syn.t =
 
   | {value = Decl_xmlns (prefix, xmlns); loc} :: rest ->
     let path = ["xmlns"; prefix] in
-    let singl = Trie.Untagged.singleton (path, Resolver.P.Xmlns {prefix; xmlns}) in
     Resolver.Scope.include_singleton (path, (Xmlns {prefix; xmlns}, ()));
     expand rest
 

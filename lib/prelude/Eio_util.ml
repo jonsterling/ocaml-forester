@@ -39,7 +39,6 @@ let ensure_remove_file path =
 
 let run_process ?(quiet = false) ~env ~cwd cmd =
   let mgr = Eio.Stdenv.process_mgr env in
-  let outsink = Eio.Stdenv.stdout env in
   let outbuf = Buffer.create 100 in
   let errbuf = Buffer.create 100 in
   let errsink = Eio.Flow.buffer_sink errbuf in

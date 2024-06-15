@@ -2,7 +2,7 @@
  (name Core)
  (preprocess
   (pps ppx_deriving.show))
- (libraries forester.prelude yuujinchou asai irmin-git)
+ (libraries forester.prelude yuujinchou asai repr)
  (public_name forester.core))
 
 (env

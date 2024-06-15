@@ -24,7 +24,8 @@ depends: [
   "algaeff" {>= "2.0.0"}
   "yojson" {>= "2.1.2"}
   "toml" {>= "7.1.0"}
-  "irmin-git" {>= "3.9.0"}
+  "repr" {>= "0.7.0"}
+  "uri" {>= "4.4.0"}
   "odoc" {with-doc}
 ]
 build: [

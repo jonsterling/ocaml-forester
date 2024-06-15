@@ -144,7 +144,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
   | Patch {obj; self; super; methods} ->
     begin
       match eval_strip obj with
-      | [Range.{value = Sem.Object obj_ptr; _}] as obj ->
+      | [Range.{value = Sem.Object obj_ptr; _}] ->
         let table =
           let env = Lex_env.read () in
           let add (name, body) =
