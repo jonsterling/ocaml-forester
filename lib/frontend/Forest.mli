@@ -1,4 +1,4 @@
-open Core
+open Forester_core
 
 type config =
   {env : Eio_unix.Stdenv.base;
@@ -27,4 +27,4 @@ val complete : forest:forest -> string -> (string * string) Seq.t
 val taxa : forest:forest-> (string * string) Seq.t
 val tags : forest:forest -> (string * string list) Seq.t
 val run_renderer : cfg:config -> forest -> ( unit -> 'a) -> 'a
-val render_json : cwd:[> Eio__.Fs.dir_ty ] Eio.Path.t -> Core.Sem.tree Analysis.Map.t -> unit
+val render_json : cwd:[> Eio__.Fs.dir_ty ] Eio.Path.t -> Forester_core.Sem.tree Analysis.Map.t -> unit

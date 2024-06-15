@@ -1,6 +1,6 @@
 %{
-  open Prelude
-  open Core
+  open Forester_prelude
+  open Forester_core
 
   let split_xml_qname str =
     match String.split_on_char ':' str with
@@ -14,7 +14,7 @@
 %token <string> TEXT VERBATIM
 %token <string> WHITESPACE
 %token <string> IDENT
-%token <Core.Prim.t> PRIM
+%token <Forester_core.Prim.t> PRIM
 %token TITLE PARENT IMPORT EXPORT DEF TAXON AUTHOR CONTRIBUTOR TAG DATE NUMBER NAMESPACE LET TEX META OPEN
 %token OBJECT PATCH CALL
 %token TRANSCLUDE SUBTREE SCOPE PUT GET DEFAULT ALLOC REF

@@ -1,5 +1,5 @@
 open Base
-open Prelude
+open Forester_prelude
 
 type node =
   | Text of string

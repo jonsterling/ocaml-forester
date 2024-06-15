@@ -1,7 +1,7 @@
 open Eio.Std
-open Prelude
-open Core
-open Render
+open Forester_prelude
+open Forester_core
+open Forester_render
 
 module A = Analysis
 module M = A.Map
@@ -122,7 +122,7 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
         let* mtime = Some stat.mtime in
         let* ptime = Ptime.of_float_s mtime in
         let (yyyy, mm, dd) = (ptime |> Ptime.to_date_time |> fst) in
-        Some Prelude.Date.{yyyy; mm = Some mm; dd = Some dd}
+        Some Date.{yyyy; mm = Some mm; dd = Some dd}
       with
         Not_found -> None
   end

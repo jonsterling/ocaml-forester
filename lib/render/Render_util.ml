@@ -1,4 +1,4 @@
-open Core
+open Forester_core
 module E = Render_effect.Perform
 
 let rec expand_title_with_parents ?(ancestors = []) (fm : Sem.frontmatter) title =

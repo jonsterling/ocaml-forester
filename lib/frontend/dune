@@ -5,7 +5,7 @@
  (flags --table))
 
 (library
- (name Forester)
+ (name Forester_frontend)
  (public_name forester.frontend)
  (preprocess
   (pps ppx_deriving.show))

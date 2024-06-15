@@ -1,6 +1,6 @@
 open Eio.Std
-open Prelude
-open Render
+open Forester_prelude
+open Forester_render
 
 type 'a env = 'a constraint 'a = <
     cwd : Eio.Fs.dir_ty Eio.Path.t;

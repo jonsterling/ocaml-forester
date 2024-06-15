@@ -1,5 +1,5 @@
 (library
- (name Render)
+ (name Forester_render)
  (preprocess
   (pps ppx_deriving.show))
  (libraries forester.prelude forester.core asai algaeff yojson uri)

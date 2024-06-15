@@ -1,5 +1,5 @@
-open Prelude
-open Core
+open Forester_prelude
+open Forester_core
 open Sem
 
 module E = Render_effect.Perform

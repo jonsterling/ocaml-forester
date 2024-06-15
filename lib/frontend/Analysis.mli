@@ -1,4 +1,4 @@
-open Core
+open Forester_core
 
 module Gph : sig
   type t

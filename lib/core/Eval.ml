@@ -1,6 +1,6 @@
 open Base
 open Bwd
-open Prelude
+open Forester_prelude
 
 module Lex_env = Algaeff.Reader.Make (struct type t = Sem.t Env.t end)
 module Dyn_env = Algaeff.Reader.Make (struct type t = Sem.t Env.t end)

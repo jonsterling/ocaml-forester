@@ -1,5 +1,5 @@
 open Dream_html_lite
-open Core
+open Forester_core
 
 val reserved_prefix : string
 val forester_xmlns : string

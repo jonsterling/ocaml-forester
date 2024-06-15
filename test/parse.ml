@@ -1,12 +1,12 @@
-open Forester.Parse
-open Core
+open Forester_core
+open Forester_frontend.Parse
 
 let emit _ = () (* ignore *)
 
 let fatal _ = exit 1
 
 let _ =
-  Core.Reporter.run ~emit ~fatal @@ fun () ->
+  Forester_core.Reporter.run ~emit ~fatal @@ fun () ->
   let good = Result.get_ok @@ parse_string {|
     \title{Good}
     \taxon{Test}
@@ -20,7 +20,7 @@ let _ =
   Format.printf "parse_good_result:\n%s\n\n" (Code.show good)
 
 let _ =
-  Core.Reporter.run ~emit ~fatal @@ fun () ->
+  Forester_core.Reporter.run ~emit ~fatal @@ fun () ->
   let bad, errors = Result.get_error @@ parse_string {|
     \title{Error recovery}
     \taxon{Test}
@@ -52,22 +52,22 @@ let _ =
       Skipped an ending brace here.
     |}
   in
-  errors |> List.iter (fun (e : Core.Reporter.Message.t Asai.Diagnostic.t) -> Format.printf "error: %s\n" (Asai.Diagnostic.string_of_text e.explanation.value));
+  errors |> List.iter (fun (e : Forester_core.Reporter.Message.t Asai.Diagnostic.t) -> Format.printf "error: %s\n" (Asai.Diagnostic.string_of_text e.explanation.value));
   Format.printf "parse_bad_result:\n%s\n\n" (Code.show bad)
 
 let _ =
-  Core.Reporter.run ~emit ~fatal @@ fun () ->
+  Forester_core.Reporter.run ~emit ~fatal @@ fun () ->
   (* Incomplete \p (brackets not unbalanced) should error *)
   let bad, errors = Result.get_error @@ parse_string {|
     \p{Keep me}
     \p
     |}
   in
-  errors |> List.iter (fun (e : Core.Reporter.Message.t Asai.Diagnostic.t) -> Format.printf "error: %s\n" (Asai.Diagnostic.string_of_text e.explanation.value));
+  errors |> List.iter (fun (e : Forester_core.Reporter.Message.t Asai.Diagnostic.t) -> Format.printf "error: %s\n" (Asai.Diagnostic.string_of_text e.explanation.value));
   Format.printf "parse_bad_result:\n%s\n\n" (Code.show bad)
 
 let _ =
-  Core.Reporter.run ~emit ~fatal @@ fun () ->
+  Forester_core.Reporter.run ~emit ~fatal @@ fun () ->
   (* Incomplete XML literal should error *)
   let bad, errors = Result.get_error @@ parse_string {|
     \p{Keep me}
@@ -76,5 +76,5 @@ let _ =
     }
     |}
   in
-  errors |> List.iter (fun (e : Core.Reporter.Message.t Asai.Diagnostic.t) -> Format.printf "error: %s\n" (Asai.Diagnostic.string_of_text e.explanation.value));
+  errors |> List.iter (fun (e : Forester_core.Reporter.Message.t Asai.Diagnostic.t) -> Format.printf "error: %s\n" (Asai.Diagnostic.string_of_text e.explanation.value));
   Format.printf "parse_bad_result:\n%s\n\n" (Code.show bad)

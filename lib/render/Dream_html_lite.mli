@@ -42,7 +42,7 @@
     outdated documentation strings. To view the latest documentation, please
     visit {{: https://github.com/yawaramin/dream-html} the repository page}. *)
 
-(** {2 Core types}
+(** {2 Forester_core types}
 
     These are the types of the final values which get rendered. *)
 

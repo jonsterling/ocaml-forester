@@ -1,5 +1,5 @@
 (library
- (name Core)
+ (name Forester_core)
  (preprocess
   (pps ppx_deriving.show))
  (libraries forester.prelude yuujinchou asai repr)

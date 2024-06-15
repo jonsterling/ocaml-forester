@@ -1,4 +1,4 @@
-open Prelude
+open Forester_prelude
 
 type t =
   | Word of string

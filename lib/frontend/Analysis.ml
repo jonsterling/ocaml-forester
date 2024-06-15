@@ -1,4 +1,4 @@
-open Core
+open Forester_core
 
 module Map = Map.Make (Addr)
 module Gph = Graph.Imperative.Digraph.Concrete (Addr)

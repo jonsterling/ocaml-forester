@@ -1,9 +1,9 @@
 open Eio.Std
-open Forester
-open Core
+open Forester_core
+open Forester_frontend
 open Cmdliner
 
-module Tty = Asai.Tty.Make (Core.Reporter.Message)
+module Tty = Asai.Tty.Make (Forester_core.Reporter.Message)
 
 let make_dir ~env dir =
   Eio.Path.(Eio.Stdenv.fs env / dir)
@@ -11,7 +11,7 @@ let make_dir ~env dir =
 let make_dirs ~env =
   List.map (make_dir ~env)
 
-let internal_config_from_config ~env (config : Forester.Config.Forest_config.t) =
+let internal_config_from_config ~env (config : Forester_frontend.Config.Forest_config.t) =
   Forest.
     {env;
      root = config.root;
@@ -32,7 +32,7 @@ let version =
 
 
 let build ~env config_filename dev render_only ignore_tex_cache no_assets no_theme  =
-  let config = Forester.Config.parse_forest_config_file config_filename in
+  let config = Forester_frontend.Config.parse_forest_config_file config_filename in
   let internal_cfg = internal_config_from_config ~env config in
   let forest =
     Forest.plant_forest @@
@@ -48,7 +48,7 @@ let build ~env config_filename dev render_only ignore_tex_cache no_assets no_the
   Forest.render_trees ~cfg:internal_cfg ~forest ~render_only
 
 let new_tree ~env config_filename dest_dir prefix template random =
-  let config = Forester.Config.parse_forest_config_file config_filename in
+  let config = Forester_frontend.Config.parse_forest_config_file config_filename in
   let internal_config =
     {(internal_config_from_config ~env config) with
      no_assets = true;
@@ -70,7 +70,7 @@ let new_tree ~env config_filename dest_dir prefix template random =
   Format.printf "%s/%s.tree\n" dest_dir addr
 
 let complete ~env config_filename title =
-  let config = Forester.Config.parse_forest_config_file config_filename in
+  let config = Forester_frontend.Config.parse_forest_config_file config_filename in
   let forest =
     Forest.plant_forest @@
     Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true @@
@@ -81,7 +81,7 @@ let complete ~env config_filename title =
   Format.printf "%s, %s\n" addr title
 
 let query_taxon ~env taxon config_filename =
-  let config = Forester.Config.parse_forest_config_file config_filename in
+  let config = Forester_frontend.Config.parse_forest_config_file config_filename in
   let forest =
     Forest.plant_forest @@
     Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true @@
@@ -92,7 +92,7 @@ let query_taxon ~env taxon config_filename =
   Format.printf "%s, %s\n" addr taxon
 
 let query_tag ~env config_filename =
-  let config = Forester.Config.parse_forest_config_file config_filename in
+  let config = Forester_frontend.Config.parse_forest_config_file config_filename in
   let forest =
     Forest.plant_forest @@
     Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true @@
@@ -107,7 +107,7 @@ let query_tag ~env config_filename =
   Format.printf "%s%s\n" addr (tag_string tags)
 
 let query_all ~env config_filename =
-  let config = Forester.Config.parse_forest_config_file config_filename in
+  let config = Forester_frontend.Config.parse_forest_config_file config_filename in
   let (forest : Forest.forest) =
     Forest.plant_forest @@
     Process.read_trees_in_dirs ~dev:true ~ignore_malformed:true @@
@@ -118,7 +118,7 @@ let query_all ~env config_filename =
   forest.trees
   |> Analysis.Map.to_list
   |> List.map snd
-  |> Render.Render_json.render_trees ~dev:true
+  |> Forester_render.Render_json.render_trees ~dev:true
   |> Yojson.Basic.to_string
   |> Format.printf "%s"
 
@@ -351,5 +351,5 @@ let () =
   Random.self_init ();
   Printexc.record_backtrace true;
   Eio_main.run @@ fun env ->
-  Core.Reporter.run ~emit:Tty.display ~fatal @@ fun () ->
+  Forester_core.Reporter.run ~emit:Tty.display ~fatal @@ fun () ->
   exit @@ Cmd.eval ~catch:false @@ cmd ~env

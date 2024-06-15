@@ -1,9 +1,9 @@
 {
-  open Prelude
+  open Forester_prelude
   let drop_sigil c str = 1 |> List.nth @@ String.split_on_char c str
   let raise_err lexbuf =
     let loc = Asai.Range.of_lexbuf lexbuf in
-    Core.Reporter.fatalf ~loc Core.Reporter.Message.Parse_error "unrecognized token `%s`" @@
+    Forester_core.Reporter.fatalf ~loc Forester_core.Reporter.Message.Parse_error "unrecognized token `%s`" @@
     String.escaped @@ Lexing.lexeme lexbuf
 }
 

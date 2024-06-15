@@ -1,5 +1,5 @@
 (library
- (name Prelude)
+ (name Forester_prelude)
  (libraries unix str ptime eio uucp bwd)
  (public_name forester.prelude))
 

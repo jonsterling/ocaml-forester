@@ -1,4 +1,4 @@
-open Core
+open Forester_core
 
 module Forest_config =
 struct

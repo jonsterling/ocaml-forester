@@ -1,4 +1,4 @@
-open Core
+open Forester_core
 open Lexing
 
 module I = Grammar.MenhirInterpreter
