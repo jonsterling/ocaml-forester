@@ -16,3 +16,4 @@ module Range = Range
 module Prim = Prim
 
 module TeX_cs = TeX_cs
+module Symbol = Symbol
