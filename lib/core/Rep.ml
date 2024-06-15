@@ -131,6 +131,16 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
     let open Base in
     enum "math_mode" [ ("inline", Inline); ("display", Display) ]
 
+  let tex_cs : TeX_cs.t ty =
+    variant "tex_cs"
+      (fun word symbol ->
+         function
+         | TeX_cs.Word x -> word x
+         | TeX_cs.Symbol x -> symbol x)
+    |~ case1 "Word" string (fun x -> TeX_cs.Word x)
+    |~ case1 "Symbol" char (fun x -> TeX_cs.Symbol x)
+    |> sealv
+
   let addr : Base.Addr.t ty =
     let open Base in
     variant "addr"
@@ -164,7 +174,7 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
         query
         link
         xml_tag
-        unresolved
+        tex_cs
         math
         embed_tex
         img
@@ -180,7 +190,7 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
           | Query (x, y) -> query (x, y)
           | Link (x, y, z) -> link (x, y, z)
           | Xml_tag (x, y, z) -> xml_tag (x, y, z)
-          | Unresolved x -> unresolved x
+          | TeX_cs x -> tex_cs x
           | Math (x, y) -> math (x, y)
           | Embed_tex x -> embed_tex x
           | Img x -> img x
@@ -203,7 +213,7 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
     |~ case1 "Xml_tag"
       (triple xml_resolved_qname (list @@ pair xml_resolved_qname t) t)
       (fun (x, y, z) -> Xml_tag (x, y, z))
-    |~ case1 "Unresolved" string (fun s -> Unresolved s)
+    |~ case1 "TeX_cs" tex_cs (fun s -> TeX_cs s)
     |~ case1 "Math" (pair math_mode t) (fun (x, y) -> Math (x, y))
     |~ case1 "Embed_tex" (embed_tex t) (fun s -> Embed_tex s)
     |~ case1 "Img" string (fun s -> Img s)

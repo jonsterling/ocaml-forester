@@ -1,3 +1,5 @@
+open Bwd
+
 (* Based on cmap_utf_8 from https://erratique.ch/software/uucp/doc/Uucp/Case/index.html#caseexamples *)
 let title_case_word s =
   let did_uppercase = ref false in
@@ -47,3 +49,12 @@ let trim_trailing_whitespace str =
   let n = String.length str in
   let chars = List.rev @@ List.init n (String.get str) in
   String.of_seq @@ List.to_seq @@ process_chars @@ chars
+
+let explode str =
+  List.init (String.length str) (String.get str)
+
+let implode chars =
+  String.init (List.length chars) (List.nth chars)
+
+let implode_bwd chars =
+  implode (Bwd.to_list chars)

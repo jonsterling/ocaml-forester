@@ -14,3 +14,5 @@ module BaseN = BaseN
 module Reporter = Reporter
 module Range = Range
 module Prim = Prim
+
+module TeX_cs = TeX_cs

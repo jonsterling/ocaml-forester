@@ -45,12 +45,10 @@ let rec render_node ~cfg : Sem.node Range.located -> Printer.t =
     render ~cfg body
   | Sem.If_tex (x , y) ->
     if cfg.tex then render ~cfg x else render ~cfg y
-  | Sem.Unresolved name ->
-    let sep = cs_separator @@ cs_type name in
-    Printer.seq
-      [Printer.text "\\";
-       Printer.text name;
-       sep]
+  | Sem.TeX_cs (Symbol x) ->
+    Printer.text @@ Format.sprintf "\\%c" x
+  | Sem.TeX_cs (Word x) ->
+    Printer.text @@ Format.sprintf "\\%s " x
   | node ->
     Reporter.fatalf ?loc:located.loc Type_error "Render_TeX_like: cannot render this kind of object"
 

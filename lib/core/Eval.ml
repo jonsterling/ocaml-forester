@@ -67,8 +67,8 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     in
     {node with value = Sem.Xml_tag (name, process attrs, eval body)} :: eval rest
 
-  | Unresolved name ->
-    {node with value = Sem.Unresolved name} :: eval rest
+  | TeX_cs cs ->
+    {node with value = Sem.TeX_cs cs} :: eval rest
 
   | Transclude addr ->
     let opts = get_transclusion_opts () in

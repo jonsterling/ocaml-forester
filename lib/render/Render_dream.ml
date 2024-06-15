@@ -179,9 +179,9 @@ let rec render_located (located : Sem.node Range.located) =
     normalise_prefix ~prefix:name.prefix ~xmlns:name.xmlns @@ fun (updates, tag_prefix) ->
     fold_attrs tag_prefix updates [] attrs
 
-  | Sem.Unresolved name ->
+  | Sem.TeX_cs name ->
     Reporter.fatalf ?loc:located.loc Resolution_error
-      "unresolved identifier `\\%s`" name
+      "unresolved TeX control sequence `\\%a`" TeX_cs.pp name
 
   | Sem.Object _ ->
     Reporter.fatal ?loc:located.loc Type_error

@@ -39,7 +39,7 @@ let rec render_node : Sem.node Range.located -> Printer.t =
     render y
   | Sem.Prim (_, x) ->
     render x
-  | Sem.Unresolved _ ->
+  | Sem.TeX_cs _ ->
     Printer.nil
   | _ ->
     Reporter.fatal ?loc:node.loc Unhandled_case "unhandled case in plain text renderer"

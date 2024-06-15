@@ -20,7 +20,7 @@ type node =
   | Query of transclusion_opts * t Query.t
   | Link of addr * t option * modifier
   | Xml_tag of xml_resolved_qname * (xml_resolved_qname * t) list * t
-  | Unresolved of string
+  | TeX_cs of TeX_cs.t
   | Math of math_mode * t
   | Embed_tex of embedded_tex
   | Img of string
@@ -134,7 +134,7 @@ let string_of_nodes =
     | Embed_tex {source; _} -> Some (render source)
     | If_tex (_, x) -> Some (render x)
     | Prim (_, x) -> Some (render x)
-    | Transclude _ | Subtree _ | Query _ | Unresolved _ | Img _ | Object _ | Link _ | Ref _ -> None
+    | Transclude _ | Subtree _ | Query _ | TeX_cs _ | Img _ | Object _ | Link _ | Ref _ -> None
   in
   render
 

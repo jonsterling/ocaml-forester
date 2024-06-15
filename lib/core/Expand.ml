@@ -247,7 +247,14 @@ and expand_lambda loc : Trie.path list * Code.t -> Syn.t =
 and expand_ident loc path =
   match Scope.resolve path, path with
   | None, [name] ->
-    [Range.{value = Syn.Unresolved name; loc}]
+    begin
+      match TeX_cs.parse name with
+      | None ->
+        Reporter.fatalf Expansion_error "Could not parse unresolved identifier `%s` as TeX control sequence" name
+      | Some (cs, rest) ->
+        let rest = match rest with "" ->  [] | _ -> [Range.{value = Syn.Text rest; loc}] in
+        Range.{value = Syn.TeX_cs cs; loc} :: rest
+    end
   | None, _ ->
     Reporter.fatalf ?loc Resolution_error
       "path %a could not be resolved"

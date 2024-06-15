@@ -18,7 +18,7 @@ type node =
   | Get of Symbol.t
   | If_tex of t * t
   | Xml_tag of xml_resolved_qname * (xml_resolved_qname * t) list * t
-  | Unresolved of string
+  | TeX_cs of TeX_cs.t
   | Prim of Prim.t * t
   | Object of {self : Symbol.t; methods: (string * t) list}
   | Patch of {obj : t; self : Symbol.t; super : Symbol.t; methods : (string * t) list}
