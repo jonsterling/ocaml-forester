@@ -125,7 +125,10 @@ let rec expand : Code.t -> Syn.t =
       Scope.section [] @@ fun () ->
       let sym = Symbol.fresh [] in
       let var = Range.{value = Syn.Var sym; loc} in
-      self |> Option.iter (fun self -> Scope.import_subtree ([], Trie.Untagged.singleton (self, Resolver.P.Term [var])));
+      begin
+        self |> Option.iter @@ fun self ->
+        Scope.import_singleton (self, (Resolver.P.Term [var], ()))
+      end;
       sym, List.map expand_method methods
     in
     {value = Syn.Object {self; methods}; loc} :: expand rest
@@ -137,9 +140,10 @@ let rec expand : Code.t -> Syn.t =
       let super_sym = Symbol.fresh [] in
       let self_var = Range.locate_opt None @@ Syn.Var self_sym in
       let super_var = Range.locate_opt None @@ Syn.Var super_sym in
-      self |> Option.iter begin fun self ->
-        Scope.import_subtree ([], Trie.Untagged.singleton (self, Resolver.P.Term [self_var]));
-        Scope.import_subtree ([], Trie.Untagged.singleton (self @ ["super"], Resolver.P.Term [super_var]));
+      begin
+        self |> Option.iter @@ fun self ->
+        Scope.import_singleton (self, (Term [self_var], ()));
+        Scope.import_singleton (self @ ["super"], (Term [super_var], ()));
       end;
       self_sym, super_sym, List.map expand_method methods
     in
@@ -178,9 +182,9 @@ let rec expand : Code.t -> Syn.t =
     expand rest
 
   | {value = Let (a, bs, def); loc} :: rest ->
-    let singl = Trie.Untagged.singleton (a, Resolver.P.Term (expand_lambda loc (bs, def))) in
+    let lam = expand_lambda loc (bs, def) in
     Resolver.Scope.section [] @@ fun _ ->
-    Resolver.Scope.import_subtree ([], singl);
+    Resolver.Scope.import_singleton (a, (Term lam, ()));
     expand rest
 
   | {value = Def (path, xs, body); loc} :: rest ->
@@ -235,8 +239,7 @@ and expand_lambda loc : Trie.path list * Code.t -> Syn.t =
     xs |> List.map @@ fun x ->
     let sym = Symbol.fresh x in
     let var = Range.locate_opt None @@ Syn.Var sym in
-    let singlx = Trie.Untagged.singleton (x, Resolver.P.Term [var]) in
-    Scope.import_subtree ([], singlx);
+    Scope.import_singleton (x, (Term [var], ()));
     sym
   in
   [Range.{value = Syn.Lam (syms, expand body); loc}]

@@ -40,11 +40,10 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
   match node.value with
   | Link {title; dest} ->
     let title = Option.map eval title in
-    let dest = User_addr (Sem.string_of_nodes @@ eval_textual [] dest) in
-    {node with value = Sem.Link (dest, title, Identity)} :: eval rest
+    {node with value = Sem.Link (eval_addr dest, title, Identity)} :: eval rest
 
   | Ref dest ->
-    let addr = User_addr (Sem.string_of_nodes @@ eval_textual [] dest) in
+    let addr = eval_addr dest in
     {node with value = Sem.Ref addr} :: eval rest
 
   | Math (mmode, e) ->
@@ -72,7 +71,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
 
   | Transclude addr ->
     let opts = get_transclusion_opts () in
-    let addr = User_addr (Sem.string_of_nodes @@ eval_textual [] addr) in
+    let addr = eval_addr addr in
     {node with value = Sem.Transclude (opts, addr)} :: eval rest
 
   | Subtree (addr, nodes) ->
@@ -239,7 +238,7 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     {node with value = Sem.Verbatim str} :: eval rest
 
   | Group _ | Text _ ->
-    eval_textual [] @@ node :: rest
+    eval_textual @@ node :: rest
 
   | Title title ->
     let title = eval title in
@@ -305,7 +304,7 @@ and eval_strip xs = Sem.strip_whitespace @@ eval xs
 
 and eval_trim xs = Sem.trim_whitespace @@ eval xs
 
-and eval_textual prefix : Syn.t -> Sem.t =
+and eval_textual ?(prefix = []) : Syn.t -> Sem.t =
   function
   | {value = Group (d, xs); _} :: rest ->
     let l, r =
@@ -314,13 +313,18 @@ and eval_textual prefix : Syn.t -> Sem.t =
       | Squares -> "[", "]"
       | Parens -> "(", ")"
     in
-    eval_textual (l :: prefix) @@ xs @ Asai.Range.locate_opt None (Syn.Text r) :: rest
+    eval_textual ~prefix:(l :: prefix) @@ xs @ Asai.Range.locate_opt None (Syn.Text r) :: rest
   | {value = Text x; _} :: rest ->
-    eval_textual (x :: prefix) @@ rest
+    eval_textual ~prefix:(x :: prefix) @@ rest
   | rest ->
     let txt = String.concat "" @@ List.rev prefix in
     Range.locate_opt None (Sem.Text txt) :: eval rest
 
+and eval_as_string xs =
+  Sem.string_of_nodes @@ eval_textual xs
+
+and eval_addr xs =
+  User_addr (eval_as_string xs)
 
 and eval_tree_inner ~addr (tree : Syn.tree) : Sem.tree =
   let outer_fm = Fm.get () in
