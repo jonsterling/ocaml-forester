@@ -10,3 +10,6 @@ let pp fmt (sym, ix) =
   Format.fprintf fmt "%a%i" Trie.pp_path sym ix
 
 let compare = compare
+
+let repr : t Repr.t =
+  Repr.pair (Repr.list Repr.string) Repr.int

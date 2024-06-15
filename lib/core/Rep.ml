@@ -219,7 +219,7 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
     |~ case1 "Img" string (fun s -> Img s)
     |~ case1 "If_tex" (pair t t) (fun (x, y) -> If_tex (x, y))
     |~ case1 "Prim" (pair prim t) (fun (x, y) -> Prim (x, y))
-    |~ case1 "Object_" symbol (fun s -> Object s)
+    |~ case1 "Object_" Symbol.repr (fun s -> Object s)
     |~ case1 "Ref" addr (fun s -> Ref s)
     |> sealv
 
@@ -233,10 +233,6 @@ module Tree : Irmin.Contents.S with type t = Sem.tree = struct
   and modifier : Sem.Text_modifier.t ty =
     let open Sem.Text_modifier in
     enum "modifier" [ ("sentence_case", Sentence_case); ("identity", Identity)]
-
-  and symbol : Symbol.t ty =
-    let open Symbol in
-    pair (list string) int
 
   and query (tree : Sem.tree ty) (t : Sem.t ty) a : 'a Query.t ty =
     let open Query in
