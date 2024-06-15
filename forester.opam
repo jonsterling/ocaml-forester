@@ -23,7 +23,6 @@ depends: [
   "bwd" {>= "2.3.0"}
   "algaeff" {>= "2.0.0"}
   "yojson" {>= "2.1.2"}
-  "dream-html" {>= "3.4.1"}
   "toml" {>= "7.1.0"}
   "irmin-git" {>= "3.9.0"}
   "odoc" {with-doc}

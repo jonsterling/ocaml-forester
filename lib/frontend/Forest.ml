@@ -274,7 +274,7 @@ let render_tree ~cfg ~cwd (tree : Sem.tree) =
     Format.pp_print_newline fmt ();
     Format.fprintf fmt "<?xml-stylesheet type=\"text/xsl\" href=\"%s\"?>" cfg.stylesheet;
     Format.pp_print_newline fmt ();
-    Dream_html.pp fmt node
+    Dream_html_lite.pp fmt node
   end
 
 let render_json ~cwd docs =
@@ -287,7 +287,6 @@ let is_hidden_file fname =
 
 let copy_theme ~env ~theme_dir =
   let cwd = Eio.Stdenv.cwd env in
-  let fs = Eio.Stdenv.fs env in
   Eio.Path.with_open_dir theme_dir @@ fun theme ->
   Eio.Path.read_dir theme |> List.iter @@ fun fname ->
   if not @@ is_hidden_file fname then

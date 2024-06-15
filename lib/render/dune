@@ -2,7 +2,7 @@
  (name Render)
  (preprocess
   (pps ppx_deriving.show))
- (libraries forester.prelude forester.core asai algaeff dream-html yojson)
+ (libraries forester.prelude forester.core asai algaeff yojson)
  (public_name forester.render))
 
 (env

@@ -1,4 +1,4 @@
-open Dream_html
+open Dream_html_lite
 open Core
 
 val reserved_prefix : string

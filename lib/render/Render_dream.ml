@@ -1,7 +1,7 @@
 open Core
 open Prelude
 
-open Dream_html
+open Dream_html_lite
 
 module E = Render_effect.Perform
 module F = Dream_forester
