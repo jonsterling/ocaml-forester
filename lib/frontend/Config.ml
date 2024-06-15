@@ -24,7 +24,7 @@ let parse_forest_config_file filename =
   let ch = open_in filename in
   Fun.protect ~finally:(fun _ -> close_in ch) @@ fun () ->
   let lexbuf = Lexing.from_channel ch in
-  match Toml.Parser.parse lexbuf  filename with
+  match Toml.Parser.parse lexbuf filename with
   | `Error (desc, { source; line; column; position }) ->
     Reporter.tracef "when parsing configuration file" @@ fun () ->
     let loc = Asai.Range.of_lexbuf ~source:(`File source) lexbuf in

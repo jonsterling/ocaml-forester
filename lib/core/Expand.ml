@@ -168,16 +168,14 @@ let rec expand : Code.t -> Syn.t =
     begin
       match import with
       | None ->
-        Reporter.emitf ?loc:loc Tree_not_found "Could not find tree %s" dep;
-        expand rest
+        Reporter.emitf ?loc:loc Tree_not_found "Could not find tree %s" dep
       | Some tree -> begin
           match vis with
           | Public -> Resolver.Scope.include_subtree ([], tree)
           | Private -> Resolver.Scope.import_subtree ([], tree)
-        end;
-        expand rest
+        end
     end;
-
+    expand rest
 
   | {value = Let (a, bs, def); loc} :: rest ->
     let singl = Trie.Untagged.singleton (a, Resolver.P.Term (expand_lambda loc (bs, def))) in
@@ -273,10 +271,6 @@ and expand_ident loc path =
       Trie.pp_path path
       xmlns
       prefix
-  | Some (Tree_set addrs, ()), _ ->
-    Reporter.fatalf ?loc Resolution_error
-      "path %a resolved to tree set instead of term"
-      Trie.pp_path path
 
 and expand_sym loc path =
   match Scope.resolve path, path with
