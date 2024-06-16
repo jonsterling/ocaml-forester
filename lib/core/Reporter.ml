@@ -8,13 +8,13 @@ struct
     | Resolution_error
     | Expansion_error
     | Duplicate_attribute
-    | Created_tree
     | Frontmatter_in_body
     | Unhandled_case
     | Transclusion_loop
     | Internal_error
     | Configuration_error
     | Initialization_warning
+    | Profiling
   [@@deriving show]
 
   let default_severity : t -> Asai.Diagnostic.severity =
@@ -26,13 +26,13 @@ struct
     | Resolution_error -> Error
     | Expansion_error -> Error
     | Duplicate_attribute -> Error
-    | Created_tree -> Info
     | Frontmatter_in_body -> Error
     | Unhandled_case -> Bug
     | Transclusion_loop -> Error
     | Internal_error -> Bug
     | Configuration_error -> Error
     | Initialization_warning -> Warning
+    | Profiling -> Info
 
   let short_code : t -> string =
     show

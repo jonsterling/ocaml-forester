@@ -30,15 +30,28 @@ let version =
   | None -> "n/a"
   | Some v -> Build_info.V1.Version.to_string v
 
+let timed_log msg body =
+  let before = Unix.gettimeofday () in
+  let result = body () in
+  let after = Unix.gettimeofday () in
+  Reporter.emitf Profiling "[%fs] %s" (after -. before) msg;
+  result
 
 let build ~env config_filename dev render_only ignore_tex_cache no_assets no_theme  =
-  let config = Forester_frontend.Config.parse_forest_config_file config_filename in
-  let internal_cfg = internal_config_from_config ~env config in
-  let forest =
-    Forest.plant_forest @@
-    Process.read_trees_in_dirs ~dev @@
-    make_dirs ~env config.trees
+  let config, internal_cfg =
+    timed_log "read configuration" @@ fun () ->
+    let config = Forester_frontend.Config.parse_forest_config_file config_filename in
+    config, internal_config_from_config ~env config
   in
+  let parsed_trees =
+    timed_log "parse trees" @@ fun () ->
+    Process.read_trees_in_dirs ~dev @@ make_dirs ~env config.trees
+  in
+  let forest =
+    timed_log "expand, evaluate, and analyse forest" @@ fun () ->
+    Forest.plant_forest parsed_trees
+  in
+  timed_log "render forest" @@ fun () ->
   let render_only =
     render_only |>
     Option.map @@
