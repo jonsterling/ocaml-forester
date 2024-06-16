@@ -287,8 +287,7 @@ let is_hidden_file fname =
 
 let copy_theme ~env ~theme_dir =
   let cwd = Eio.Stdenv.cwd env in
-  Eio.Path.with_open_dir theme_dir @@ fun theme ->
-  Eio.Path.read_dir theme |> List.iter @@ fun fname ->
+  Eio.Path.read_dir theme_dir |> List.iter @@ fun fname ->
   if not @@ is_hidden_file fname then
     Eio.Path.native @@ Eio.Path.(theme_dir / fname) |> Option.iter @@ fun source ->
     Eio_util.copy_to_dir ~env ~cwd ~source ~dest_dir:"output"
@@ -296,8 +295,7 @@ let copy_theme ~env ~theme_dir =
 let copy_assets ~env ~assets_dirs =
   let cwd = Eio.Stdenv.cwd env in
   assets_dirs |> List.iter @@ fun assets_dir ->
-  Eio.Path.with_open_dir assets_dir @@ fun assets ->
-  Eio.Path.read_dir assets |> List.iter @@ fun fname ->
+  Eio.Path.read_dir assets_dir |> List.iter @@ fun fname ->
   if not @@ is_hidden_file fname then
     let path = Eio.Path.(assets_dir / fname) in
     let source = Eio.Path.native_exn path in
@@ -306,8 +304,7 @@ let copy_assets ~env ~assets_dirs =
 
 let copy_resources ~env =
   let cwd = Eio.Stdenv.cwd env in
-  Eio.Path.with_open_dir Eio.Path.(cwd / "build") @@ fun build ->
-  Eio.Path.read_dir build |> List.iter @@ fun fname ->
+  Eio.Path.read_dir Eio.Path.(cwd / "build") |> List.iter @@ fun fname ->
   if not @@ is_hidden_file fname then
     let ext = Filename.extension fname in
     let fp = Format.sprintf "build/%s" fname in

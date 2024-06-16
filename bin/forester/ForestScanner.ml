@@ -8,9 +8,8 @@ let rec process_file fp =
     if Filename.extension basename = ".tree" && not @@ String.starts_with ~prefix:"." basename then
       S.yield fp
 
-and process_dir fp =
+and process_dir dir =
   try
-    Eio.Path.with_open_dir fp @@ fun dir ->
     Eio.Path.read_dir dir |> List.iter @@ fun fp ->
     process_file Eio.Path.(dir / fp)
   with Eio.Io (Eio.Fs.E (Permission_denied _), _) -> ()
