@@ -24,7 +24,7 @@ type raw_forest = Code.tree list
 
 type forest =
   {trees : Sem.tree Analysis.Map.t;
-   analysis : Analysis.analysis Lazy.t}
+   analysis : Analysis.analysis}
 
 module LaTeX_queue = LaTeX_queue.Make ()
 
@@ -32,7 +32,7 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
   let module S = Set.Make (Addr) in
   let module H : Render_effect.Handler =
   struct
-    let analysis = Lazy.force forest.analysis
+    let analysis = forest.analysis
 
     let is_root addr =
       Option.map (fun x -> User_addr x) cfg.root = Some addr
@@ -168,7 +168,7 @@ let plant_forest (trees : raw_forest) : forest =
     A.Topo.fold task import_graph (Expand.UnitMap.empty, M.empty)
   in
 
-  {trees; analysis = lazy (A.analyze_trees trees)}
+  {trees; analysis = A.analyze_trees trees}
 
 let rec random_not_in keys =
   let attempt = Random.int (36*36*36*36 - 1) in

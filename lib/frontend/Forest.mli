@@ -16,7 +16,7 @@ type raw_forest = Code.tree list
 
 type forest =
   {trees : Sem.tree Analysis.Map.t;
-   analysis : Analysis.analysis Lazy.t}
+   analysis : Analysis.analysis}
 
 val plant_forest : raw_forest -> forest
 val render_trees : cfg:config -> forest:forest -> render_only:addr list option -> unit
