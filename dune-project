@@ -1,6 +1,6 @@
-(lang dune 3.7)
+(lang dune 3.13)
 
-(using menhir 2.0)
+(using menhir 3.0)
 
 (name forester)
 
@@ -26,7 +26,7 @@
  (synopsis "A tool for tending mathematical forests")
  (depends
   (menhir
-   (>= 20211230))
+   (>= 3.0))
   (ocamlgraph
    (>= 2.1.0))
   (ocaml

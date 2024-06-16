@@ -2,7 +2,8 @@
 
 (menhir
  (modules Grammar)
- (flags --table))
+ (explain true)
+ (flags --inspection --table --dump))
 
 (library
  (name Forester_frontend)
