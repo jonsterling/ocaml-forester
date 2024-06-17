@@ -2,7 +2,7 @@ type t = {yyyy : int; mm : int option; dd : int option}
 
 val pp : Format.formatter -> t -> unit
 val pp_human : Format.formatter -> t -> unit
-val parse : string -> t
+val parse : string -> t option
 val now : unit -> t
 
 val compare : t -> t -> int

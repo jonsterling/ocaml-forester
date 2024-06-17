@@ -31,22 +31,22 @@ let parse_date str =
           match rest with
           | [dd] ->
             let dd = Some (int_of_string dd) in
-            {yyyy; mm; dd}
+            Some {yyyy; mm; dd}
           | _ ->
-            {yyyy; mm; dd = None}
+            Some {yyyy; mm; dd = None}
         end
       | _ ->
-        {yyyy; mm = None; dd = None}
+        Some {yyyy; mm = None; dd = None}
     end
   | _ ->
-    failwith @@ Format.sprintf "Invalid date string: %s" str
+    None
 
 let parse str =
   match String.split_on_char 'T' str with
   | [date] -> parse_date date
   | date :: _ -> parse_date date
   | _ ->
-    failwith @@ Format.sprintf "Invalid date string: %s" str
+    None
 
 let pp fmt date =
   Format.fprintf fmt "%04d" date.yyyy;

@@ -250,47 +250,34 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
     eval rest
 
   | Meta (k, v) ->
-    begin
-      let v = eval v in
-      Fm.modify @@ fun fm ->
-      {fm with metas = fm.metas @ [k,v]}
-    end;
+    let v = eval v in
+    Fm.modify (fun fm -> {fm with metas = fm.metas @ [k,v]});
     eval rest
 
   | Author author ->
-    begin
-      Fm.modify @@ fun fm ->
-      {fm with authors = fm.authors @ [User_addr author]}
-    end;
+    Fm.modify (fun fm -> {fm with authors = fm.authors @ [User_addr author]});
     eval rest
 
   | Contributor author ->
-    begin
-      Fm.modify @@ fun fm ->
-      {fm with contributors = fm.contributors @ [User_addr author]}
-    end;
+    Fm.modify (fun fm -> {fm with contributors = fm.contributors @ [User_addr author]});
     eval rest
 
   | Tag tag ->
-    begin
-      Fm.modify @@ fun fm ->
-      {fm with tags = fm.tags @ [tag]}
-    end;
+    Fm.modify (fun fm -> {fm with tags = fm.tags @ [tag]});
     eval rest
 
   | Date date ->
-    let date = Date.parse date in
     begin
-      Fm.modify @@ fun fm ->
-      {fm with dates = fm.dates @ [date]}
-    end;
-    eval rest
+      match Date.parse date with
+      | None ->
+        Reporter.fatalf Parse_error "Invalid date string `%s`" date
+      | Some date ->
+        Fm.modify (fun fm -> {fm with dates = fm.dates @ [date]});
+        eval rest
+    end
 
   | Number num ->
-    begin
-      Fm.modify @@ fun fm ->
-      {fm with number = Some num}
-    end;
+    Fm.modify (fun fm -> {fm with number = Some num});
     eval rest
 
   | Taxon taxon ->
