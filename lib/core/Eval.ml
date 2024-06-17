@@ -166,9 +166,8 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
       | [Range.{value = Sem.Object sym; _}] as obj_val ->
         let rec call_method (obj : Sem.obj) =
           let proto_val =
-            match obj.prototype with
-            | None -> None
-            | Some ptr -> Some [Range.locate_opt None @@ Sem.Object ptr]
+            obj.prototype |> Option.map @@ fun ptr ->
+            [Range.locate_opt None @@ Sem.Object ptr]
           in
           match Sem.MethodTable.find_opt method_name obj.methods with
           | Some mthd ->
@@ -189,7 +188,6 @@ and eval_node : Syn.node Range.located -> Syn.t -> Sem.t =
               Reporter.fatalf ?loc:node.loc Type_error
                 "tried to call unbound method `%s`" method_name
         in
-
         let result = call_method @@ Env.find sym @@ Heap.get () in
         result @ eval rest
       | xs ->

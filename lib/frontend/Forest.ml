@@ -56,9 +56,7 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
       LaTeX_queue.enqueue ~name ~preamble ~source
 
     let addr_peek_title scope =
-      match M.find_opt scope forest.trees with
-      | Some doc -> Sem.Util.peek_title doc
-      | None -> None
+      Option.bind (M.find_opt scope forest.trees) Sem.Util.peek_title
 
     let get_sorted_trees addrs : Sem.tree list =
       let find addr =
@@ -112,19 +110,16 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
       M.filter (fun _ -> Sem.Query.test query) forest.trees
 
     let last_changed scope =
-      try
-        let ( let* ) = Option.bind in
-        let tree = M.find scope forest.trees in
-        let* source_path = tree.fm.source_path in
-        let env = cfg.env in
-        let path = Eio.Path.(Eio.Stdenv.fs env / source_path) in
-        let stat  = Eio.Path.stat ~follow:true path in
-        let* mtime = Some stat.mtime in
-        let* ptime = Ptime.of_float_s mtime in
-        let (yyyy, mm, dd) = (ptime |> Ptime.to_date_time |> fst) in
-        Some Date.{yyyy; mm = Some mm; dd = Some dd}
-      with
-        Not_found -> None
+      let (let*) = Option.bind in
+      let* tree = M.find_opt scope forest.trees in
+      let* source_path = tree.fm.source_path in
+      let env = cfg.env in
+      let path = Eio.Path.(Eio.Stdenv.fs env / source_path) in
+      let stat  = Eio.Path.stat ~follow:true path in
+      let* mtime = Some stat.mtime in
+      let* ptime = Ptime.of_float_s mtime in
+      let (yyyy, mm, dd) = (ptime |> Ptime.to_date_time |> fst) in
+      Some (Date.{yyyy; mm = Some mm; dd = Some dd})
   end
   in
   let module Run = Render_effect.Run (H) in

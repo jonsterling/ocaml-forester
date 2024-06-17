@@ -141,7 +141,7 @@ let init ~env () =
     "https://git.sr.ht/~jonsterling/forester-base-theme"
   in
   let theme_version = "4.0.0" in
-  let ( / ) = Eio.Path.( / ) in
+  let (/) = Eio.Path.(/) in
   let fs = Eio.Stdenv.fs env in
   let try_create_dir name =
     try Eio.Path.mkdir ~perm:0o700 (fs / name)
