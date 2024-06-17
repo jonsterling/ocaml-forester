@@ -155,12 +155,11 @@ let init ~env () =
 trees = ["trees" ]                   # The directories in which your trees are stored
 assets = ["assets"]                  # The directories in which your assets are stored
 theme = "theme"                      # The directory in which your theme is stored
-root = "hello"                       # The address of the root tree
 base_url = "https://www.example.com" # The base URL of your site
 |}
   in
 
-  let hello_tree_str =
+  let index_tree_str =
     {|
 \title{Hello, World!}
 \p{
@@ -211,14 +210,14 @@ base_url = "https://www.example.com" # The base URL of your site
 
   begin
     try
-      Eio.Path.(save ~create:(`Exclusive 0o600) (fs / "trees" / "hello.tree") hello_tree_str)
+      Eio.Path.(save ~create:(`Exclusive 0o600) (fs / "trees" / "index.tree") index_tree_str)
     with _ ->
       Reporter.with_backtrace Emp @@ fun () ->
-      Reporter.emitf Initialization_warning "`hello.tree` already exists"
+      Reporter.emitf Initialization_warning "`index.tree` already exists"
   end;
 
   build ~env "forest.toml" true None false false false ;
-  Format.printf "%s" "Initialized forest, try editing `trees/hello.tree` and running `forester build`. Afterwards, you can open `output/index.xml` in your browser to view your forest."
+  Format.printf "%s" "Initialized forest, try editing `trees/index.tree` and running `forester build`. Afterwards, you can open `output/index.xml` in your browser to view your forest."
 
 let arg_config =
   let doc = "A TOML file like $(i,forest.toml)" in
