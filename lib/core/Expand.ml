@@ -13,7 +13,7 @@ struct
   let create path =
     let sym = Symbol.fresh path in
     sym, fun () ->
-      Resolver.Scope.include_singleton (path, (Sym sym, ()))
+      Resolver.Scope.include_singleton path @@ Sym sym
 
   module Transclude =
   struct
@@ -127,7 +127,7 @@ let rec expand : Code.t -> Syn.t =
       let var = Range.{value = Syn.Var sym; loc} in
       begin
         self |> Option.iter @@ fun self ->
-        Scope.import_singleton (self, (Resolver.P.Term [var], ()))
+        Scope.import_singleton self @@ Resolver.P.Term [var]
       end;
       sym, List.map expand_method methods
     in
@@ -142,8 +142,8 @@ let rec expand : Code.t -> Syn.t =
       let super_var = Range.locate_opt None @@ Syn.Var super_sym in
       begin
         self |> Option.iter @@ fun self ->
-        Scope.import_singleton (self, (Term [self_var], ()));
-        Scope.import_singleton (self @ ["super"], (Term [super_var], ()));
+        Scope.import_singleton self @@ Term [self_var];
+        Scope.import_singleton (self @ ["super"]) @@ Term [super_var]
       end;
       self_sym, super_sym, List.map expand_method methods
     in
@@ -175,8 +175,8 @@ let rec expand : Code.t -> Syn.t =
         Reporter.emitf ?loc:loc Tree_not_found "Could not find tree %s" dep
       | Some tree -> begin
           match vis with
-          | Public -> Resolver.Scope.include_subtree ([], tree)
-          | Private -> Resolver.Scope.import_subtree ([], tree)
+          | Public -> Resolver.Scope.include_subtree [] tree
+          | Private -> Resolver.Scope.import_subtree [] tree
         end
     end;
     expand rest
@@ -184,22 +184,22 @@ let rec expand : Code.t -> Syn.t =
   | {value = Let (a, bs, def); loc} :: rest ->
     let lam = expand_lambda loc (bs, def) in
     Resolver.Scope.section [] @@ fun _ ->
-    Resolver.Scope.import_singleton (a, (Term lam, ()));
+    Resolver.Scope.import_singleton a @@ Term lam;
     expand rest
 
   | {value = Def (path, xs, body); loc} :: rest ->
     let lam = expand_lambda loc (xs, body) in
-    Resolver.Scope.include_singleton (path, (Term lam, ()));
+    Resolver.Scope.include_singleton path @@ Term lam;
     expand rest
 
   | {value = Decl_xmlns (prefix, xmlns); loc} :: rest ->
     let path = ["xmlns"; prefix] in
-    Resolver.Scope.include_singleton (path, (Xmlns {prefix; xmlns}, ()));
+    Resolver.Scope.include_singleton path @@ Xmlns {prefix; xmlns};
     expand rest
 
   | {value = Alloc path; loc} :: rest ->
     let symbol = Symbol.fresh path in
-    Resolver.Scope.include_singleton (path, (Sym symbol, ()));
+    Resolver.Scope.include_singleton path @@ Sym symbol;
     expand rest
 
   | {value = Title xs; loc} :: rest ->
@@ -239,7 +239,7 @@ and expand_lambda loc : Trie.path list * Code.t -> Syn.t =
     xs |> List.map @@ fun x ->
     let sym = Symbol.fresh x in
     let var = Range.locate_opt None @@ Syn.Var sym in
-    Scope.import_singleton (x, (Term [var], ()));
+    Scope.import_singleton x @@ Term [var];
     sym
   in
   [Range.{value = Syn.Lam (syms, expand body); loc}]
