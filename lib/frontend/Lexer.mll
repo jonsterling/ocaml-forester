@@ -118,15 +118,21 @@ and custom_verbatim_herald =
   | verbatim_herald as herald
     { let buffer = Buffer.create 2000 in
       eat_verbatim_herald_sep (custom_verbatim herald buffer) lexbuf }
-  | _ as c
+  | newline
+    { Lexing.new_line lexbuf; 
+      raise_err lexbuf }
+  | _ 
     { raise_err lexbuf }
 
 and eat_verbatim_herald_sep kont = 
   parse 
   | verbatim_herald_sep 
     { kont lexbuf }
-  | _ as c 
-   { raise_err lexbuf }
+  | newline
+    { Lexing.new_line lexbuf; 
+      raise_err lexbuf }
+  | _ 
+    { raise_err lexbuf }
 
 and custom_verbatim herald buffer =
   parse
@@ -152,12 +158,26 @@ and custom_verbatim herald buffer =
 and xml_qname =
   parse
   | xml_qname as qname { qname }
-
+  | newline
+    { Lexing.new_line lexbuf; 
+      raise_err lexbuf }
+  | _ 
+    { raise_err lexbuf }
 
 and xml_base_ident =
   parse
   | xml_base_ident as x { x }
+  | newline
+    { Lexing.new_line lexbuf; 
+      raise_err lexbuf }
+  | _ 
+    { raise_err lexbuf }
 
 and rangle =
   parse
   | ">" { () }
+    | newline
+    { Lexing.new_line lexbuf; 
+      raise_err lexbuf }
+  | _ 
+    { raise_err lexbuf }
