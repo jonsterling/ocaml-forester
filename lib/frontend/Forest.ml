@@ -118,7 +118,7 @@ let run_renderer ~cfg (forest : forest) (body : unit -> 'a) : 'a =
       let stat  = Eio.Path.stat ~follow:true path in
       let* mtime = Some stat.mtime in
       let* ptime = Ptime.of_float_s mtime in
-      let (yyyy, mm, dd) = (ptime |> Ptime.to_date_time |> fst) in
+      let (yyyy, mm, dd) = ptime |> Ptime.to_date_time |> fst in
       Some (Date.{yyyy; mm = Some mm; dd = Some dd})
   end
   in
@@ -184,10 +184,10 @@ let split_addr addr =
       and suffix = String.sub addr (i + 1) (String.length addr - i - 1) in
       begin
         match BaseN.Base36.int_of_string suffix with
-        | Some key -> (prefix, Some key)
-        | None -> (addr, None)
+        | Some key -> prefix, Some key
+        | None -> addr, None
       end
-    | _ -> (addr, None)
+    | _ -> addr, None
 
 let next_addr ~prefix ~mode (forest : string Seq.t) =
   let keys =
